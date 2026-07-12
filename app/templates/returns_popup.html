@@ -1,0 +1,133 @@
+<div class="stats-modal" id="returnsPopupModal" tabindex="-1">
+  <style>
+    #returnsPopupModal .stats-modal-content {
+      width: 98%;
+      max-width: 1600px;
+    }
+    #returnsPopupModal .modern-table {
+      border-radius: 1rem;
+      overflow: hidden;
+      background: #fff;
+      border: 1px solid #000;
+    }
+    #returnsPopupModal .modern-table th {
+      background: #D79921 !important;
+      font-size: 1.1rem;
+      letter-spacing: 0.5px;
+      color: #333;
+      vertical-align: middle;
+      border-bottom: 1px solid #000 !important;
+    }
+    #returnsPopupModal .modern-table td {
+      vertical-align: middle;
+      font-size: 1rem;
+      background: #fff;
+      border-bottom: 1px solid #000;
+    }
+    #returnsPopupModal .modern-table tbody tr:hover td {
+      background: #fff3cd !important;
+      transition: background 0.2s;
+    }
+  </style>
+  <div class="stats-modal-content">
+    <button type="button" class="close-btn" data-bs-dismiss="modal" id="returnsPopupCloseBtn" aria-label="Close"><i class="fas fa-times"></i></button>
+    <h4 class="modal-title">المرتجعات</h4>
+    <div class="modal-body py-2">
+      <div class="d-flex gap-2 align-items-stretch mb-2">
+        <div style="width:80px;">
+          <select id="returnsMonth" class="form-select h-100" onchange="loadReturnsData()">
+            {% for m in range(1, 13) %}
+            <option value="{{ m }}" {% if m == datetime.now().month %}selected{% endif %}>{{ m }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div style="width:100px;">
+          <select id="returnsYear" class="form-select h-100" onchange="loadReturnsData()">
+            {% for y in range(datetime.now().year - 2, datetime.now().year + 1) %}
+            <option value="{{ y }}" {% if y == datetime.now().year %}selected{% endif %}>{{ y }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="ms-auto">
+          <a href="{{ url_for('main.add_return_order') }}" class="btn btn-info d-inline-flex align-items-center gap-1 h-100" onclick="document.getElementById('returnsPopupModal').style.display='none'">
+            <i class="fas fa-plus"></i> إضافة طلب إرجاع
+          </a>
+        </div>
+      </div>
+      <div class="modern-table table-responsive">
+        <table class="table table-striped mb-0 text-center align-middle">
+          <thead>
+            <tr>
+              <th>تاريخ</th>
+              <th>عميل</th>
+              <th>المنتجات</th>
+              <th>السبب</th>
+              <th>المبلغ المسترد</th>
+              <th>الموظف المستلم</th>
+            </tr>
+          </thead>
+          <tbody id="returnsTableBody">
+            <tr><td colspan="6" class="text-muted">جاري التحميل...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function openReturnsPopup() {
+  const modal = document.getElementById('returnsPopupModal');
+  if (modal) modal.style.display = 'flex';
+  loadReturnsData();
+}
+
+function loadReturnsData() {
+  const month = document.getElementById('returnsMonth').value;
+  const year = document.getElementById('returnsYear').value;
+  const tbody = document.getElementById('returnsTableBody');
+  tbody.innerHTML = '<tr><td colspan="6" class="text-center"><div class="sk sk-row" style="height:1.2rem; max-width:200px; margin:0 auto;"></div></td></tr>';
+
+  fetch('{{ url_for("main.returns_popup_data") }}', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({month: parseInt(month), year: parseInt(year)})
+  }).then(r => r.json()).then(d => {
+    if (d.success) {
+      tbody.innerHTML = '';
+      if (d.returns && d.returns.length > 0) {
+        d.returns.forEach(r => {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td>${r.created_at}</td>
+            <td>${r.customer_name}</td>
+            <td class="text-start" style="max-width:200px;white-space:normal;">${r.items_summary}</td>
+            <td>${r.return_reason}</td>
+            <td>${r.customer_refund_amount.toFixed(2)} ج.م</td>
+            <td>${r.received_by_name}</td>
+          `;
+          tbody.appendChild(tr);
+        });
+      } else {
+        tbody.innerHTML = '<tr><td colspan="6" class="text-muted">لا توجد مرتجعات في هذا الشهر</td></tr>';
+      }
+    } else {
+      tbody.innerHTML = '<tr><td colspan="6" class="text-danger">حدث خطأ في تحميل البيانات</td></tr>';
+    }
+  }).catch(() => {
+    tbody.innerHTML = '<tr><td colspan="6" class="text-danger">خطأ في الاتصال</td></tr>';
+  });
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  const modal = document.getElementById('returnsPopupModal');
+  if (modal) {
+    modal.addEventListener('click', function(e) {
+      if (e.target === modal || e.target.closest('#returnsPopupCloseBtn')) {
+        modal.style.display = 'none';
+        document.body.style.overflow = '';
+      }
+    });
+  }
+});
+</script>

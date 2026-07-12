@@ -1,0 +1,142 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container py-4" dir="rtl">
+  
+  <div class="text-center mb-4">
+    <h2 class="fw-bold">فواتير <span class="text-warning">{{ supplier.name }}</span></h2>
+    <p class="text-muted">جميع فواتير المشتريات من هذا المورد</p>
+  </div>
+
+  <div class="d-flex justify-content-end mb-4">
+    <a href="{{ url_for('main.supplier_profile', supplier_id=supplier.id) }}" class="btn btn-secondary">
+      <i class="fas fa-arrow-left me-1"></i>رجوع
+    </a>
+  </div>
+
+  <div class="row g-3 mb-4">
+    <div class="col-12 col-md-3">
+      <div class="card card-box bg-primary bg-opacity-10 border-primary">
+        <div class="card-body text-center">
+          <i class="fas fa-file-invoice fa-2x text-primary mb-2"></i>
+          <h5 class="fw-bold text-primary">{{ invoices|length }}</h5>
+          <p class="text-muted mb-0">عدد الفواتير</p>
+        </div>
+      </div>
+    </div>
+    <div class="col-12 col-md-3">
+      <div class="card card-box bg-warning bg-opacity-10 border-warning">
+        <div class="card-body text-center">
+          <i class="fas fa-money-bill-wave fa-2x text-warning mb-2"></i>
+          <h5 class="fw-bold text-warning">{{ "%.2f"|format(invoices|sum(attribute='total_amount')) }} ج.م</h5>
+          <p class="text-muted mb-0">إجمالي قيمة الفواتير</p>
+        </div>
+      </div>
+    </div>
+    <div class="col-12 col-md-3">
+      <div class="card card-box bg-success bg-opacity-10 border-success">
+        <div class="card-body text-center">
+          <i class="fas fa-check-circle fa-2x text-success mb-2"></i>
+          <h5 class="fw-bold text-success">{{ "%.2f"|format(invoices|sum(attribute='paid_amount')) }} ج.م</h5>
+          <p class="text-muted mb-0">إجمالي المدفوع</p>
+        </div>
+      </div>
+    </div>
+    <div class="col-12 col-md-3">
+      <div class="card card-box bg-danger bg-opacity-10 border-danger">
+        <div class="card-body text-center">
+          <i class="fas fa-exclamation-triangle fa-2x text-danger mb-2"></i>
+          <h5 class="fw-bold text-danger">{{ "%.2f"|format(supplier.actual_total_debt) }} ج.م</h5>
+          <p class="text-muted mb-0">إجمالي الدين</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {% if invoices %}
+  <div class="table-responsive">
+    <table class="table modern-table table-hover text-center align-middle">
+      <thead>
+        <tr>
+          <th>رقم الفاتورة</th>
+          <th>التاريخ</th>
+          <th>إجمالي المبلغ</th>
+          <th>المدفوع</th>
+          <th>المتبقي</th>
+          <th>عدد المنتجات</th>
+          <th>إجمالي الكمية</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for invoice in invoices %}
+        <tr style="cursor: pointer;" onclick="window.location.href='{{ url_for('main.view_invoice', invoice_id=invoice.id) }}'">
+          <td>{{ invoice.invoice_number }}</td>
+          <td>{{ invoice.date.strftime('%Y-%m-%d') }}</td>
+          <td><strong class="text-primary">{{ "%.2f"|format(invoice.total_amount) }} ج.م</strong></td>
+          <td><strong class="text-success">{{ "%.2f"|format(invoice.paid_amount) }} ج.م</strong></td>
+          <td>
+            {% set remaining = invoice.total_amount - invoice.paid_amount %}
+            <strong class="{% if remaining > 0 %}text-danger{% else %}text-success{% endif %}">
+              {{ "%.2f"|format(remaining) }} ج.م
+            </strong>
+          </td>
+          <td>{{ invoice.items|length }}</td>
+          <td><strong class="text-info">{{ invoice.items|sum(attribute='quantity') }}</strong></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% else %}
+  <div class="alert alert-light border text-center text-muted mt-4">
+    لا توجد فواتير لهذا المورد.
+  </div>
+     {% endif %}
+
+ </div>
+
+<style>
+  .modern-table {
+    border-radius: 1rem;
+    overflow: hidden;
+    background: #fff;
+    border: 1px solid #000;
+  }
+  .modern-table th {
+    background: #D79921 !important;
+    font-size: 1.1rem;
+    letter-spacing: 0.5px;
+    color: #333;
+    vertical-align: middle;
+    border-bottom: 1px solid #000 !important;
+  }
+  .modern-table td {
+    vertical-align: middle;
+    font-size: 1rem;
+    background: #fff;
+    border-bottom: 1px solid #000;
+  }
+  .modern-table tbody tr:hover td {
+    background: #fff3cd !important;
+    transition: background 0.2s;
+  }
+  .custom-yellow {
+    color: #D79921 !important;
+  }
+  .custom-yellow-bg {
+    background-color: #D79921 !important;
+  }
+  .card-box {
+    border-radius: 1rem;
+    box-shadow: 0 0 15px rgba(0,0,0,0.08);
+    transition: all 0.3s ease;
+  }
+  .card-box:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 0 20px rgba(0,0,0,0.12);
+  }
+  
+  /* Dark mode support for supplier invoices */
+</style>
+{% endblock %} 

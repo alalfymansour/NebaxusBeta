@@ -1,0 +1,112 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container py-5" dir="rtl">
+  
+  <div class="row justify-content-center mb-4 customer-header-row">
+    <div class="col-12">
+    <div class="card card-box px-4 py-3 bg-white w-100 d-flex flex-column align-items-center justify-content-center customer-header-card">
+        <div class="mb-2">
+      <div class="rounded-circle mx-auto customer-avatar-circle" style="width: 90px; height: 90px; font-size: 36px; font-weight: bold; background-color: rgba(215, 153, 33, 0.25); color: #D79921; display: flex; align-items: center; justify-content: center;">
+            {{ customer.name[0] }}
+          </div>
+        </div>
+        <h3 class="fw-bold mb-2" style="font-size: 1.6rem;">{{ customer.name }}</h3>
+        <p class="text-muted mb-1"><i class="fas fa-phone-alt me-2"></i>{{ customer.phone }}</p>
+        <p class="text-muted"><i class="fas fa-map-marker-alt me-2"></i>{{ customer.governorate }} - {{ customer.address_details }}</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-4 justify-content-center mb-5 customer-actions-row">
+    <div class="col-12 col-md-4 d-flex align-items-stretch">
+      <a href="{{ url_for('main.edit_customer', customer_id=customer.id) }}" class="text-decoration-none w-100">
+        <div class="card card-box p-4 bg-white h-100 d-flex flex-column align-items-center justify-content-center">
+          <i class="fas fa-user-edit fa-2x mb-2 text-primary"></i>
+          <h6 class="fw-bold text-dark">تعديل بيانات العميل</h6>
+        </div>
+      </a>
+    </div>
+    <div class="col-12 col-md-4 d-flex align-items-stretch">
+      <a href="{{ url_for('main.view_customer_orders', customer_id=customer.id) }}" class="text-decoration-none w-100">
+        <div class="card card-box p-4 bg-white h-100 d-flex flex-column align-items-center justify-content-center">
+          <i class="fas fa-box-open fa-2x mb-2 text-warning"></i>
+          <h6 class="fw-bold text-dark">عرض الطلبات</h6>
+        </div>
+      </a>
+    </div>
+    <div class="col-12 col-md-4 d-flex align-items-stretch">
+      <a href="{{ url_for('main.customer_history', customer_id=customer.id) }}" class="text-decoration-none w-100">
+        <div class="card card-box p-4 bg-white h-100 d-flex flex-column align-items-center justify-content-center">
+          <i class="fas fa-history fa-2x mb-2 text-danger"></i>
+          <h6 class="fw-bold text-dark">سجل التواصل والملاحظات</h6>
+        </div>
+      </a>
+    </div>
+  </div>
+
+  <div class="d-flex w-100 justify-content-end gap-2 align-items-center customer-bottom-actions">
+    <form id="delete-customer-form" method="POST" action="{{ url_for('main.delete_customer', customer_id=customer.id) }}" style="display:inline;">
+      
+      <button type="submit" class="btn btn-danger d-flex align-items-center gap-1 delete-btn" data-confirm="هل أنت متأكد أنك تريد حذف هذا العميل؟">
+        <i class="fas fa-trash me-1"></i> حذف العميل
+      </button>
+    </form>
+    {% set return_to = request.args.get('return_to', '') %}
+    {% if return_to and return_to.startswith('/') %}
+      <a href="{{ return_to }}" class="btn btn-secondary d-inline-flex align-items-center gap-1 px-4">
+        <i class="fas fa-arrow-left"></i> <span>رجوع</span>
+      </a>
+    {% elif request.args.get('from') == 'followups' %}
+      <a href="{{ url_for('main.followups') }}" class="btn btn-secondary d-inline-flex align-items-center gap-1 px-4">
+        <i class="fas fa-arrow-left"></i> <span>رجوع</span>
+      </a>
+    {% else %}
+      <a href="{{ url_for('main.customers') }}" class="btn btn-secondary d-inline-flex align-items-center gap-1 px-4">
+        <i class="fas fa-arrow-left"></i> <span>رجوع</span>
+      </a>
+    {% endif %}
+  </div>
+</div>
+
+<style>
+  .card-box {
+    border-radius: 1rem !important;
+    box-shadow: 0 0 15px rgba(0,0,0,0.08);
+    transition: all 0.3s ease;
+  }
+  .card-box:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 0 20px rgba(0,0,0,0.12);
+  }
+</style>
+
+<style>
+  /* Mobile-only tweaks: icons-only actions and split bottom buttons */
+  @media (max-width: 576px) {
+  /* Match spacing between header card and action cards to the cards' gap */
+  .customer-header-row { margin-bottom: 0.5rem !important; }
+  /* Action cards: slightly smaller icons and perfect centering */
+  .customer-actions-row .card { display: flex !important; align-items: center !important; justify-content: center !important; }
+  .customer-actions-row .card i { font-size: 1.25rem !important; }
+    /* Three action cards in one row and icons only */
+    .customer-actions-row { --bs-gutter-x: 0.5rem; --bs-gutter-y: 0.5rem; }
+    .customer-actions-row > [class*="col-"] { flex: 0 0 33.3333% !important; max-width: 33.3333% !important; }
+    .customer-actions-row .card { padding: 0.9rem !important; }
+    .customer-actions-row .card h6 { display: none !important; }
+    .customer-actions-row .card i { margin-bottom: 0 !important; }
+
+  /* Bottom buttons: icons only and opposite ends */
+    .customer-bottom-actions { justify-content: space-between !important; }
+  .customer-bottom-actions .btn { font-size: 0 !important; padding: 0.5rem 1.1rem !important; min-width: 56px !important; }
+    .customer-bottom-actions .btn i { font-size: 1.1rem !important; margin: 0 !important; }
+    .customer-bottom-actions .btn span { display: none !important; }
+
+  /* Header card: reduce height by shrinking padding and avatar */
+  .customer-header-card { padding: 0.6rem 0.9rem !important; }
+  .customer-header-card .mb-2 { margin-bottom: 0.35rem !important; }
+  .customer-header-card .customer-avatar-circle { width: 72px !important; height: 72px !important; font-size: 28px !important; }
+  .customer-header-card p { margin-bottom: 0.3rem !important; }
+  }
+</style>
+{% endblock %}

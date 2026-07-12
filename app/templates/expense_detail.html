@@ -1,0 +1,77 @@
+<div class="row g-3">
+  <div class="col-md-6 d-flex align-items-center">
+    <label class="form-label fw-semibold mb-0 me-2">عنوان المصروف:</label>
+    <span class="text-dark">{{ expense.title }}</span>
+  </div>
+  <div class="col-md-6 d-flex align-items-center">
+    <label class="form-label fw-semibold mb-0 me-2">المبلغ:</label>
+    <span class="fw-bold text-success">{{ expense.formatted_amount }}</span>
+  </div>
+  <div class="col-md-6 d-flex align-items-center">
+    <label class="form-label fw-semibold mb-0 me-2">الفئة:</label>
+    <span class="badge {% if expense.category == 'مصاريف تشغيلية' %}bg-success{% else %}bg-info{% endif %} me-1">
+      {{ expense.category }}
+    </span>
+    {% if expense.subcategory %}
+      <small class="text-muted">{{ expense.subcategory }}</small>
+    {% endif %}
+  </div>
+  <div class="col-md-6 d-flex align-items-center">
+    <label class="form-label fw-semibold mb-0 me-2">التاريخ:</label>
+    <span class="text-dark">{{ expense.formatted_date }}</span>
+  </div>
+  <div class="col-12 d-flex align-items-center">
+    <label class="form-label fw-semibold mb-0 me-2">طريقة الدفع:</label>
+    <span class="text-dark">{{ expense.payment_method or '-' }}</span>
+  </div>
+
+  {% if expense.category == 'أصول ثابتة' and 'مقسوم على' in (expense.payment_method or '') %}
+    {% set related_expenses = expense.get_related_expenses() %}
+    {% if related_expenses %}
+    <div class="col-12">
+      <div class="d-flex align-items-center">
+        <label class="form-label fw-semibold mb-0 me-2">إجمالي المبلغ المقسم:</label>
+        <span class="text-success fw-bold">{{ "%.2f"|format((related_expenses|sum(attribute='amount'))|round(2)) }} ج.م</span>
+      </div>
+    </div>
+    
+    <div class="col-12">
+      <div class="d-flex flex-column">
+        <label class="form-label fw-semibold mb-2">الشهور المقسم عليها:</label>
+        <div class="text-dark">
+          <div class="row g-2">
+            {% for related_expense in related_expenses %}
+              <div class="col-md-2 col-sm-4 mb-1">
+                <div class="border rounded p-1 text-center" style="background-color: #f8f9fa;">
+                  <div class="fw-bold text-primary small">
+                    {% set month_names = {
+                      'January': 'يناير', 'February': 'فبراير', 'March': 'مارس', 'April': 'أبريل',
+                      'May': 'مايو', 'June': 'يونيو', 'July': 'يوليو', 'August': 'أغسطس',
+                      'September': 'سبتمبر', 'October': 'أكتوبر', 'November': 'نوفمبر', 'December': 'ديسمبر'
+                    } %}
+                    {{ month_names[related_expense.date.strftime('%B')] }} {{ related_expense.date.strftime('%Y') }}
+                  </div>
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+    </div>
+    {% else %}
+    <div class="col-12">
+      <div class="d-flex flex-column">
+        <label class="form-label fw-semibold mb-2">الشهور المقسم عليها:</label>
+        <span class="text-muted">لا توجد شهور مقسمة</span>
+      </div>
+    </div>
+    {% endif %}
+  {% endif %}
+  
+  <div class="col-12">
+    <div class="d-flex align-items-start">
+      <label class="form-label fw-semibold mb-0 me-2">الوصف التفصيلي:</label>
+      <span class="text-dark">{{ expense.description or 'لا يوجد وصف' }}</span>
+    </div>
+  </div>
+</div> 

@@ -1,0 +1,1024 @@
+{% extends 'base.html' %}
+
+{% block title %}إضافة موظف جديد - تحديد الصلاحيات{% endblock %}
+
+{% block content %}
+<style>
+  .permission-card {
+    border-radius: 1rem;
+    box-shadow: 0 0 15px rgba(0,0,0,0.08);
+    transition: all 0.3s ease;
+    background: #fff;
+    border: 2px solid #e9ecef;
+    position: relative;
+  }
+  
+  .permission-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 0 20px rgba(0,0,0,0.12);
+    border-color: #D79921;
+  }
+  
+  .permission-icon {
+    font-size: 2.5rem;
+    color: #D79921;
+    margin-bottom: 1rem;
+  }
+  
+  .permission-title {
+    font-size: 1.3rem;
+    font-weight: bold;
+    color: #333;
+    margin-bottom: 0.5rem;
+  }
+  
+  .permission-description {
+    font-size: 0.95rem;
+    color: #6c757d;
+    margin-bottom: 1.5rem;
+    line-height: 1.4;
+  }
+  
+  .form-check {
+    margin-bottom: 0.75rem;
+    padding-left: 0;
+  }
+  
+  .form-check-input {
+    margin-left: 0;
+    margin-right: 0.5rem;
+  }
+  
+  .form-check-input:checked {
+    background-color: #D79921;
+    border-color: #D79921;
+  }
+  
+  .form-check-label {
+    font-weight: 500;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    font-size: 0.9rem;
+  }
+  
+  .form-check-label i {
+    width: 16px;
+    margin-left: 0.5rem;
+    color: #D79921;
+  }
+  
+  .permission-card {
+    transition: all 0.3s ease, border-color 0.2s ease, transform 0.2s ease;
+  }
+  
+  .btn-success {
+    background-color: #D79921;
+    border-color: #D79921;
+    color: #000;
+  }
+  
+  .btn-success:hover {
+    background-color: #e6c23a;
+    border-color: #e6c23a;
+    color: #000;
+  }
+  
+  .permissions-grid {
+    column-count: 4;
+    column-gap: 16px;
+    direction: rtl;
+  }
+  .permissions-grid > .row { display: contents; }
+  .permissions-grid > .row > [class*="col-"] { display: contents; }
+  .permissions-grid .permission-card {
+    break-inside: avoid;
+    margin-bottom: 16px;
+  }
+  .permissions-grid .d-flex.justify-content-between {
+    column-span: all;
+  }
+  @media (max-width: 991px) { .permissions-grid { column-count: 3; } }
+  @media (max-width: 767px) { .permissions-grid { column-count: 2; } }
+  @media (max-width: 575px) { .permissions-grid { column-count: 1; } }
+  
+  @media (max-width: 768px) {
+    .permission-card {
+      min-height: auto;
+    }
+  }
+</style>
+
+<div class="container py-4" dir="rtl">
+  <div class="text-center mb-4">
+    <h2 class="fw-bold text-dark mb-1">
+      <span class="text-dark">إضافة موظف جديد</span>
+    </h2>
+    <div class="text-muted mb-2" style="font-size:1.1rem;">الخطوة الثانية: تحديد صلاحيات الموظف</div>
+
+  </div>
+
+  <div class="row justify-content-center mb-4">
+    <div class="col-md-8">
+      <div class="card bg-warning border-0 shadow-sm">
+        <div class="card-body text-center">
+          <h6 class="fw-bold mb-3 text-dark">
+            <i class="fas fa-user-check me-2"></i>
+            بيانات الموظف الجديد
+          </h6>
+          <div class="row">
+            <div class="col-md-6">
+              <p class="mb-1"><strong>الاسم:</strong> {{ employee_data.name }}</p>
+              <p class="mb-1"><strong>الوظيفة:</strong> {{ employee_data.position }}</p>
+            </div>
+            <div class="col-md-6">
+              <p class="mb-1"><strong>رقم الهاتف:</strong> {{ employee_data.phone }}</p>
+              <p class="mb-0"><strong>الراتب:</strong> {{ employee_data.salary }} ج.م</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <form method="POST" class="permissions-grid">
+    
+    <div class="row g-4 align-items-start">
+      
+      <div class="col-lg-3 col-md-6 col-12">
+        <div class="permission-card p-4 d-flex flex-column">
+          <div class="text-center mb-3">
+            <i class="fas fa-users permission-icon"></i>
+            <div class="permission-title">العملاء</div>
+            <div class="permission-description">إدارة بيانات العملاء والتفاعل معهم</div>
+          </div>
+          <div class="permission-options">
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="can_view_customers" name="can_view_customers">
+              <label class="form-check-label" for="can_view_customers">
+                <i class="fas fa-eye"></i>
+                عرض العملاء
+              </label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="can_add_customers" name="can_add_customers">
+              <label class="form-check-label" for="can_add_customers">
+                <i class="fas fa-plus"></i>
+                إضافة عميل
+              </label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="can_edit_customers" name="can_edit_customers">
+              <label class="form-check-label" for="can_edit_customers">
+                <i class="fas fa-edit"></i>
+                تعديل بيانات عميل
+              </label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="can_delete_customers" name="can_delete_customers">
+              <label class="form-check-label" for="can_delete_customers">
+                <i class="fas fa-trash"></i>
+                حذف عميل
+              </label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="can_view_customer_orders" name="can_view_customer_orders">
+              <label class="form-check-label" for="can_view_customer_orders">
+                <i class="fas fa-shopping-cart"></i>
+                عرض طلبات عميل
+              </label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="can_view_customer_logs" name="can_view_customer_logs">
+              <label class="form-check-label" for="can_view_customer_logs">
+                <i class="fas fa-history"></i>
+                عرض سجل التواصل
+              </label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="can_view_customer_profile" name="can_view_customer_profile">
+              <label class="form-check-label" for="can_view_customer_profile">
+                <i class="fas fa-user"></i>
+                عرض ملف عميل
+              </label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="can_add_customer_logs" name="can_add_customer_logs">
+              <label class="form-check-label" for="can_add_customer_logs">
+                <i class="fas fa-plus-circle"></i>
+                إضافة سجل تواصل
+              </label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="can_delete_customer_logs" name="can_delete_customer_logs">
+              <label class="form-check-label" for="can_delete_customer_logs">
+                <i class="fas fa-trash-alt"></i>
+                حذف سجل تواصل
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-lg-3 col-md-6 col-12">
+        <div class="permission-card p-4 d-flex flex-column">
+          <div class="text-center mb-3">
+            <i class="fas fa-boxes permission-icon"></i>
+            <div class="permission-title">المنتجات</div>
+            <div class="permission-description">إدارة المنتجات والمخزون</div>
+          </div>
+          <div class="permission-options">
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="can_view_products" name="can_view_products">
+              <label class="form-check-label" for="can_view_products">
+                <i class="fas fa-eye"></i>
+                عرض المنتجات
+              </label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="can_add_products" name="can_add_products">
+              <label class="form-check-label" for="can_add_products">
+                <i class="fas fa-plus"></i>
+                إضافة منتج
+              </label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="can_edit_products" name="can_edit_products">
+              <label class="form-check-label" for="can_edit_products">
+                <i class="fas fa-edit"></i>
+                تعديل المنتجات
+              </label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="can_delete_products" name="can_delete_products">
+              <label class="form-check-label" for="can_delete_products">
+                <i class="fas fa-trash"></i>
+                حذف منتج
+              </label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="can_restore_products" name="can_restore_products">
+              <label class="form-check-label" for="can_restore_products">
+                <i class="fas fa-undo"></i>
+                استعادة منتج محذوف
+              </label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="can_delete_all_products" name="can_delete_all_products">
+              <label class="form-check-label" for="can_delete_all_products">
+                <i class="fas fa-trash-alt"></i>
+                حذف جميع المنتجات
+              </label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="can_view_purchase_price" name="can_view_purchase_price">
+              <label class="form-check-label" for="can_view_purchase_price">
+                <i class="fas fa-money-bill-wave"></i>
+                رؤية سعر الشراء
+              </label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="can_manage_stocktake" name="can_manage_stocktake">
+              <label class="form-check-label" for="can_manage_stocktake">
+                <i class="fas fa-clipboard-list"></i>
+                جرد المخزون
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-lg-3 col-md-6 col-12">
+        <div class="permission-card p-4 d-flex flex-column">
+          <div class="text-center mb-3">
+            <i class="fas fa-shopping-cart permission-icon"></i>
+            <div class="permission-title">الطلبات</div>
+            <div class="permission-description">إدارة طلبات العملاء</div>
+          </div>
+          <div class="permission-options">
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="can_view_orders" name="can_view_orders">
+              <label class="form-check-label" for="can_view_orders">
+                <i class="fas fa-eye"></i>
+                عرض الطلبات
+              </label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="can_add_orders" name="can_add_orders">
+              <label class="form-check-label" for="can_add_orders">
+                <i class="fas fa-plus"></i>
+                إضافة طلب
+              </label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="can_edit_orders" name="can_edit_orders">
+              <label class="form-check-label" for="can_edit_orders">
+                <i class="fas fa-edit"></i>
+                تعديل طلب
+              </label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="can_delete_orders" name="can_delete_orders">
+              <label class="form-check-label" for="can_delete_orders">
+                <i class="fas fa-trash"></i>
+                حذف الطلب
+              </label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="can_update_order_status" name="can_update_order_status">
+              <label class="form-check-label" for="can_update_order_status">
+                <i class="fas fa-tasks"></i>
+                تحديث حالة الطلب
+              </label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="can_update_tracking" name="can_update_tracking">
+              <label class="form-check-label" for="can_update_tracking">
+                <i class="fas fa-truck"></i>
+                تحديث رقم التتبع
+              </label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="can_view_orders_by_status" name="can_view_orders_by_status">
+              <label class="form-check-label" for="can_view_orders_by_status">
+                <i class="fas fa-filter"></i>
+                عرض الطلبات حسب الحالة
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-lg-3 col-md-6 col-12">
+        <div class="permission-card p-4 d-flex flex-column">
+          <div class="text-center mb-3">
+            <i class="fas fa-exchange-alt permission-icon"></i>
+            <div class="permission-title">طلبات الاستبدال</div>
+            <div class="permission-description">إدارة طلبات استبدال المنتجات</div>
+          </div>
+          <div class="permission-options">
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="can_view_replacements" name="can_view_replacements">
+              <label class="form-check-label" for="can_view_replacements">
+                <i class="fas fa-eye"></i>
+                عرض طلبات الاستبدال
+              </label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="can_add_replacements" name="can_add_replacements">
+              <label class="form-check-label" for="can_add_replacements">
+                <i class="fas fa-plus"></i>
+                إضافة طلب استبدال
+              </label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="can_edit_replacements" name="can_edit_replacements">
+              <label class="form-check-label" for="can_edit_replacements">
+                <i class="fas fa-edit"></i>
+                تعديل طلب استبدال
+              </label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="can_view_replacements_by_state" name="can_view_replacements_by_state">
+              <label class="form-check-label" for="can_view_replacements_by_state">
+                <i class="fas fa-filter"></i>
+                عرض الاستبدالات حسب الحالة
+              </label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="can_delete_replacements" name="can_delete_replacements">
+              <label class="form-check-label" for="can_delete_replacements">
+                <i class="fas fa-trash"></i>
+                حذف طلب استبدال
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="row g-4 align-items-start">
+      
+      <div class="col-lg-3 col-md-6 col-12">
+        <div class="permission-card p-4 d-flex flex-column">
+          <div class="text-center mb-3">
+            <i class="fas fa-undo-alt permission-icon"></i>
+            <div class="permission-title">المرتجعات</div>
+            <div class="permission-description">إدارة طلبات إرجاع المنتجات</div>
+          </div>
+          <div class="permission-options">
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="can_view_returns" name="can_view_returns">
+              <label class="form-check-label" for="can_view_returns">
+                <i class="fas fa-eye"></i> عرض المرتجعات
+              </label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="can_add_returns" name="can_add_returns">
+              <label class="form-check-label" for="can_add_returns">
+                <i class="fas fa-plus"></i> إضافة طلب إرجاع
+              </label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="can_view_returns_by_state" name="can_view_returns_by_state">
+              <label class="form-check-label" for="can_view_returns_by_state">
+                <i class="fas fa-filter"></i> عرض المرتجعات حسب الحالة
+              </label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="can_delete_returns" name="can_delete_returns">
+              <label class="form-check-label" for="can_delete_returns">
+                <i class="fas fa-trash"></i> حذف طلب إرجاع (معطل)
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-lg-3 col-md-6 col-12">
+        <div class="permission-card p-4 d-flex flex-column">
+          <div class="text-center mb-3">
+            <i class="fas fa-map-marker-alt permission-icon"></i>
+            <div class="permission-title">رسوم المحافظات</div>
+            <div class="permission-description">إدارة رسوم الشحن للمحافظات</div>
+          </div>
+          <div class="permission-options">
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="can_view_fees" name="can_view_fees">
+              <label class="form-check-label" for="can_view_fees">
+                <i class="fas fa-eye"></i>
+                عرض رسوم المحافظات
+              </label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="can_edit_fees" name="can_edit_fees">
+              <label class="form-check-label" for="can_edit_fees">
+                <i class="fas fa-edit"></i>
+                تعديل وإضافة رسوم محافظة
+              </label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="can_delete_fees" name="can_delete_fees">
+              <label class="form-check-label" for="can_delete_fees">
+                <i class="fas fa-trash"></i>
+                حذف رسوم محافظة
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-lg-3 col-md-6 col-12">
+        <div class="permission-card p-4 d-flex flex-column">
+          <div class="text-center mb-3">
+            <i class="fas fa-user-tie permission-icon"></i>
+            <div class="permission-title">الموظفين</div>
+            <div class="permission-description">إدارة الموظفين والصلاحيات</div>
+          </div>
+          <div class="permission-options">
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="can_view_employees" name="can_view_employees">
+              <label class="form-check-label" for="can_view_employees">
+                <i class="fas fa-eye"></i>
+                عرض الموظفين
+              </label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="can_add_employees" name="can_add_employees">
+              <label class="form-check-label" for="can_add_employees">
+                <i class="fas fa-plus"></i>
+                إضافة موظف
+              </label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="can_edit_employees" name="can_edit_employees">
+              <label class="form-check-label" for="can_edit_employees">
+                <i class="fas fa-edit"></i>
+                تعديل بيانات موظف
+              </label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="can_delete_employees" name="can_delete_employees">
+              <label class="form-check-label" for="can_delete_employees">
+                <i class="fas fa-trash"></i>
+                حذف موظف
+              </label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="can_view_employee_logs" name="can_view_employee_logs">
+              <label class="form-check-label" for="can_view_employee_logs">
+                <i class="fas fa-history"></i>
+                عرض سجل موظف
+              </label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="can_manage_employee_salary" name="can_manage_employee_salary">
+              <label class="form-check-label" for="can_manage_employee_salary">
+                <i class="fas fa-money-bill"></i>
+                إدارة مرتبات الموظفين
+              </label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="can_view_employee_activity" name="can_view_employee_activity">
+              <label class="form-check-label" for="can_view_employee_activity">
+                <i class="fas fa-chart-line"></i>
+                عرض نشاط الموظفين
+              </label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="can_manage_attendance" name="can_manage_attendance">
+              <label class="form-check-label" for="can_manage_attendance">
+                <i class="fas fa-user-check"></i>
+                إدارة الحضور
+              </label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="can_delete_salary_transactions" name="can_delete_salary_transactions">
+              <label class="form-check-label" for="can_delete_salary_transactions">
+                <i class="fas fa-trash"></i>
+                حذف معاملات المرتب (خصم/مكافأة/سلفة)
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-lg-3 col-md-6 col-12">
+        <div class="permission-card p-4 d-flex flex-column">
+          <div class="text-center mb-3">
+            <i class="fas fa-chart-bar permission-icon"></i>
+            <div class="permission-title">الإحصائيات والتقارير</div>
+            <div class="permission-description">عرض إحصائيات المتجر والأداء</div>
+          </div>
+          <div class="permission-options">
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="can_view_statistics" name="can_view_statistics">
+              <label class="form-check-label" for="can_view_statistics">
+                <i class="fas fa-eye"></i>
+                عرض الإحصائيات
+              </label>
+            </div>
+            <hr style="border-color:#D79921; margin:0.5rem 0;">
+            <small class="text-muted fw-bold d-block mb-1">كروت الإحصائيات</small>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="can_view_stats_stock" name="can_view_stats_stock">
+              <label class="form-check-label" for="can_view_stats_stock"><i class="fas fa-boxes"></i> قيمة المخزون</label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="can_view_stats_fixed_assets" name="can_view_stats_fixed_assets">
+              <label class="form-check-label" for="can_view_stats_fixed_assets"><i class="fas fa-building"></i> الأصول الثابتة</label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="can_view_stats_total_debt" name="can_view_stats_total_debt">
+              <label class="form-check-label" for="can_view_stats_total_debt"><i class="fas fa-exclamation-circle"></i> إجمالي الدين</label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="can_view_stats_capital_growth" name="can_view_stats_capital_growth">
+              <label class="form-check-label" for="can_view_stats_capital_growth"><i class="fas fa-chart-line"></i> نمو رأس المال</label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="can_view_stats_daily" name="can_view_stats_daily">
+              <label class="form-check-label" for="can_view_stats_daily"><i class="fas fa-calendar-day"></i> إحصائيات اليوم</label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="can_view_stats_pending_orders" name="can_view_stats_pending_orders">
+              <label class="form-check-label" for="can_view_stats_pending_orders"><i class="fas fa-hourglass-half"></i> الطلبات المعلقة</label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="can_view_stats_net_profit" name="can_view_stats_net_profit">
+              <label class="form-check-label" for="can_view_stats_net_profit"><i class="fas fa-funnel-dollar"></i> صافي الربح</label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="can_view_stats_losses" name="can_view_stats_losses">
+              <label class="form-check-label" for="can_view_stats_losses"><i class="fas fa-fire"></i> إجمالي الخسائر</label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="can_view_stats_delivery_rate" name="can_view_stats_delivery_rate">
+              <label class="form-check-label" for="can_view_stats_delivery_rate"><i class="fas fa-truck"></i> نسبة التوصيل</label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="can_view_stats_sales" name="can_view_stats_sales">
+              <label class="form-check-label" for="can_view_stats_sales"><i class="fas fa-shopping-cart"></i> مبيعات الشهر</label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="can_view_stats_amount_paid" name="can_view_stats_amount_paid">
+              <label class="form-check-label" for="can_view_stats_amount_paid"><i class="fas fa-hand-holding-usd"></i> المبالغ المدفوعة</label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="can_view_stats_monthly_delivered" name="can_view_stats_monthly_delivered">
+              <label class="form-check-label" for="can_view_stats_monthly_delivered"><i class="fas fa-check-circle"></i> ما تم تسليمه الشهر</label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="can_view_stats_monthly_invoices" name="can_view_stats_monthly_invoices">
+              <label class="form-check-label" for="can_view_stats_monthly_invoices"><i class="fas fa-file-invoice"></i> فواتير الشهر</label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="can_view_stats_fixed_assets_expenses" name="can_view_stats_fixed_assets_expenses">
+              <label class="form-check-label" for="can_view_stats_fixed_assets_expenses"><i class="fas fa-industry"></i> مصروفات الأصول</label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="can_view_stats_employee_salaries" name="can_view_stats_employee_salaries">
+              <label class="form-check-label" for="can_view_stats_employee_salaries"><i class="fas fa-users"></i> صافي المرتبات</label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="can_view_stats_employee_debt" name="can_view_stats_employee_debt">
+              <label class="form-check-label" for="can_view_stats_employee_debt"><i class="fas fa-hand-holding-usd"></i> ديون الموظفين</label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="can_view_stats_operational_expenses" name="can_view_stats_operational_expenses">
+              <label class="form-check-label" for="can_view_stats_operational_expenses"><i class="fas fa-cogs"></i> المصروفات التشغيلية</label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="can_view_sold_products_by_quantity" name="can_view_sold_products_by_quantity">
+              <label class="form-check-label" for="can_view_sold_products_by_quantity"><i class="fas fa-sort-amount-down"></i> المنتجات المباعة حسب الكمية</label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-lg-3 col-md-6 col-12">
+        <div class="permission-card p-4 d-flex flex-column">
+          <div class="text-center mb-3">
+            <i class="fas fa-handshake permission-icon"></i>
+            <div class="permission-title">الموردين</div>
+            <div class="permission-description">إدارة بيانات الموردين والتزاماتهم</div>
+          </div>
+          <div class="permission-options">
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="can_view_suppliers" name="can_view_suppliers">
+              <label class="form-check-label" for="can_view_suppliers">
+                <i class="fas fa-eye"></i>
+                عرض الموردين
+              </label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="can_add_suppliers" name="can_add_suppliers">
+              <label class="form-check-label" for="can_add_suppliers">
+                <i class="fas fa-plus"></i>
+                إضافة مورد
+              </label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="can_edit_suppliers" name="can_edit_suppliers">
+              <label class="form-check-label" for="can_edit_suppliers">
+                <i class="fas fa-edit"></i>
+                تعديل بيانات مورد
+              </label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="can_delete_suppliers" name="can_delete_suppliers">
+              <label class="form-check-label" for="can_delete_suppliers">
+                <i class="fas fa-trash"></i>
+                حذف مورد
+              </label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="can_view_supplier_invoices" name="can_view_supplier_invoices">
+              <label class="form-check-label" for="can_view_supplier_invoices">
+                <i class="fas fa-file-invoice"></i>
+                عرض فواتير المورد
+              </label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="can_view_supplier_history" name="can_view_supplier_history">
+              <label class="form-check-label" for="can_view_supplier_history">
+                <i class="fas fa-history"></i>
+                عرض سجل حساب المورد
+              </label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="can_pay_supplier_debt" name="can_pay_supplier_debt">
+              <label class="form-check-label" for="can_pay_supplier_debt">
+                <i class="fas fa-money-bill-wave"></i>
+                دفع ديون المورد
+              </label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="can_add_supplier_debt" name="can_add_supplier_debt">
+              <label class="form-check-label" for="can_add_supplier_debt">
+                <i class="fas fa-plus-circle"></i>
+                إضافة ديون للمورد
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="row g-4 align-items-start">
+      
+      <div class="col-lg-3 col-md-6 col-12">
+        <div class="permission-card p-4 d-flex flex-column">
+          <div class="text-center mb-3">
+            <i class="fas fa-clipboard-list permission-icon"></i>
+            <div class="permission-title">قائمة المتابعة</div>
+            <div class="permission-description">إدارة المتابعات وتحديث حالتها</div>
+          </div>
+          <div class="permission-options">
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="can_view_followups" name="can_view_followups">
+              <label class="form-check-label" for="can_view_followups">
+                <i class="fas fa-eye"></i>
+                عرض المتابعات
+              </label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="can_add_followups" name="can_add_followups">
+              <label class="form-check-label" for="can_add_followups">
+                <i class="fas fa-plus"></i>
+                إضافة متابعة
+              </label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="can_edit_followups" name="can_edit_followups">
+              <label class="form-check-label" for="can_edit_followups">
+                <i class="fas fa-edit"></i>
+                تحديث / تغيير الحالة
+              </label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="can_delete_followups" name="can_delete_followups">
+              <label class="form-check-label" for="can_delete_followups">
+                <i class="fas fa-trash"></i>
+                حذف متابعة
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-lg-3 col-md-6 col-12">
+        <div class="permission-card p-4 d-flex flex-column">
+          <div class="text-center mb-3">
+            <i class="fas fa-exclamation-triangle permission-icon"></i>
+            <div class="permission-title">المنتجات التالفة</div>
+            <div class="permission-description">إدارة سجلات المنتجات التالفة</div>
+          </div>
+          <div class="permission-options">
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="can_view_damaged_products" name="can_view_damaged_products">
+              <label class="form-check-label" for="can_view_damaged_products">
+                <i class="fas fa-eye"></i>
+                عرض السجل
+              </label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="can_add_damaged_products" name="can_add_damaged_products">
+              <label class="form-check-label" for="can_add_damaged_products">
+                <i class="fas fa-plus"></i>
+                إضافة سجل
+              </label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="can_delete_damaged_products" name="can_delete_damaged_products">
+              <label class="form-check-label" for="can_delete_damaged_products">
+                <i class="fas fa-trash"></i>
+                حذف سجل
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="col-lg-3 col-md-6 col-12">
+        <div class="permission-card p-4 d-flex flex-column">
+          <div class="text-center mb-3">
+            <i class="fas fa-file-invoice permission-icon"></i>
+            <div class="permission-title">الفواتير</div>
+            <div class="permission-description">إدارة فواتير المشتريات من الموردين</div>
+          </div>
+          <div class="permission-options">
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="can_view_invoices" name="can_view_invoices">
+              <label class="form-check-label" for="can_view_invoices">
+                <i class="fas fa-eye"></i>
+                عرض الفواتير
+              </label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="can_add_invoices" name="can_add_invoices">
+              <label class="form-check-label" for="can_add_invoices">
+                <i class="fas fa-plus"></i>
+                إضافة فاتورة
+              </label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="can_edit_invoices" name="can_edit_invoices">
+              <label class="form-check-label" for="can_edit_invoices">
+                <i class="fas fa-edit"></i>
+                تعديل الفواتير
+              </label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="can_delete_invoices" name="can_delete_invoices">
+              <label class="form-check-label" for="can_delete_invoices">
+                <i class="fas fa-trash"></i>
+                حذف فاتورة
+              </label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="can_view_invoice_details" name="can_view_invoice_details">
+              <label class="form-check-label" for="can_view_invoice_details">
+                <i class="fas fa-search"></i>
+                عرض تفاصيل الفاتورة
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-lg-3 col-md-6 col-12">
+        <div class="permission-card p-4 d-flex flex-column">
+          <div class="text-center mb-3">
+            <i class="fas fa-receipt permission-icon"></i>
+            <div class="permission-title">المصروفات</div>
+            <div class="permission-description">إدارة مصروفات المتجر</div>
+          </div>
+          <div class="permission-options">
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="can_view_expenses" name="can_view_expenses">
+              <label class="form-check-label" for="can_view_expenses">
+                <i class="fas fa-eye"></i>
+                عرض المصروفات
+              </label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="can_add_expenses" name="can_add_expenses">
+              <label class="form-check-label" for="can_add_expenses">
+                <i class="fas fa-plus"></i>
+                إضافة مصروف
+              </label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="can_edit_expenses" name="can_edit_expenses">
+              <label class="form-check-label" for="can_edit_expenses">
+                <i class="fas fa-edit"></i>
+                تعديل المصروفات
+              </label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="can_delete_expenses" name="can_delete_expenses">
+              <label class="form-check-label" for="can_delete_expenses">
+                <i class="fas fa-trash"></i>
+                حذف مصروف
+              </label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="can_view_operational_expenses" name="can_view_operational_expenses">
+              <label class="form-check-label" for="can_view_operational_expenses">
+                <i class="fas fa-cogs"></i>
+                عرض المصروفات التشغيلية
+              </label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="can_view_fixed_assets" name="can_view_fixed_assets">
+              <label class="form-check-label" for="can_view_fixed_assets">
+                <i class="fas fa-building"></i>
+                عرض الأصول الثابتة
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-lg-3 col-md-6 col-12">
+        <div class="permission-card p-4 d-flex flex-column">
+          <div class="text-center mb-3">
+            <i class="fas fa-credit-card permission-icon"></i>
+            <div class="permission-title">المعاملات</div>
+            <div class="permission-description">إدارة معاملات السُلف والديون الخارجية</div>
+          </div>
+          <div class="permission-options">
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="can_view_transactions" name="can_view_transactions">
+              <label class="form-check-label" for="can_view_transactions">
+                <i class="fas fa-eye"></i>
+                عرض المعاملات
+              </label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="can_add_transactions" name="can_add_transactions">
+              <label class="form-check-label" for="can_add_transactions">
+                <i class="fas fa-plus"></i>
+                إضافة معاملة
+              </label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="can_edit_transactions" name="can_edit_transactions">
+              <label class="form-check-label" for="can_edit_transactions">
+                <i class="fas fa-edit"></i>
+                تعديل المعاملات
+              </label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="can_delete_transactions" name="can_delete_transactions">
+              <label class="form-check-label" for="can_delete_transactions">
+                <i class="fas fa-trash"></i>
+                حذف معاملة
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-lg-3 col-md-6 col-12">
+        <div class="permission-card p-4 d-flex flex-column">
+          <div class="text-center mb-3">
+            <i class="fas fa-cogs permission-icon"></i>
+            <div class="permission-title">النظام</div>
+            <div class="permission-description">إدارة النظام والصلاحيات</div>
+          </div>
+          <div class="permission-options">
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="can_view_activity_log" name="can_view_activity_log">
+              <label class="form-check-label" for="can_view_activity_log">
+                <i class="fas fa-list-alt"></i>
+                عرض سجل النشاط العام
+              </label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="can_manage_reminders" name="can_manage_reminders">
+              <label class="form-check-label" for="can_manage_reminders">
+                <i class="fas fa-bell"></i>
+                إدارة التنبيهات
+              </label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="is_admin" name="is_admin">
+              <label class="form-check-label" for="is_admin">
+                <i class="fas fa-user-shield"></i>
+                صلاحيات المدير
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="d-flex justify-content-between mt-4">
+      <button type="submit" class="btn btn-success d-inline-flex align-items-center gap-1 px-4">
+        <i class="fas fa-user-plus"></i> <span>إضافة الموظف</span>
+      </button>
+      <a href="{{ url_for('main.add_employee_basic') }}" class="btn btn-secondary d-inline-flex align-items-center gap-1 px-4">
+        <i class="fas fa-arrow-left"></i> <span>رجوع للبيانات الأساسية</span>
+      </a>
+    </div>
+  </form>
+</div>
+
+<script>
+
+document.addEventListener('DOMContentLoaded', function() {
+  
+  const form = document.querySelector('form');
+  const firstRow = document.querySelector('.row.mb-4');
+  
+  const selectAllDiv = document.createElement('div');
+  selectAllDiv.className = 'text-center mb-3';
+  selectAllDiv.innerHTML = `
+    <div class="form-check d-inline-block">
+      <input class="form-check-input" type="checkbox" id="select_all">
+      <label class="form-check-label fw-bold" for="select_all">
+        <i class="fas fa-check-double me-1"></i>
+        تحديد جميع الصلاحيات
+      </label>
+    </div>
+  `;
+  
+  firstRow.parentNode.insertBefore(selectAllDiv, firstRow);
+  
+  const selectAllCheckbox = document.getElementById('select_all');
+  const allCheckboxes = document.querySelectorAll('input[type="checkbox"]:not(#select_all)');
+  
+  selectAllCheckbox.addEventListener('change', function() {
+    allCheckboxes.forEach(checkbox => {
+      checkbox.checked = this.checked;
+    });
+  });
+  
+  allCheckboxes.forEach(checkbox => {
+    checkbox.addEventListener('change', function() {
+      const checkedCount = document.querySelectorAll('input[type="checkbox"]:not(#select_all):checked').length;
+      const totalCount = allCheckboxes.length;
+      selectAllCheckbox.checked = checkedCount === totalCount;
+      selectAllCheckbox.indeterminate = checkedCount > 0 && checkedCount < totalCount;
+    });
+  });
+  
+  allCheckboxes.forEach(checkbox => {
+    checkbox.addEventListener('change', function() {
+      const card = this.closest('.permission-card');
+      if (this.checked) {
+        card.style.borderColor = '#D79921';
+        card.style.transform = 'translateY(-2px)';
+      } else {
+        card.style.borderColor = '#e9ecef';
+        card.style.transform = 'translateY(0)';
+      }
+    });
+  });
+  });
+});
+
+</script>
+{% endblock %} 

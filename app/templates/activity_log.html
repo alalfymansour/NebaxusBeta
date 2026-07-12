@@ -1,0 +1,296 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<style>
+  .modern-table {
+    border-radius: 1rem;
+    overflow: hidden;
+    background: #fff;
+    border: 1px solid #000;
+  }
+  .modern-table th {
+    background: #D79921 !important;
+    font-size: 1.1rem;
+    letter-spacing: 0.5px;
+    color: #333;
+    vertical-align: middle;
+    border-bottom: 1px solid #000 !important;
+  }
+  .modern-table td {
+    vertical-align: middle;
+    font-size: 1rem;
+    background: #fff;
+    border-bottom: 1px solid #000;
+  }
+  .modern-table tbody tr:hover td {
+    background: #fff3cd !important;
+    transition: background 0.2s;
+  }
+  .custom-yellow {
+    color: #D79921 !important;
+  }
+  .custom-yellow-bg {
+    background-color: #D79921 !important;
+  }
+  .card-box {
+    border-radius: 1rem;
+    box-shadow: 0 0 15px rgba(0,0,0,0.08);
+    transition: all 0.3s ease;
+  }
+  .card-box:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 0 20px rgba(0,0,0,0.12);
+  }
+  .period-filter {
+    background: #f8f9fa;
+    border-radius: 0.5rem;
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+  }
+  .period-btn {
+    border: 2px solid #D79921;
+    background: transparent;
+    color: #333;
+    transition: all 0.3s ease;
+  }
+  .period-btn:hover, .period-btn.active {
+    background: #D79921;
+    color: #333;
+    border-color: #D79921;
+  }
+  .action-badge {
+    font-size: 0.8rem;
+    padding: 0.25rem 0.5rem;
+  }
+  .action-create { background-color: #d4edda; color: #155724; }
+  .action-update { background-color: #fff3cd; color: #856404; }
+  .action-delete { background-color: #f8d7da; color: #721c24; }
+  .action-view { background-color: #d1ecf1; color: #0c5460; }
+</style>
+
+<div class="container py-4" dir="rtl">
+  
+  <div class="text-center mb-4">
+    <h2 class="fw-bold">📊 <span class="text-warning">سجل العمليات الشامل</span></h2>
+    <p class="text-muted">مراجعة جميع العمليات التي تمت في النظام</p>
+  </div>
+
+  <div class="row mb-4">
+    <div class="col-md-3">
+      <div class="card bg-light border-0 card-box">
+        <div class="card-body text-center">
+          <h5 class="card-title text-muted">إجمالي العمليات</h5>
+          <h3 class="text-primary fw-bold">{{ total_activities }}</h3>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card bg-light border-0 card-box">
+        <div class="card-body text-center">
+          <h5 class="card-title text-muted">عمليات اليوم</h5>
+          <h3 class="text-success fw-bold">{{ today_activities }}</h3>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card bg-light border-0 card-box">
+        <div class="card-body text-center">
+          <h5 class="card-title text-muted">عمليات الشهر</h5>
+          <h3 class="text-info fw-bold">{{ month_activities }}</h3>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card bg-light border-0 card-box">
+        <div class="card-body text-center">
+          <h5 class="card-title text-muted">الموظفين النشطين</h5>
+          <h3 class="text-warning fw-bold">{{ employees|length }}</h3>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card border-0 shadow-sm mb-4">
+    <div class="card-header bg-warning text-dark">
+      <h6 class="fw-bold mb-0">
+        <i class="fas fa-filter me-1"></i>
+        فلاتر البحث
+      </h6>
+    </div>
+    <div class="card-body">
+      <form method="GET" class="row g-3">
+        
+        <div class="col-md-2">
+          <label class="form-label fw-semibold">الفترة</label>
+          <div class="d-flex gap-1">
+            <a href="{{ url_for('main.activity_log', period='day', employee_id=employee_filter, action=action_filter, entity_type=entity_filter) }}" 
+               class="btn btn-sm period-btn {% if period == 'day' %}active{% endif %}">اليوم</a>
+            <a href="{{ url_for('main.activity_log', period='month', employee_id=employee_filter, action=action_filter, entity_type=entity_filter) }}" 
+               class="btn btn-sm period-btn {% if period == 'month' %}active{% endif %}">الشهر</a>
+            <a href="{{ url_for('main.activity_log', period='all', employee_id=employee_filter, action=action_filter, entity_type=entity_filter) }}" 
+               class="btn btn-sm period-btn {% if period == 'all' %}active{% endif %}">الكل</a>
+          </div>
+        </div>
+        
+        <div class="col-md-2">
+          <label class="form-label fw-semibold">الموظف</label>
+          <select name="employee_id" class="form-select form-select-sm">
+            <option value="">جميع الموظفين</option>
+            {% for emp in employees %}
+            <option value="{{ emp.id }}" {% if employee_filter|string == emp.id|string %}selected{% endif %}>
+              {{ emp.name }}
+            </option>
+            {% endfor %}
+          </select>
+        </div>
+        
+        <div class="col-md-2">
+          <label class="form-label fw-semibold">نوع العملية</label>
+          <select name="action" class="form-select form-select-sm">
+            <option value="">جميع العمليات</option>
+            {% for action in actions %}
+            <option value="{{ action }}" {% if action_filter == action %}selected{% endif %}>
+              {% if action == 'create' %}إضافة
+              {% elif action == 'update' %}تعديل
+              {% elif action == 'delete' %}حذف
+              {% elif action == 'view' %}عرض
+              {% else %}{{ action }}
+              {% endif %}
+            </option>
+            {% endfor %}
+          </select>
+        </div>
+        
+        <div class="col-md-2">
+          <label class="form-label fw-semibold">نوع الكيان</label>
+          <select name="entity_type" class="form-select form-select-sm">
+            <option value="">جميع الأنواع</option>
+            {% for entity_type in entity_types %}
+            <option value="{{ entity_type }}" {% if entity_filter == entity_type %}selected{% endif %}>
+              {% if entity_type == 'customer' %}العملاء
+              {% elif entity_type == 'product' %}المنتجات
+              {% elif entity_type == 'order' %}الطلبات
+              {% elif entity_type == 'employee' %}الموظفين
+              {% elif entity_type == 'supplier' %}الموردين
+              {% elif entity_type == 'invoice' %}الفواتير
+              {% else %}{{ entity_type }}
+              {% endif %}
+            </option>
+            {% endfor %}
+          </select>
+        </div>
+        
+        <div class="col-md-4 d-flex align-items-end">
+          <button type="submit" class="btn btn-primary btn-sm me-2">
+            <i class="fas fa-search me-1"></i> بحث
+          </button>
+          <a href="{{ url_for('main.activity_log') }}" class="btn btn-secondary btn-sm">
+            <i class="fas fa-times me-1"></i> إعادة تعيين
+          </a>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="card border-0 shadow-sm">
+    <div class="card-header bg-warning text-dark">
+      <h6 class="fw-bold mb-0">
+        <i class="fas fa-history me-1"></i>
+        سجل العمليات
+        {% if period == 'day' %}
+          (اليوم)
+        {% elif period == 'month' %}
+          (هذا الشهر)
+        {% else %}
+          (الكل)
+        {% endif %}
+      </h6>
+    </div>
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover mb-0 modern-table">
+          <thead>
+            <tr>
+              <th>التاريخ والوقت</th>
+              <th>الموظف</th>
+              <th>نوع العملية</th>
+              <th>نوع الكيان</th>
+              <th>اسم الكيان</th>
+              <th>التفاصيل</th>
+              <th>عنوان IP</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for log in activity_logs %}
+            <tr>
+              <td class="align-middle">
+                <div>
+                  <strong>{{ log.created_at.strftime('%Y-%m-%d') }}</strong>
+                  <br>
+                  <small class="text-muted">{{ log.created_at.strftime('%I:%M:%S %p') }}</small>
+                </div>
+              </td>
+              <td class="align-middle">
+                <span class="fw-bold">{{ log.employee.name }}</span>
+              </td>
+              <td class="align-middle">
+                <span class="badge action-badge action-{{ log.action }}">
+                  {% if log.action == 'create' %}إضافة
+                  {% elif log.action == 'update' %}تعديل
+                  {% elif log.action == 'delete' %}حذف
+                  {% elif log.action == 'view' %}عرض
+                  {% else %}{{ log.action }}
+                  {% endif %}
+                </span>
+              </td>
+              <td class="align-middle">
+                <span class="badge bg-info">
+                  {% if log.entity_type == 'customer' %}العملاء
+                  {% elif log.entity_type == 'product' %}المنتجات
+                  {% elif log.entity_type == 'order' %}الطلبات
+                  {% elif log.entity_type == 'employee' %}الموظفين
+                  {% elif log.entity_type == 'supplier' %}الموردين
+                  {% elif log.entity_type == 'invoice' %}الفواتير
+                  {% else %}{{ log.entity_type }}
+                  {% endif %}
+                </span>
+              </td>
+              <td class="align-middle">
+                <span class="fw-semibold">{{ log.entity_name or 'غير محدد' }}</span>
+              </td>
+              <td class="align-middle">
+                <small class="text-muted">{{ log.details or 'لا توجد تفاصيل' }}</small>
+              </td>
+              <td class="align-middle">
+                <span class="badge bg-secondary">{{ log.ip_address }}</span>
+              </td>
+            </tr>
+            {% else %}
+            <tr>
+              <td colspan="7" class="text-center py-5">
+                <div class="text-muted">
+                  <i class="fas fa-history fa-3x mb-3"></i>
+                  <h5>لا توجد عمليات</h5>
+                  <p>لم يتم العثور على عمليات في الفترة المحددة</p>
+                </div>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="text-center mt-4">
+    <div class="d-flex gap-2 justify-content-center">
+      <a href="{{ url_for('main.dashboard') }}" class="btn btn-primary d-flex align-items-center gap-1 px-4">
+        <i class="fas fa-home me-1"></i> الرئيسية
+      </a>
+      <a href="{{ url_for('main.employees') }}" class="btn btn-warning d-flex align-items-center gap-1 px-4">
+        <i class="fas fa-users me-1"></i> الموظفين
+      </a>
+    </div>
+  </div>
+</div>
+{% endblock %} 

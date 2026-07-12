@@ -1,0 +1,130 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<style>
+  .modern-table {
+    border-radius: 1rem;
+    overflow: hidden;
+    background: #fff;
+    border: 1px solid #000;
+  }
+  .modern-table th {
+    background: #D79921 !important;
+    font-size: 1.1rem;
+    letter-spacing: 0.5px;
+    color: #333;
+    vertical-align: middle;
+    border-bottom: 1px solid #000 !important;
+  }
+  .modern-table td {
+    vertical-align: middle;
+    font-size: 1rem;
+    background: #fff;
+    border-bottom: 1px solid #000;
+  }
+  .modern-table tbody tr:hover td {
+    background: #fff3cd !important;
+    transition: background 0.2s;
+  }
+  .custom-yellow {
+    color: #D79921 !important;
+  }
+  .custom-yellow-bg {
+    background-color: #D79921 !important;
+  }
+  .card-box {
+    border-radius: 1rem;
+    box-shadow: 0 0 15px rgba(0,0,0,0.08);
+    transition: all 0.3s ease;
+  }
+  .card-box:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 0 20px rgba(0,0,0,0.12);
+  }
+</style>
+
+<div class="container py-4" dir="rtl">
+  
+  <div class="text-center mb-4">
+    <h2 class="fw-bold">قائمة <span class="text-warning">الفواتير</span></h2>
+    <p class="text-muted">إدارة فواتير المشتريات من الموردين</p>
+  </div>
+
+  <div class="row mb-4">
+    <div class="col-md-3 col-sm-12 mb-2">
+      <input type="text" class="form-control" id="instant-search-invoices"
+             placeholder="ابحث برقم الفاتورة أو المورد" style="width: 200px;">
+    </div>
+    <div class="col-md-9 col-sm-12 text-md-end text-center">
+      <a href="{{ url_for('main.add_invoice') }}" class="btn btn-success d-inline-flex align-items-center">
+        <i class="fas fa-plus me-1"></i> <span>إضافة فاتورة</span>
+      </a>
+    </div>
+  </div>
+
+  {% if invoices %}
+  <div class="table-responsive">
+    <table class="table modern-table table-hover text-center align-middle" id="invoices-table">
+      <thead>
+        <tr>
+          <th>رقم الفاتورة</th>
+          <th>المورد</th>
+          <th>التاريخ</th>
+          <th>إجمالي المبلغ</th>
+          <th>المدفوع</th>
+          <th>المتبقي</th>
+          <th>عدد المنتجات</th>
+          <th>إجمالي الكمية</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for invoice in invoices %}
+        <tr style="cursor: pointer;" onclick="window.location.href='{{ url_for('main.view_invoice', invoice_id=invoice.id) }}'" data-invoice-number="{{ invoice.invoice_number }}" data-supplier="{{ invoice.supplier.name }}">
+          <td>{{ invoice.invoice_number }}</td>
+          <td>
+            <div>
+              <strong>{{ invoice.supplier.name }}</strong>
+              <br><span class="text-muted">{{ invoice.supplier.phone }}</span>
+            </div>
+          </td>
+          <td>{{ invoice.date.strftime('%Y-%m-%d') }}</td>
+          <td><strong class="text-primary">{{ "%.2f"|format(invoice.total_amount) }} ج.م</strong></td>
+          <td><strong class="text-success">{{ "%.2f"|format(invoice.paid_amount) }} ج.م</strong></td>
+          <td>
+            {% set remaining = invoice.total_amount - invoice.paid_amount %}
+            <strong class="{% if remaining > 0 %}text-danger{% else %}text-success{% endif %}">
+              {{ "%.2f"|format(remaining) }} ج.م
+            </strong>
+          </td>
+          <td>{{ invoice.items|length }}</td>
+          <td><strong class="text-info">{{ invoice.items|sum(attribute='quantity') }}</strong></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="alert alert-light border text-center text-muted mt-4">
+    لا توجد فواتير حالياً.
+  </div>
+  {% endif %}
+
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  var input = document.getElementById('instant-search-invoices');
+  if (!input) return;
+  var rows = document.querySelectorAll('#invoices-table tbody tr');
+  if (!rows.length) return;
+  input.addEventListener('input', function() {
+    var q = this.value.trim().toLowerCase();
+    rows.forEach(function(row) {
+      var inv = (row.getAttribute('data-invoice-number') || '').toLowerCase();
+      var sup = (row.getAttribute('data-supplier') || '').toLowerCase();
+      row.style.display = (inv.indexOf(q) !== -1 || sup.indexOf(q) !== -1) ? '' : 'none';
+    });
+  });
+});
+</script>
+{% endblock %} 

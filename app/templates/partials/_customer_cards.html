@@ -1,0 +1,16 @@
+{% for customer in customers %}
+<div class="col-12 col-md-6 col-lg-3 customer-card-wrapper">
+  <a href="{{ url_for('main.customer_profile', customer_id=customer.id) }}" class="card card-box text-decoration-none p-4 d-block bg-white h-100 d-flex flex-column justify-content-center align-items-center customer-card">
+    <div class="mb-3 avatar">
+      <div class="rounded-circle mx-auto" style="width: 80px; height: 80px; font-size: 32px; font-weight: bold; background-color: rgba(215, 153, 33, 0.25); color: #D79921; display: flex; align-items: center; justify-content: center;">
+        {{ customer.name[0] }}
+      </div>
+    </div>
+    <div class="customer-info">
+      <h5 class="fw-bold text-dark">{{ customer.name }}</h5>
+      <p class="text-muted"><i class="fas fa-phone-alt me-2"></i>{{ customer.phone }}</p>
+      <p class="text-muted small"><i class="fas fa-map-marker-alt me-2"></i>{{ (customer.governorate or '-') ~ ' - ' ~ (customer.address_details or '-') }}</p>
+    </div>
+  </a>
+</div>
+{% endfor %}

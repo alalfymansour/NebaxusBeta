@@ -1,0 +1,170 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container py-4" dir="rtl">
+  
+  <div class="text-center mb-4">
+    <h2 class="fw-bold">إضافة <span class="text-warning">معاملة جديدة</span></h2>
+    <p class="text-muted">قم بإدخال بيانات المعاملة واختيار المتعامل</p>
+  </div>
+
+  <form method="POST" action="{{ url_for('main.add_transaction_page') }}" id="addTransactionForm">
+    
+    <div class="card shadow-sm mb-4">
+      <div class="card-header bg-light">
+        <h5 class="mb-0"><i class="fas fa-user me-2"></i>بيانات المتعامل</h5>
+      </div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-md-12">
+            <label for="partyName" class="form-label fw-semibold">اسم المتعامل <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" id="partyName" name="party_name" required autocomplete="off" placeholder="ابحث عن متعامل أو اكتب اسم جديد" value="{{ selected_party.name if selected_party else '' }}">
+            <input type="hidden" id="partyId" name="party_id" value="{{ selected_party.id if selected_party else '' }}">
+            <div id="partySearchResults" class="list-group position-absolute" style="z-index: 1000; max-height: 300px; overflow-y: auto; display: none; width: calc(100% - 30px);"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card shadow-sm mb-4">
+      <div class="card-header bg-light">
+        <h5 class="mb-0"><i class="fas fa-exchange-alt me-2"></i>بيانات المعاملة</h5>
+      </div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">نوع المعاملة <span class="text-danger">*</span></label>
+            <div class="row">
+              <div class="col-6">
+                <div class="form-check">
+                  <input class="form-check-input" type="radio" name="transaction_type" id="receivable" value="receivable" checked>
+                  <label class="form-check-label text-success fw-bold" for="receivable">
+                    <i class="fas fa-arrow-up me-1"></i>دين لنا (مستحق لنا)
+                  </label>
+                </div>
+              </div>
+              <div class="col-6">
+                <div class="form-check">
+                  <input class="form-check-input" type="radio" name="transaction_type" id="payable" value="payable">
+                  <label class="form-check-label text-danger fw-bold" for="payable">
+                    <i class="fas fa-arrow-down me-1"></i>دين علينا (مطلوب منا)
+                  </label>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-md-3">
+            <label for="amount" class="form-label fw-semibold">المبلغ <span class="text-danger">*</span></label>
+            <input type="number" step="0.01" class="form-control" id="amount" name="amount" required>
+          </div>
+
+          <div class="col-md-3">
+            <label for="transactionDate" class="form-label fw-semibold">تاريخ المعاملة</label>
+            <input type="date" class="form-control" id="transactionDate" name="transaction_date" value="{{ today }}">
+          </div>
+
+          <div class="col-md-12">
+            <label for="category" class="form-label fw-semibold">تصنيف المعاملة</label>
+            <input type="text" class="form-control" id="category" name="category" placeholder="مثال: بضاعة، خدمات، قرض، سلفة، إيجار...">
+          </div>
+
+          <div class="col-md-12">
+            <label for="description" class="form-label fw-semibold">الوصف / الملاحظات</label>
+            <textarea class="form-control" id="description" name="description" rows="3" placeholder="أي تفاصيل إضافية عن المعاملة"></textarea>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="d-flex gap-2">
+      <button type="submit" class="btn btn-primary" id="submitBtn">
+        <i class="fas fa-save me-2"></i>حفظ المعاملة
+      </button>
+      <a href="{{ url_for('main.transactions') }}" class="btn btn-secondary">
+        <i class="fas fa-times me-2"></i>إلغاء
+      </a>
+    </div>
+  </form>
+
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const partyNameInput = document.getElementById('partyName');
+  const partyIdInput = document.getElementById('partyId');
+  const searchResults = document.getElementById('partySearchResults');
+  let searchTimeout = null;
+  let selectedPartyId = null;
+
+  partyNameInput.addEventListener('input', function() {
+    const query = this.value.trim();
+    
+    if (query.length < 2) {
+      searchResults.style.display = 'none';
+      partyIdInput.value = '';
+      selectedPartyId = null;
+      return;
+    }
+
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(() => {
+      fetch(`/api/search_parties?q=${encodeURIComponent(query)}`)
+        .then(response => response.json())
+        .then(data => {
+          if (data.parties && data.parties.length > 0) {
+            searchResults.innerHTML = '';
+            data.parties.forEach(party => {
+              const item = document.createElement('a');
+              item.href = '#';
+              item.className = 'list-group-item list-group-item-action';
+              item.innerHTML = `
+                <div class="d-flex justify-content-between align-items-center">
+                  <div>
+                    <strong>${party.name}</strong>
+                  </div>
+                  ${party.balance !== 0 ? `
+                    <span class="badge ${party.balance > 0 ? 'bg-success' : 'bg-danger'}">
+                      ${party.balance > 0 ? 'لنا: ' : 'علينا: '}${Math.abs(party.balance).toFixed(0)} ج
+                    </span>
+                  ` : ''}
+                </div>
+              `;
+              item.addEventListener('click', function(e) {
+                e.preventDefault();
+                partyNameInput.value = party.name;
+                partyIdInput.value = party.id;
+                selectedPartyId = party.id;
+                searchResults.style.display = 'none';
+              });
+              searchResults.appendChild(item);
+            });
+            searchResults.style.display = 'block';
+          } else {
+            searchResults.style.display = 'none';
+            partyIdInput.value = '';
+            selectedPartyId = null;
+          }
+        })
+        .catch(error => {
+          console.error('Error:', error);
+          searchResults.style.display = 'none';
+        });
+    }, 300);
+  });
+
+  document.addEventListener('click', function(e) {
+    if (!partyNameInput.contains(e.target) && !searchResults.contains(e.target)) {
+      searchResults.style.display = 'none';
+    }
+  });
+
+  const form = document.getElementById('addTransactionForm');
+  const submitBtn = document.getElementById('submitBtn');
+  form.addEventListener('submit', function() {
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>جاري الحفظ...';
+  });
+});
+</script>
+{% endblock %}

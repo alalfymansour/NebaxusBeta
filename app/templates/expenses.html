@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<style>
+  .card-box {
+    border-radius: 1rem;
+    box-shadow: 0 0 15px rgba(0,0,0,0.08);
+    transition: all 0.3s ease;
+  }
+  .card-box:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 0 20px rgba(0,0,0,0.12);
+  }
+</style>
+
+<div class="container py-4" dir="rtl">
+
+  <div class="text-center mb-4">
+    <h2 class="fw-bold">إدارة <span class="text-warning">المصروفات</span></h2>
+    <p class="text-muted">إجمالي مصروفات الشهر الحالي</p>
+  </div>
+
+  <div class="row mb-4">
+    <div class="col-12 text-end">
+      <a href="{{ url_for('main.add_expense') }}" class="btn btn-success d-inline-flex align-items-center gap-2 px-4 shadow">
+        <i class="fas fa-plus"></i> <span>مصروف جديد</span>
+      </a>
+    </div>
+  </div>
+
+  <div class="row g-4 mb-4 justify-content-center mt-3">
+    {% set expense_types = [
+      {'name': 'المصروفات التشغيلية', 'icon': 'fas fa-cogs', 'color': 'success', 'url': 'main.operational_expenses'},
+      {'name': 'الأصول الثابتة', 'icon': 'fas fa-building', 'color': 'info', 'url': 'main.fixed_assets_expenses'}
+    ] %}
+    {% for expense_type in expense_types %}
+      <div class="col-12 col-sm-6 col-md-4 d-flex align-items-stretch">
+        <a href="{{ url_for(expense_type.url) }}" class="text-decoration-none w-100">
+          <div class="card card-box p-4 bg-white h-100 d-flex flex-column justify-content-center align-items-center mb-3">
+            <i class="{{ expense_type.icon }} fa-3x" style="color: #D79921 !important;" class="mb-2"></i>
+            <h5 class="fw-bold text-dark mb-1">{{ expense_type.name }}</h5>
+            <div class="small text-muted">
+              {% if expense_type.name == 'المصروفات التشغيلية' %}
+                {{ operational_expenses|default(0)|round(2) }} ج.م
+              {% else %}
+                {{ fixed_assets|default(0)|round(2) }} ج.م
+              {% endif %}
+            </div>
+          </div>
+        </a>
+      </div>
+    {% endfor %}
+  </div>
+
+</div>
+
+{% endblock %} 

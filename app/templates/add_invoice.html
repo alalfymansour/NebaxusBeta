@@ -1,0 +1,545 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid">
+  <div class="text-center mb-4">
+    <h2 class="fw-bold">إضافة <span class="text-warning">فاتورة جديدة</span></h2>
+    <p class="text-muted">قم بإدخال بيانات الفاتورة مع تفاصيل المورد والمنتجات</p>
+  </div>
+
+  <form method="POST" action="{{ url_for('main.add_invoice') }}" id="invoiceForm">
+    <input type="hidden" name="submission_id" value="{{ submission_id }}">
+    <div class="mb-4">
+      <label class="form-label fw-semibold d-block mb-2">بيانات المورد</label>
+      <div class="row g-2 align-items-end">
+        <div class="col-md-3">
+          <label class="form-label fw-semibold">اسم المورد</label>
+          <select class="form-select" id="supplier_select" style="width: 100%">
+            <option value=""></option>
+          </select>
+          <input type="hidden" name="supplier_id" id="supplier_id">
+          <input type="hidden" name="supplier_name" id="supplier_name_hidden">
+        </div>
+        <div class="col-md-2">
+          <label class="form-label fw-semibold">رقم الهاتف</label>
+          <input type="text" class="form-control" name="supplier_phone" id="supplier_phone" placeholder="رقم الهاتف">
+        </div>
+        <div class="col-md-3">
+          <label class="form-label fw-semibold">عنوان المورد</label>
+          <input type="text" class="form-control" name="supplier_address" id="supplier_address" placeholder="عنوان المورد">
+        </div>
+        <div class="col-md-2">
+          <label class="form-label fw-semibold">رقم الفاتورة</label>
+          <input type="text" class="form-control" name="invoice_number" id="invoice_number" placeholder="رقم الفاتورة">
+        </div>
+        <div class="col-md-2">
+          <label class="form-label fw-semibold">تاريخ الفاتورة</label>
+          <input type="date" class="form-control" name="date" id="date" required>
+        </div>
+      </div>
+    </div>
+
+    <hr>
+
+                <h5 class="fw-bold mb-3">المنتجات</h5>
+    <div id="products-container"></div>
+         <button type="button" class="btn btn-secondary mb-4" onclick="addProduct()">
+       <i class="fas fa-plus"></i> <span>منتج جديد</span>
+     </button>
+
+           <div class="row g-3 mb-4">
+                 <div class="col-md-4">
+           <label class="form-label fw-semibold">المبلغ المدفوع</label>
+                      <input name="paid_amount" id="paidAmount" type="number" step="0.01" class="form-control" value="0" oninput="calculateTotals()" onchange="calculateTotals()" onkeyup="calculateTotals()" onblur="calculateTotals()">
+         </div>
+        <div class="col-md-4">
+          <label class="form-label fw-semibold">إجمالي الفاتورة</label>
+          <input id="totalAmount" type="text" class="form-control bg-light" readonly value="0.00">
+        </div>
+        <div class="col-md-4">
+          <label class="form-label fw-semibold">المتبقي</label>
+          <input name="remaining_amount" id="remainingAmount" type="text" class="form-control bg-light" readonly value="0.00">
+        </div>
+      </div>
+
+     <div class="mb-4">
+      <label class="form-label fw-semibold">ملاحظات</label>
+      <textarea class="form-control" name="notes" rows="3" placeholder="ملاحظات اختيارية"></textarea>
+    </div>
+
+    <div class="d-flex gap-2 mt-4 flex-wrap">
+      <button type="submit" class="btn btn-primary d-flex align-items-center gap-1" id="submitBtn">
+        <i class="fas fa-plus"></i> <span>إضافة الفاتورة</span>
+      </button>
+      <a href="{{ url_for('main.invoices') }}" class="btn btn-secondary d-inline-flex align-items-center gap-1 px-4">
+        <i class="fas fa-arrow-left"></i> <span>رجوع</span>
+      </a>
+    </div>
+  </form>
+</div>
+
+<script>
+let productIndex = 0;
+
+function searchProduct(input, index) {
+  const searchTerm = input.value.trim();
+  const resultsDiv = input.parentNode.querySelector('.product-search-results');
+  
+  if (searchTerm.length < 2) {
+    resultsDiv.style.display = 'none';
+    return;
+  }
+  
+  fetch(`/api/search_products?term=${encodeURIComponent(searchTerm)}`)
+    .then(response => response.json())
+    .then(data => {
+      if (data.success && data.products.length > 0) {
+        
+        resultsDiv.innerHTML = '';
+        data.products.forEach(product => {
+          const div = document.createElement('div');
+          div.className = 'p-2 border-bottom product-result';
+          div.style.cursor = 'pointer';
+          div.innerHTML = `
+            <div class="fw-bold">${product.name}</div>
+            <small class="text-muted">السعر: ${product.price} ج.م | المخزون: ${product.stock}</small>
+          `;
+          div.onclick = () => selectProduct(input, product, index);
+          resultsDiv.appendChild(div);
+        });
+        
+         const addNewDiv = document.createElement('div');
+         addNewDiv.className = 'p-2 bg-light product-result';
+         addNewDiv.style.cursor = 'pointer';
+         addNewDiv.innerHTML = `
+           <div class="fw-bold text-primary">
+             <i class="fas fa-plus"></i> إضافة منتج جديد: "${searchTerm}"
+           </div>
+         `;
+         addNewDiv.onclick = function() {
+           addNewProduct(input, searchTerm, index);
+         };
+         resultsDiv.appendChild(addNewDiv);
+        
+        resultsDiv.style.display = 'block';
+             } else {
+         
+         const addNewDiv = document.createElement('div');
+         addNewDiv.className = 'p-2 bg-light product-result';
+         addNewDiv.style.cursor = 'pointer';
+         addNewDiv.innerHTML = `
+           <div class="fw-bold text-primary">
+             <i class="fas fa-plus"></i> إضافة منتج جديد: "${searchTerm}"
+           </div>
+         `;
+         addNewDiv.onclick = function() {
+           addNewProduct(input, searchTerm, index);
+         };
+         resultsDiv.innerHTML = '';
+         resultsDiv.appendChild(addNewDiv);
+         resultsDiv.style.display = 'block';
+       }
+    })
+    .catch(error => {
+      console.error('خطأ في البحث:', error);
+    });
+}
+
+function selectProduct(input, product, index) {
+  input.value = product.name;
+  input.parentNode.querySelector('.product-id').value = product.id;
+  input.parentNode.querySelector('.product-search-results').style.display = 'none';
+  
+  const row = input.closest('.row');
+  row.querySelector('.purchase-price').value = product.purchase_price || product.wholesale_price || 0;
+  row.querySelector('.selling-price').value = product.price || 0;
+  
+  calculateTotals();
+}
+
+let typeIndex = 0;
+let optionIndex = 0;
+
+function addProductType(productIndex) {
+  const container = document.getElementById(`product-types-container-${productIndex}`);
+  const typeId = typeIndex++;
+  
+  const typeHtml = `
+    <div class="product-type mb-3" data-type-id="${typeId}">
+      <div class="row g-2 align-items-end">
+        <div class="col-md-4">
+          <label class="form-label">نوع المنتج</label>
+                     <select class="form-control" name="products[${productIndex}][types][${typeId}][type_name]">
+             <option value="">اختر النوع</option>
+             <option value="size">المقاس</option>
+             <option value="color">اللون</option>
+             <option value="style">الشكل</option>
+           </select>
+        </div>
+        <div class="col-md-8">
+          <div class="d-flex gap-2">
+            <button type="button" class="btn btn-success btn-sm" onclick="addOption(${productIndex}, ${typeId})">
+              <i class="fas fa-plus"></i> إضافة خيار
+            </button>
+            <button type="button" class="btn btn-danger btn-sm" onclick="removeProductType(${productIndex}, ${typeId})">
+              <i class="fas fa-trash"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+      <div id="options-container-${productIndex}-${typeId}" class="mt-2">
+        
+      </div>
+    </div>
+  `;
+  
+  container.insertAdjacentHTML('beforeend', typeHtml);
+}
+
+function addOption(productIndex, typeId) {
+  const container = document.getElementById(`options-container-${productIndex}-${typeId}`);
+  const optionId = optionIndex++;
+  
+  const optionHtml = `
+    <div class="option-row mb-2" data-option-id="${optionId}">
+      <div class="row g-2 align-items-end">
+        <div class="col-md-4">
+          <label class="form-label">اسم الخيار</label>
+          <input type="text" class="form-control" name="products[${productIndex}][types][${typeId}][options][${optionId}][name]" placeholder="مثال: أحمر، كبير">
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">السعر الإضافي</label>
+          <input type="number" step="0.01" class="form-control" name="products[${productIndex}][types][${typeId}][options][${optionId}][price]" value="0" placeholder="0">
+        </div>
+        <div class="col-md-2">
+          <button type="button" class="btn btn-danger btn-sm w-100" onclick="removeOption(${productIndex}, ${typeId}, ${optionId})">
+            <i class="fas fa-trash"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+  `;
+  
+  container.insertAdjacentHTML('beforeend', optionHtml);
+}
+
+function removeProductType(productIndex, typeId) {
+  const typeElement = document.querySelector(`[data-type-id="${typeId}"]`);
+  if (typeElement) {
+    typeElement.remove();
+  }
+}
+
+function removeOption(productIndex, typeId, optionId) {
+  const optionElement = document.querySelector(`[data-option-id="${optionId}"]`);
+  if (optionElement) {
+    optionElement.remove();
+  }
+}
+
+function addNewProduct(input, productName, index) {
+  input.value = productName;
+  input.parentNode.querySelector('.product-id').value = '';
+  input.parentNode.querySelector('.product-search-results').style.display = 'none';
+  
+    const row = input.closest('.row');
+    const variantsSection = row.querySelector('.product-variants');
+    if (!variantsSection) {
+      const variantsHtml = `
+        <div class="col-12 mt-2 product-variants">
+          <div class="card border-warning">
+            <div class="card-header bg-warning text-dark">
+              <i class="fas fa-plus"></i> أنواع المنتج
+            </div>
+            <div class="card-body">
+              <div id="product-types-container-${index}">
+                
+              </div>
+                           <div class="text-center mt-3">
+               <button type="button" class="btn btn-success" onclick="addProductType(${index})">
+                 <i class="fas fa-plus"></i> إضافة نوع
+               </button>
+               
+             </div>
+            </div>
+          </div>
+        </div>
+      `;
+      row.insertAdjacentHTML('afterend', variantsHtml);
+    }
+}
+
+function addProduct() {
+  const container = document.getElementById('products-container');
+  const productRow = document.createElement('div');
+  productRow.className = 'row g-2 mb-3';
+  productRow.innerHTML = `
+    <div class="col-md-3">
+      <label class="form-label">اسم المنتج</label>
+      <input type="text" class="form-control product-search" name="products[${productIndex}][product_name]" placeholder="اكتب اسم المنتج للبحث" required oninput="searchProduct(this, ${productIndex})">
+      <div class="product-search-results" style="display: none; position: absolute; z-index: 1000; background: white; border: 1px solid #ddd; border-radius: 4px; max-height: 200px; overflow-y: auto; width: 100%;"></div>
+      <input type="hidden" name="products[${productIndex}][product_id]" class="product-id">
+    </div>
+         <div class="col-md-2">
+       <label class="form-label">الكمية</label>
+       <input type="number" class="form-control" name="products[${productIndex}][quantity]" min="1" value="1" required onchange="calculateTotals()" oninput="calculateTotals()">
+     </div>
+     <div class="col-md-2">
+       <label class="form-label">سعر الشراء</label>
+       <input type="number" step="0.01" class="form-control purchase-price" name="products[${productIndex}][purchase_price]" required onchange="calculateTotals()" oninput="calculateTotals()">
+     </div>
+         <div class="col-md-2">
+       <label class="form-label">سعر البيع المقترح</label>
+       <input type="number" step="0.01" class="form-control selling-price" name="products[${productIndex}][selling_price]" required onchange="calculateTotals()" oninput="calculateTotals()">
+     </div>
+    <div class="col-md-2">
+      <label class="form-label">الإجمالي</label>
+      <input type="text" class="form-control item-total bg-light" readonly>
+    </div>
+    <div class="col-md-1">
+      <label class="form-label">&nbsp;</label>
+      <button type="button" class="btn btn-danger btn-sm w-100" onclick="removeProduct(this)">
+        <i class="fas fa-trash"></i>
+      </button>
+    </div>
+  `;
+  container.appendChild(productRow);
+  productIndex++;
+  calculateTotals();
+}
+
+function removeProduct(button) {
+  const row = button.closest('.row');
+  
+  const variantsSection = row.nextElementSibling;
+  if (variantsSection && variantsSection.classList.contains('product-variants')) {
+    variantsSection.remove();
+  }
+  row.remove();
+  calculateTotals();
+}
+
+function calculateTotals() {
+  let totalAmount = 0;
+  let productCount = 0;
+  
+  const productRows = document.querySelectorAll('#products-container .row');
+  console.log('Found product rows:', productRows.length);
+  
+  productRows.forEach((row, index) => {
+    const quantityInput = row.querySelector('input[name*="[quantity]"]');
+    const purchasePriceInput = row.querySelector('.purchase-price');
+    const itemTotalInput = row.querySelector('.item-total');
+    
+    if (quantityInput && purchasePriceInput && itemTotalInput) {
+      const quantity = parseInt(quantityInput.value) || 0;
+      const purchasePrice = parseFloat(purchasePriceInput.value) || 0;
+      const itemTotal = quantity * purchasePrice;
+      
+      itemTotalInput.value = itemTotal.toFixed(0) + ' ج.م';
+      totalAmount += itemTotal;
+      productCount++;
+      
+      console.log(`Product ${index + 1}: Quantity=${quantity}, Price=${purchasePrice}, Total=${itemTotal}`);
+    }
+  });
+  
+  const paidAmount = parseFloat(document.getElementById('paidAmount').value) || 0;
+  const remainingAmount = totalAmount - paidAmount;
+  
+  document.getElementById('totalAmount').value = totalAmount.toFixed(0) + ' ج.م';
+  document.getElementById('remainingAmount').value = remainingAmount.toFixed(0) + ' ج.م';
+  
+  const remainingElement = document.getElementById('remainingAmount');
+  if (remainingAmount < 0) {
+    remainingElement.style.color = 'red';
+  } else {
+    remainingElement.style.color = 'black';
+  }
+  
+  console.log('Total Products Found:', productCount);
+  console.log('Total Amount:', totalAmount);
+  console.log('Paid Amount:', paidAmount);
+  console.log('Remaining Amount:', remainingAmount);
+}
+
+function validateForm() {
+  
+  const supplierId = (document.getElementById('supplier_id').value || '').trim();
+  const supplierNameNew = (document.getElementById('supplier_name_hidden').value || '').trim();
+  if (!supplierId && !supplierNameNew) {
+    alert('يرجى اختيار المورد بالاسم أو كتابة اسم مورد جديد');
+    return false;
+  }
+  
+  const productRows = document.querySelectorAll('#products-container .row');
+  if (productRows.length === 0) {
+    alert('يجب إضافة منتج واحد على الأقل');
+    return false;
+  }
+  
+  for (let i = 0; i < productRows.length; i++) {
+    const row = productRows[i];
+    const productName = row.querySelector('input[name*="[product_name]"]').value.trim();
+    const quantity = row.querySelector('input[name*="[quantity]"]').value;
+    const purchasePrice = row.querySelector('.purchase-price').value;
+    const sellingPrice = row.querySelector('.selling-price').value;
+    
+    if (!productName || !quantity || !purchasePrice || !sellingPrice) {
+      alert(`يجب إكمال جميع بيانات المنتج رقم ${i + 1}`);
+      return false;
+    }
+  }
+  
+  return true;
+}
+
+document.getElementById('invoiceForm').addEventListener('submit', function() {
+  document.getElementById('submitBtn').disabled = true;
+});
+
+document.getElementById('date').value = new Date().toISOString().split('T')[0];
+
+document.addEventListener('DOMContentLoaded', function() {
+  addProduct();
+  
+  document.addEventListener('click', function(e) {
+    if (!e.target.closest('.product-search') && !e.target.closest('.product-search-results')) {
+      document.querySelectorAll('.product-search-results').forEach(div => {
+        div.style.display = 'none';
+      });
+    }
+  });
+  
+  (function loadSelect2(callback){
+    function loadScript(src, onload){
+      const s = document.createElement('script'); s.src = src; s.onload = onload; document.body.appendChild(s);
+    }
+    function loadStyle(href){
+      const l = document.createElement('link'); l.rel = 'stylesheet'; l.href = href; document.head.appendChild(l);
+    }
+    
+    loadStyle('https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css');
+  
+  loadStyle('https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.rtl.min.css');
+    
+    if (!window.jQuery) {
+      loadScript('https://code.jquery.com/jquery-3.6.0.min.js', function(){
+        loadScript('https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js', callback);
+      });
+    } else {
+      loadScript('https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js', callback);
+    }
+  })(function initSelect2(){
+    const $ = window.jQuery;
+    const $select = $('#supplier_select');
+    $select.select2({
+  width: '100%',
+      theme: 'bootstrap-5',
+      placeholder: 'ابحث باسم المورد',
+      allowClear: true,
+      dir: 'rtl',
+      language: {
+        inputTooShort: () => 'اكتب حرفين على الأقل',
+        noResults: () => 'لا توجد نتائج'
+      },
+      minimumInputLength: 0,
+      ajax: {
+        url: '/api/search_suppliers',
+        dataType: 'json',
+        delay: 250,
+        data: params => ({ q: params.term || '' }),
+        processResults: data => ({
+          results: (data.results || []).map(s => ({ id: s.id, text: s.name, phone: s.phone, address: s.address }))
+        })
+      },
+      tags: true,
+      createTag: params => {
+        const term = (params.term || '').trim();
+        if (term === '') return null;
+        return {
+          id: `new:${term}`,
+          text: term,
+          isNew: true
+        };
+      },
+      templateResult: item => {
+        if (item.loading) return item.text;
+        if (item.isNew) return `إضافة مورد جديد: ${item.text}`;
+        const phone = item.phone ? ` - ${item.phone}` : '';
+        return `${item.text}${phone}`;
+      },
+      templateSelection: item => item.text
+    });
+
+    $select.on('select2:open', function(){
+      const sf = document.querySelector('.select2-container--open .select2-search__field');
+      if (sf) sf.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+
+    $select.on('select2:select', function (e) {
+      const data = e.params.data;
+      if (data.isNew || (typeof data.id === 'string' && data.id.startsWith('new:'))) {
+        
+        document.getElementById('supplier_id').value = '';
+        document.getElementById('supplier_name_hidden').value = data.text;
+        
+        document.getElementById('supplier_phone').value = '';
+        document.getElementById('supplier_address').value = '';
+      } else {
+        
+        document.getElementById('supplier_id').value = data.id;
+        document.getElementById('supplier_name_hidden').value = '';
+        
+        document.getElementById('supplier_phone').value = (data.phone || '');
+        document.getElementById('supplier_address').value = (data.address || '');
+      }
+    });
+
+    $select.on('select2:clear', function(){
+      document.getElementById('supplier_id').value = '';
+      document.getElementById('supplier_name_hidden').value = '';
+      document.getElementById('supplier_phone').value = '';
+      document.getElementById('supplier_address').value = '';
+    });
+
+  });
+});
+</script>
+
+<style>
+/* تأكيد أن حقل اسم المورد (Select2) يظهر بإطار مثل بقية الحقول */
+.select2-container { width: 100% !important; }
+.select2-container--bootstrap-5 .select2-selection--single {
+  border: 1px solid #ced4da;
+  border-radius: .375rem;
+  height: calc(2.25rem + 2px);
+  min-height: calc(2.25rem + 2px);
+  display: flex;
+  align-items: center; /* توسيط عمودي للنص */
+}
+.select2-container--bootstrap-5 .select2-selection--single .select2-selection__rendered {
+  padding: 0 .75rem; /* نفس حشوة عناصر Bootstrap */
+  line-height: 1.5;  /* سطر طبيعي، الاعتماد على flex للتوسيط */
+}
+.select2-container--bootstrap-5 .select2-selection--single .select2-selection__arrow {
+  height: 100%;
+  display: flex;
+  align-items: center;
+}
+/*Fallback في حال لم يطبق الثيم*/
+.select2-container--default .select2-selection--single {
+  border: 1px solid #ced4da;
+  border-radius: .375rem;
+  height: calc(2.25rem + 2px);
+  min-height: calc(2.25rem + 2px);
+  display: flex;
+  align-items: center;
+}
+.select2-container--default .select2-selection--single .select2-selection__rendered {
+  line-height: 1.5;
+  padding: 0 .75rem;
+}
+</style>
+
+{% endblock %} 

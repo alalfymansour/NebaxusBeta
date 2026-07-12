@@ -1,0 +1,328 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<style>
+  .form-card {
+    border-radius: 1rem;
+    box-shadow: 0 0 15px rgba(0,0,0,0.08);
+    background: #fff;
+  }
+  .form-card .card-header {
+    background: #D79921;
+    border-bottom: 1px solid #000;
+    border-radius: 1rem 1rem 0 0 !important;
+  }
+  .distribution-section {
+    background: #f8f9fa;
+    border-radius: 0.5rem;
+    padding: 1rem;
+    margin-top: 1rem;
+  }
+  .distribution-info {
+    background: #e3f2fd;
+    border: 1px solid #2196f3;
+    border-radius: 0.5rem;
+    padding: 0.75rem;
+    margin-top: 0.5rem;
+    display: none;
+  }
+</style>
+
+<div class="container py-4" dir="rtl">
+  <div class="row justify-content-center">
+    <div class="col-lg-8">
+      
+      <div class="text-center mb-4">
+        <h2 class="fw-bold">إضافة <span class="text-warning">مصروف جديد</span></h2>
+        <p class="text-muted">أدخل تفاصيل المصروف الجديد</p>
+      </div>
+
+      <div class="card form-card">
+        <div class="card-body p-4">
+          <form method="POST" action="{{ url_for('main.add_expense') }}">
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label">عنوان المصروف *</label>
+                <input type="text" name="title" class="form-control" required>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">المبلغ *</label>
+                <input type="number" name="amount" class="form-control" step="0.01" required>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">الفئة *</label>
+                <select name="category" class="form-select" required onchange="updateDistributionSection(this.value)">
+                  <option value="">اختر الفئة</option>
+                                      <option value="مصاريف تشغيلية">مصاريف تشغيلية</option>
+                  <option value="أصول ثابتة">أصول ثابتة</option>
+                </select>
+              </div>
+
+              <div class="col-md-6">
+                <label class="form-label">التاريخ *</label>
+                <input type="date" name="date" class="form-control" required value="{{ today }}">
+              </div>
+
+              <div class="col-12" id="distribution_section" style="display: none;">
+                <div class="distribution-section">
+                  <h6 class="fw-bold mb-3">تقسيم المبلغ على الفترة الزمنية</h6>
+                  
+                  <div class="row g-3">
+                    <div class="col-md-4">
+                      <label class="form-label">طريقة التقسيم</label>
+                      <select name="distribution_type" class="form-select" onchange="toggleDistributionOptions()">
+                        <option value="current_month">الشهر الحالي فقط</option>
+                        <option value="selected_months">شهور محددة</option>
+                      </select>
+                    </div>
+                    
+                    <div class="col-md-12" id="selected_months_option" style="display: none;">
+                      <div class="row g-3">
+                        <div class="col-12">
+                          <label class="form-label">اختر الشهور من سنوات مختلفة</label>
+
+                          <div id="month_selections">
+                            
+                          </div>
+                          <button type="button" class="btn btn-outline-primary btn-sm mt-2" onclick="addMonthSelection()">
+                            <i class="fas fa-plus me-1"></i> إضافة شهر
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  
+                  <div id="distribution_info" class="distribution-info">
+                    <div class="row">
+                      <div class="col-md-6">
+                        <strong>عدد الشهور:</strong> <span id="total_months">-</span>
+                      </div>
+                      <div class="col-md-6">
+                        <strong>المبلغ الشهري:</strong> <span id="monthly_amount">-</span> ج.م
+                      </div>
+                    </div>
+                    <div class="mt-2">
+                      <strong>الفترة:</strong> <span id="period_range">-</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="col-12">
+                <label class="form-label">الوصف التفصيلي</label>
+                <textarea name="description" class="form-control" rows="4"></textarea>
+              </div>
+            </div>
+            
+            <div class="d-flex justify-content-between gap-2 mt-4">
+              <button type="submit" class="btn btn-primary">
+                <i class="fas fa-save me-1"></i> حفظ المصروف
+              </button>
+              <a href="{{ url_for('main.expenses') }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-right me-1"></i> رجوع
+              </a>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+
+function updateDistributionSection(category) {
+  const distributionSection = document.getElementById('distribution_section');
+  
+  if (category === 'أصول ثابتة') {
+    distributionSection.style.display = 'block';
+  } else {
+    distributionSection.style.display = 'none';
+    
+    document.querySelector('select[name="distribution_type"]').value = 'current_month';
+    toggleDistributionOptions();
+    
+    lastAddedMonth = null;
+  }
+}
+
+function toggleDistributionOptions() {
+  const distributionType = document.querySelector('select[name="distribution_type"]').value;
+  const selectedMonthsOption = document.getElementById('selected_months_option');
+  const distributionInfo = document.getElementById('distribution_info');
+  
+  selectedMonthsOption.style.display = 'none';
+  distributionInfo.style.display = 'none';
+  
+  if (distributionType === 'selected_months') {
+    selectedMonthsOption.style.display = 'block';
+    
+    lastAddedMonth = null;
+  }
+  
+  calculateDistribution();
+}
+
+function calculateDistribution() {
+  const distributionType = document.querySelector('select[name="distribution_type"]').value;
+  const amount = parseFloat(document.querySelector('input[name="amount"]').value) || 0;
+  const distributionInfo = document.getElementById('distribution_info');
+  
+  let totalMonths = 1;
+  let periodRange = '';
+  
+  if (distributionType === 'current_month') {
+    totalMonths = 1;
+    const today = new Date();
+    const currentMonthName = today.toLocaleDateString('ar-EG', { month: 'long', year: 'numeric' });
+    periodRange = `الشهر الحالي (${currentMonthName})`;
+  } else if (distributionType === 'selected_months') {
+    const monthSelections = document.querySelectorAll('.month-selection');
+    totalMonths = monthSelections.length;
+    
+    if (totalMonths > 0) {
+      const monthNames = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 
+                          'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
+      const selections = [];
+      
+      monthSelections.forEach(selection => {
+        const year = selection.querySelector('select[name="year[]"]').value;
+        const month = selection.querySelector('select[name="month[]"]').value;
+        const monthName = monthNames[parseInt(month) - 1];
+        selections.push(`${monthName} ${year}`);
+      });
+      
+      periodRange = `الشهور المحددة: ${selections.join(', ')}`;
+    } else {
+      periodRange = 'لم يتم اختيار أي شهر';
+    }
+  }
+  
+  const monthlyAmount = totalMonths > 0 ? (amount / totalMonths).toFixed(0) : amount.toFixed(0);
+  
+  document.getElementById('total_months').textContent = totalMonths;
+  document.getElementById('monthly_amount').textContent = monthlyAmount;
+  document.getElementById('period_range').textContent = periodRange;
+  
+  distributionInfo.style.display = 'block';
+}
+
+document.querySelector('input[name="amount"]').addEventListener('input', calculateDistribution);
+
+let monthSelectionCounter = 0;
+let lastAddedMonth = null; 
+
+function addMonthSelection() {
+  const container = document.getElementById('month_selections');
+  const selectionDiv = document.createElement('div');
+  selectionDiv.className = 'month-selection border rounded p-3 mb-2';
+  selectionDiv.innerHTML = `
+    <div class="row g-2 align-items-center">
+      <div class="col-md-4">
+        <select name="year[]" class="form-select" onchange="calculateDistribution(); updateMonthSelection(this)">
+          <option value="2024">2024</option>
+          <option value="2025">2025</option>
+          <option value="2026">2026</option>
+          <option value="2027">2027</option>
+          <option value="2028">2028</option>
+        </select>
+      </div>
+      <div class="col-md-4">
+        <select name="month[]" class="form-select" onchange="calculateDistribution(); updateMonthSelection(this)">
+          <option value="1">يناير</option>
+          <option value="2">فبراير</option>
+          <option value="3">مارس</option>
+          <option value="4">أبريل</option>
+          <option value="5">مايو</option>
+          <option value="6">يونيو</option>
+          <option value="7">يوليو</option>
+          <option value="8">أغسطس</option>
+          <option value="9">سبتمبر</option>
+          <option value="10">أكتوبر</option>
+          <option value="11">نوفمبر</option>
+          <option value="12">ديسمبر</option>
+        </select>
+      </div>
+      <div class="col-md-3">
+        <button type="button" class="btn btn-outline-danger btn-sm" onclick="removeMonthSelection(this)">
+          <i class="fas fa-trash me-1"></i> حذف
+        </button>
+      </div>
+    </div>
+  `;
+  
+  const yearSelect = selectionDiv.querySelector('select[name="year[]"]');
+  const monthSelect = selectionDiv.querySelector('select[name="month[]"]');
+  
+  if (lastAddedMonth) {
+    
+    let nextYear = lastAddedMonth.year;
+    let nextMonth = lastAddedMonth.month + 1;
+    
+    if (nextMonth > 12) {
+      nextMonth = 1;
+      nextYear++;
+    }
+    
+    yearSelect.value = nextYear;
+    monthSelect.value = nextMonth;
+    
+    lastAddedMonth = { year: nextYear, month: nextMonth };
+  } else {
+    
+    const currentDate = new Date();
+    yearSelect.value = currentDate.getFullYear();
+    monthSelect.value = currentDate.getMonth() + 1; 
+    
+    lastAddedMonth = { year: currentDate.getFullYear(), month: currentDate.getMonth() + 1 };
+  }
+  
+  container.appendChild(selectionDiv);
+  monthSelectionCounter++;
+  calculateDistribution();
+}
+
+function removeMonthSelection(button) {
+  button.closest('.month-selection').remove();
+  updateLastAddedMonth();
+  calculateDistribution();
+}
+
+function updateLastAddedMonth() {
+  const monthSelections = document.querySelectorAll('.month-selection');
+  if (monthSelections.length === 0) {
+    lastAddedMonth = null;
+    return;
+  }
+  
+  let latestMonth = null;
+  monthSelections.forEach(selection => {
+    const year = parseInt(selection.querySelector('select[name="year[]"]').value);
+    const month = parseInt(selection.querySelector('select[name="month[]"]').value);
+    
+    if (!latestMonth || 
+        year > latestMonth.year || 
+        (year === latestMonth.year && month > latestMonth.month)) {
+      latestMonth = { year, month };
+    }
+  });
+  
+  lastAddedMonth = latestMonth;
+}
+
+function updateMonthSelection(select) {
+  
+  setTimeout(() => {
+    updateLastAddedMonth();
+  }, 100);
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  const currentYear = new Date().getFullYear();
+  const yearSelect = document.querySelector('select[name="selected_year"]');
+  if (yearSelect) {
+    yearSelect.value = currentYear;
+  }
+});
+
+</script>
+{% endblock %} 

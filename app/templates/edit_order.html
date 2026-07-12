@@ -1,0 +1,937 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<style>
+  input[readonly], select[readonly], select:disabled {
+    background-color: #f8f9fa !important;
+    pointer-events: none;
+  }
+  .modern-table { border-radius: 1rem; overflow: hidden; background: #fff; border: 1px solid #000; }
+  .modern-table th { background: #D79921 !important; font-size: 1.1rem; letter-spacing: 0.5px; color: #333; vertical-align: middle; border-bottom: 1px solid #000 !important; }
+  .modern-table td { vertical-align: middle; font-size: 1rem; background: #fff; border-bottom: 1px solid #000; }
+  .modern-table tbody tr:hover td { background: #fff3cd !important; transition: background 0.2s; }
+  .product-row .form-select, .product-row .form-control { min-height: 38px; }
+  /* Select2 appearance alignment */
+  .select2-container { width: 100% !important; }
+  .select2-container--bootstrap-5 .select2-selection--single { border: 1px solid #ced4da; border-radius: .375rem; height: calc(2.25rem + 2px); min-height: calc(2.25rem + 2px); display:flex; align-items:center; }
+  .select2-container--bootstrap-5 .select2-selection--single .select2-selection__rendered { padding: 0 .75rem; line-height: 1.5; }
+  .select2-container--bootstrap-5 .select2-selection--single .select2-selection__arrow { height: 100%; display:flex; align-items:center; }
+  .variant-groups-container { min-width: 200px; }
+</style>
+
+<div class="container py-4" dir="rtl">
+  <div class="text-center mb-4">
+    <h2 class="fw-bold">تعديل <span class="text-warning">الطلب رقم {{ order.id }}</span></h2>
+  </div>
+
+  <form method="POST" id="editOrderForm">
+    <div class="row mb-3">
+      <div class="col-md-3">
+        <label class="form-label fw-semibold">اسم العميل</label>
+        {% if order.is_walkin %}
+        <input type="text" class="form-control" value="زبون أرضية" readonly disabled>
+        <input type="hidden" name="customer_name" value="زبون أرضية">
+        {% else %}
+        <input type="text" class="form-control customer-field" name="customer_name" id="customerName" value="{{ order.customer_name }}" {% if order.status != 'جديد' %}readonly{% endif %} required>
+        {% endif %}
+      </div>
+      {% if not order.is_walkin %}
+      <div class="col-md-3">
+        <label class="form-label fw-semibold">رقم الهاتف</label>
+        <input type="text" class="form-control customer-field" name="customer_phone" id="customerPhone" value="{{ order.customer_phone }}" {% if order.status != 'جديد' %}readonly{% endif %} required>
+      </div>
+      <div class="col-md-2">
+        <label class="form-label fw-semibold">المحافظة</label>
+        <select class="form-select customer-field" name="customer_governorate" id="customerGovernorate" {% if order.status != 'جديد' %}disabled{% endif %} required>
+          <option value="">اختر المحافظة</option>
+          <option value="القاهرة" {% if order.customer_governorate == 'القاهرة' %}selected{% endif %}>القاهرة</option>
+          <option value="الجيزة" {% if order.customer_governorate == 'الجيزة' %}selected{% endif %}>الجيزة</option>
+          <option value="الإسكندرية" {% if order.customer_governorate == 'الإسكندرية' %}selected{% endif %}>الإسكندرية</option>
+          <option value="الدقهلية" {% if order.customer_governorate == 'الدقهلية' %}selected{% endif %}>الدقهلية</option>
+          <option value="البحر الأحمر" {% if order.customer_governorate == 'البحر الأحمر' %}selected{% endif %}>البحر الأحمر</option>
+          <option value="البحيرة" {% if order.customer_governorate == 'البحيرة' %}selected{% endif %}>البحيرة</option>
+          <option value="الفيوم" {% if order.customer_governorate == 'الفيوم' %}selected{% endif %}>الفيوم</option>
+          <option value="الغربية" {% if order.customer_governorate == 'الغربية' %}selected{% endif %}>الغربية</option>
+          <option value="الإسماعيلية" {% if order.customer_governorate == 'الإسماعيلية' %}selected{% endif %}>الإسماعيلية</option>
+          <option value="المنوفية" {% if order.customer_governorate == 'المنوفية' %}selected{% endif %}>المنوفية</option>
+          <option value="المنيا" {% if order.customer_governorate == 'المنيا' %}selected{% endif %}>المنيا</option>
+          <option value="القليوبية" {% if order.customer_governorate == 'القليوبية' %}selected{% endif %}>القليوبية</option>
+          <option value="الوادي الجديد" {% if order.customer_governorate == 'الوادي الجديد' %}selected{% endif %}>الوادي الجديد</option>
+          <option value="السويس" {% if order.customer_governorate == 'السويس' %}selected{% endif %}>السويس</option>
+          <option value="أسوان" {% if order.customer_governorate == 'أسوان' %}selected{% endif %}>أسوان</option>
+          <option value="أسيوط" {% if order.customer_governorate == 'أسيوط' %}selected{% endif %}>أسيوط</option>
+          <option value="بني سويف" {% if order.customer_governorate == 'بني سويف' %}selected{% endif %}>بني سويف</option>
+          <option value="بورسعيد" {% if order.customer_governorate == 'بورسعيد' %}selected{% endif %}>بورسعيد</option>
+          <option value="دمياط" {% if order.customer_governorate == 'دمياط' %}selected{% endif %}>دمياط</option>
+          <option value="الشرقية" {% if order.customer_governorate == 'الشرقية' %}selected{% endif %}>الشرقية</option>
+          <option value="جنوب سيناء" {% if order.customer_governorate == 'جنوب سيناء' %}selected{% endif %}>جنوب سيناء</option>
+          <option value="كفر الشيخ" {% if order.customer_governorate == 'كفر الشيخ' %}selected{% endif %}>كفر الشيخ</option>
+          <option value="مطروح" {% if order.customer_governorate == 'مطروح' %}selected{% endif %}>مطروح</option>
+          <option value="الأقصر" {% if order.customer_governorate == 'الأقصر' %}selected{% endif %}>الأقصر</option>
+          <option value="قنا" {% if order.customer_governorate == 'قنا' %}selected{% endif %}>قنا</option>
+          <option value="شمال سيناء" {% if order.customer_governorate == 'شمال سيناء' %}selected{% endif %}>شمال سيناء</option>
+          <option value="سوهاج" {% if order.customer_governorate == 'سوهاج' %}selected{% endif %}>سوهاج</option>
+        </select>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label fw-semibold">باقي العنوان</label>
+        <input type="text" class="form-control customer-field" name="customer_address_details" id="customerAddressDetails" value="{{ order.customer_address_details }}" {% if order.status != 'جديد' %}readonly{% endif %} placeholder="مدينة، حي، شارع..." required>
+      </div>
+      {% endif %}
+    </div>
+
+    {% if not order.is_walkin %}
+    <div class="row mb-3">
+      <div class="col-md-3">
+        <label for="employee_id" class="form-label fw-semibold">الموظف المسؤول</label>
+        <select name="employee_id" id="employee_id" class="form-select" required>
+          <option value="">اختر الموظف</option>
+          <option value="0" {% if not order.employee_id %}selected{% endif %}>بدون</option>
+          {% for emp in employees %}
+            <option value="{{ emp.id }}" {% if order.employee_id == emp.id %}selected{% endif %}>{{ emp.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+    {% endif %}
+
+    <hr>
+    <h5 class="fw-bold mb-3">المنتجات</h5>
+    <div id="zeroStockInfo" class="alert alert-warning py-2 px-3 d-none" style="font-size:0.9rem;">
+      بعض المنتجات في هذا الطلب غير متوفرة حالياً في المخزون. يمكنك تعديل الطلب أو حفظه كـ (جديد)، لكن لا يمكن تحويل الحالة إلى "خرج للتوصيل" إلا بعد توفرها.
+    </div>
+    <div id="productsContainer"></div>
+    <button type="button" class="btn btn-secondary mb-4" id="addProductBtn"><i class="fas fa-plus"></i> <span>منتج جديد</span></button>
+
+    <hr>
+    <div class="row g-3 mb-4">
+      {% if not order.is_walkin %}
+      <div class="col-md-3">
+        <label class="form-label fw-semibold">رسوم التوصيل</label>
+        <input name="delivery_fees" type="number" step="0.01" class="form-control customer-field" id="deliveryFees" value="{{ order.delivery_fees|default(0) }}" {% if order.status != 'جديد' %}readonly{% endif %} required>
+      </div>
+      {% endif %}
+      <div class="col-md-3">
+        <label class="form-label fw-semibold">المبلغ المدفوع</label>
+        <input id="amountPaid" name="amount_paid" type="number" step="0.01" class="form-control" value="{{ order.amount_paid|default(0) }}" required>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label fw-semibold">الإجمالي</label>
+        <input id="totalAmount" type="text" class="form-control" value="{{ (order.total_price + order.delivery_fees + (order.cod_fee_applied or 0))|round(2) }}" readonly>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label fw-semibold">المتبقي</label>
+        <input id="remainingAmount" type="text" class="form-control" value="{{ order.remaining_amount|round(2) }}" readonly>
+        <input type="hidden" id="codFeeApplied" value="{{ order.cod_fee_applied|default(0) }}">
+        {% if order.cod_fee_applied and order.cod_fee_applied > 0 %}
+        <small class="text-muted d-block mt-1">
+          <i class="fas fa-info-circle"></i> يشمل رسوم تحصيل: {{ order.cod_fee_applied|round(2) }} ج.م
+        </small>
+        {% endif %}
+      </div>
+    </div>
+
+    {% if not order.is_walkin %}
+    <div class="row">
+      <div class="col-md-6 mb-3">
+        <label for="status" class="form-label fw-semibold">الحالة</label>
+        <select name="status" id="status" class="form-select" required>
+          {% for s in all_statuses %}
+            {% if s in valid_next_statuses %}
+            <option value="{{ s }}" {% if order.status == s %}selected{% endif %}>{{ s }}</option>
+            {% endif %}
+          {% endfor %}
+        </select>
+        {% if order.status == 'جديد' %}
+        <div class="form-check mt-2">
+          <input class="form-check-input" type="checkbox" id="is_urgent" name="is_urgent" value="1" {% if order.is_urgent %}checked{% endif %}>
+          <label class="form-check-label" for="is_urgent">طلب مستعجل</label>
+        </div>
+        {% endif %}
+      </div>
+      <div class="col-md-6 mb-3">
+        <label for="tracking_number" class="form-label fw-semibold">الرقم التتبعي</label>
+        <input type="text" class="form-control" id="tracking_number" name="tracking_number" value="{{ order.tracking_number|default('', true) }}">
+      </div>
+    </div>
+    {% else %}
+    <input type="hidden" name="status" value="{{ order.status }}">
+    {% endif %}
+
+    <div class="mb-3">
+      <label for="notes" class="form-label fw-semibold">ملاحظات</label>
+      <textarea name="notes" id="notes" class="form-control" rows="3">{{ order.notes }}</textarea>
+    </div>
+
+    <div class="mb-3">
+        <label for="weight" class="form-label">وزن الشحنة (جرام)</label>
+        <input type="number"
+               class="form-control"
+               id="weight"
+               name="weight"
+               min="0"
+               step="0.1"
+               value="{{ order.weight or '' }}"
+               placeholder="مثال: 500">
+    </div>
+
+    <div class="mb-3">
+        <label for="package_volume" class="form-label">حجم الشحنة</label>
+        <select class="form-select" id="package_volume" name="package_volume">
+            <option value="">-- اختر الحجم --</option>
+            <option value="Small"        {% if order.package_volume == 'Small'        %}selected{% endif %}>Small</option>
+            <option value="medium"       {% if order.package_volume == 'medium'       %}selected{% endif %}>Medium</option>
+            <option value="Large"        {% if order.package_volume == 'Large'        %}selected{% endif %}>Large</option>
+            <option value="Extra Weight" {% if order.package_volume == 'Extra Weight' %}selected{% endif %}>Extra Weight</option>
+        </select>
+    </div>
+
+    <div class="mb-3">
+        <label for="delivery_notes" class="form-label">ملاحظات التوصيل</label>
+        <textarea class="form-control"
+                  id="delivery_notes"
+                  name="delivery_notes"
+                  rows="2"
+                  placeholder="ملاحظات خاصة بالمندوب أو التوصيل">{{ order.delivery_notes or '' }}</textarea>
+    </div>
+
+    <div class="d-flex gap-2 mt-4 justify-content-center">
+      <input type="hidden" name="order_items_data" id="order_items_data">
+      <input type="hidden" name="update_customer_profile" id="updateCustomerProfile" value="0">
+      <button type="submit" class="btn btn-primary"><i class="fas fa-save me-1"></i> حفظ التعديلات</button>
+      {% if order.customer %}
+      <a href="{{ url_for('main.customer_profile', customer_id=order.customer_id, return_to=request.path) }}" class="btn btn-warning text-dark">
+        <i class="fas fa-user me-1"></i> ملف العميل
+      </a>
+      {% else %}
+      <span class="btn btn-secondary text-light opacity-50"><i class="fas fa-user-slash me-1"></i> زبون أرضية</span>
+      {% endif %}
+      <a href="{{ url_for('main.order_status_history', order_id=order.id) }}" class="btn btn-info">
+        <i class="fas fa-history me-1"></i> تاريخ الحالات
+      </a>
+      <button type="button" class="btn btn-danger delete-btn" data-confirm="هل أنت متأكد أنك تريد حذف هذا الطلب؟ هذا الإجراء لا يمكن التراجع عنه." data-form-id="deleteOrderForm"><i class="fas fa-trash me-1"></i> حذف الطلب</button>
+      {% if next_url %}
+        <a href="{{ next_url }}" class="btn btn-secondary"><i class="fas fa-arrow-left"></i> <span>رجوع</span></a>
+      {% else %}
+        <a href="{{ url_for('main.orders') }}" class="btn btn-secondary"><i class="fas fa-arrow-left"></i> <span>رجوع</span></a>
+      {% endif %}
+    </div>
+  </form>
+
+  <form id="deleteOrderForm" method="POST" action="{{ url_for('main.delete_order', order_id=order.id) }}" style="display: none;"></form>
+</div>
+
+{% if not order.is_walkin %}
+<!-- Modal: اختيار تحديث بيانات العميل -->
+<div class="stats-modal" id="customerUpdateModal" tabindex="-1">
+  <div class="stats-modal-content">
+    <button type="button" class="close-btn" onclick="closeCustomerUpdateModal()"><i class="fas fa-times"></i></button>
+    <h4 class="modal-title fw-bold"><i class="fas fa-user-edit me-2"></i>تم تعديل بيانات العميل</h4>
+    <div class="modal-body">
+      <p class="mb-3">لقد قمت بتعديل البيانات التالية للعميل:</p>
+      <ul id="customerChangesList" class="list-group mb-3"></ul>
+      <p class="fw-semibold">هل تريد تحديث هذه البيانات على مستوى:</p>
+    </div>
+    <div class="d-flex justify-content-center gap-2 mt-4">
+      <button type="button" class="btn btn-outline-primary px-4" id="btnUpdateOrderOnly">
+        <i class="fas fa-file-alt me-1"></i> الطلب فقط
+      </button>
+      <button type="button" class="btn btn-primary px-4" id="btnUpdateOrderAndCustomer">
+        <i class="fas fa-user-check me-1"></i> الطلب وبيانات العميل
+      </button>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<script id="editProductsData" type="application/json">{{ products|tojson }}</script>
+<script id="initialOrderItemsData" type="application/json">{{ order_items_json|tojson }}</script>
+<script id="governorateFeesData" type="application/json">{{ governorate_fees|tojson }}</script>
+<script>
+
+const editProducts = JSON.parse(document.getElementById('editProductsData')?.textContent || '[]');
+const initialOrderItems = JSON.parse(document.getElementById('initialOrderItemsData')?.textContent || '[]');
+const returnedProductIds = {{ returned_product_ids | list | tojson }};
+const governorateFees = JSON.parse(document.getElementById('governorateFeesData')?.textContent || '{}');
+let productIndex = 0;
+
+// حفظ القيم الأصلية لبيانات العميل لاكتشاف التعديلات
+const originalCustomerData = document.getElementById('customerName') ? {
+  name: document.getElementById('customerName')?.value || '',
+  phone: document.getElementById('customerPhone')?.value || '',
+  governorate: document.getElementById('customerGovernorate')?.value || '',
+  address: document.getElementById('customerAddressDetails')?.value || ''
+} : null;
+
+function whenJQueryReady(cb){
+  if (window.jQuery) { cb(window.jQuery); return; }
+  setTimeout(()=> whenJQueryReady(cb), 40);
+}
+
+whenJQueryReady(($)=>{
+  
+});
+
+function buildVariantGroups(product, row, index) {
+  const groupsContainer = row.find('.variant-groups-container');
+  groupsContainer.empty();
+  
+  if (product && product.is_bundle && product.bundle_items && product.bundle_items.length > 0) {
+    
+    product.bundle_items.forEach((item, itemIdx) => {
+      const itemBlock = $('<div>').addClass('mb-3 p-3 bg-light border rounded')
+        .attr('data-bundle-item-idx', itemIdx)
+        .attr('data-bundle-item-product-id', item.product_id);
+      
+      const itemNameDiv = $('<div>').addClass('fw-semibold text-primary mb-2');
+      itemNameDiv.html(`<span class="text-muted me-2">├─</span>${item.product_name}`);
+      itemBlock.append(itemNameDiv);
+      
+      if (item.product_variants && item.product_variants.length > 0) {
+        const variantsRow = $('<div>').addClass('d-flex gap-2 flex-wrap');
+        
+        const groupOrder = ["مقاس", "لون", "شكل"].filter(g => 
+          item.product_variants.some(v => v.group_name === g)
+        );
+        
+        groupOrder.forEach(groupName => {
+          let fieldName = '';
+          if (groupName === 'مقاس') fieldName = 'size_variant_id';
+          else if (groupName === 'لون') fieldName = 'color_variant_id';
+          else if (groupName === 'شكل') fieldName = 'style_variant_id';
+
+          const selectGroup = $('<div>').addClass('flex-grow-1');
+          const label = $('<label>').addClass('form-label mb-1 small fw-semibold').text(groupName);
+          const select = $('<select>').addClass('form-select form-select-sm bundle-variant-select')
+            .attr('data-group', groupName)
+            .attr('data-field', fieldName)
+            .attr('data-bundle-item-idx', itemIdx)
+            .attr('data-bundle-item-product-id', item.product_id);
+          
+          select.append($('<option>').val('').text(`اختر ${groupName}`));
+          item.product_variants
+            .filter(v => v.group_name === groupName)
+            .forEach(v => select.append($('<option>').val(String(v.id)).text(v.variant_name)));
+          
+          selectGroup.append(label).append(select);
+          variantsRow.append(selectGroup);
+        });
+        
+        itemBlock.append(variantsRow);
+      } else {
+        
+        const noVariants = $('<div>').addClass('text-muted small').text('لا توجد أنواع');
+        itemBlock.append(noVariants);
+      }
+      
+      groupsContainer.append(itemBlock);
+    });
+    return;
+  }
+  
+  if (!product || !product.variants || product.variants.length === 0) {
+    groupsContainer.html('<span class="text-muted small">لا توجد أنواع لهذا المنتج</span>');
+    return;
+  }
+  const groupOrder = ["مقاس", "لون", "شكل"].filter(g => product.variants.some(v => v.group_name === g));
+  groupOrder.forEach(groupName => {
+    const values = [...new Set(product.variants.filter(v => v.group_name === groupName).map(v => v.variant_name))];
+    const selectContainer = $('<div>').addClass('flex-grow-1');
+    const label = $('<label>').addClass('form-label mb-1 fw-semibold').text(groupName);
+    const select = $('<select>').addClass('form-select group-select')
+      .attr('data-group', groupName)
+      .attr('data-index', index);
+    select.append($('<option>').val('').text(`اختر ${groupName}`));
+    values.forEach(val => select.append($('<option>').val(val).text(val)));
+    selectContainer.append(label).append(select);
+    groupsContainer.append(selectContainer);
+  });
+  groupsContainer.removeClass('row').addClass('d-flex align-items-end gap-2');
+}
+
+function addProductRow(prefill) {
+  if (!window.jQuery) { return; } 
+  const container = $('#productsContainer');
+  const row = $('<div>').addClass('row g-2 mb-3 align-items-end product-row').attr('data-index', productIndex);
+  let productOptions = '<option disabled selected>اختر منتج</option>';
+  (editProducts || []).forEach(p => {
+    productOptions += `<option value="${p.id}">${p.name}</option>`;
+  });
+  const html = `
+    <div class="d-flex align-items-end gap-2 w-100 flex-wrap">
+      <div class="d-flex align-items-end gap-2 flex-grow-1" style="flex-wrap: nowrap;">
+  <select class="form-select product-select" required><option value=""></option>${productOptions}</select>
+        <div class="variant-groups-container d-flex align-items-end gap-2 flex-grow-1"></div>
+      </div>
+      <div class="position-relative" style="max-width:90px;">
+        <input type="number" class="form-control pe-4 ps-4 text-center quantity-input" min="1" value="1" required>
+        <button type="button" class="btn btn-link btn-sm position-absolute start-0 top-0 h-100 text-secondary" style="border: none; background: transparent; z-index: 5; width: 25px; padding: 0;">
+          <i class="fas fa-minus"></i>
+        </button>
+        <button type="button" class="btn btn-link btn-sm position-absolute end-0 top-0 h-100 text-secondary" style="border: none; background: transparent; z-index: 5; width: 25px; padding: 0;">
+          <i class="fas fa-plus"></i>
+        </button>
+      </div>
+      <input type="number" step="0.01" class="form-control price-input" style="max-width:120px;" value="0" required>
+      <div class="price-error text-danger small d-none"></div>
+      <button type="button" class="btn btn-danger remove-row">حذف</button>
+    </div>`;
+  row.html(html);
+  container.append(row);
+
+  row.find('.start-0').on('click', () => {
+    const q = row.find('.quantity-input');
+    const v = Math.max(1, (parseInt(q.val())||1) - 1);
+    q.val(v).trigger('input');
+  });
+  row.find('.end-0').on('click', () => {
+    const q = row.find('.quantity-input');
+    const v = (parseInt(q.val())||1) + 1;
+    q.val(v).trigger('input');
+  });
+  row.find('.remove-row').on('click', () => { row.remove(); calculateTotals(); });
+
+  const productSelect = row.find('.product-select');
+  productSelect.select2({
+    theme: 'bootstrap-5',
+    width: '100%',
+    placeholder: 'ابحث باسم المنتج',
+    allowClear: true,
+    dir: 'rtl',
+    minimumInputLength: 0,
+    dropdownParent: row
+  });
+  productSelect.on('change', function() {
+    const pid = parseInt($(this).val());
+    const product = editProducts.find(p => p.id === pid);
+    buildVariantGroups(product, row, productIndex);
+    const price = product ? (product.price > 0 ? product.price : (product.wholesale_price||0)) : 0;
+    row.find('.price-input').val(price);
+    row.find('.price-error').addClass('d-none');
+    row.data('price-valid', true);
+    calculateTotals();
+  });
+
+  row.on('change', '.group-select', function() {
+    const group = $(this).data('group');
+    const value = $(this).val();
+    const pid = parseInt(productSelect.val());
+    const product = editProducts.find(p => p.id === pid);
+    if (!product) return;
+    const variant = product.variants.find(v => v.group_name === group && v.variant_name === value);
+    if (!variant) return;
+    if (group === 'مقاس') row.data('size_variant_id', variant.id);
+    if (group === 'لون') row.data('color_variant_id', variant.id);
+    if (group === 'شكل') row.data('style_variant_id', variant.id);
+  });
+
+  row.on('input change', '.quantity-input, .price-input', calculateTotals);
+  
+  row.on('input change', '.quantity-input', function(){
+    let v = parseInt($(this).val());
+    if (!isNaN(v) && v <= 0){
+      alert('⚠️ لا يمكن تعيين كمية المنتج بصفر. سيتم التغيير إلى 1.');
+      $(this).val(1);
+      calculateTotals();
+    }
+  });
+
+  if (prefill) {
+    if (prefill.product_id) {
+      productSelect.val(String(prefill.product_id));
+      if (!productSelect.val()) {
+        
+        if (prefill.product_name) {
+          productSelect.append($('<option>').val(String(prefill.product_id)).text(prefill.product_name));
+          productSelect.val(String(prefill.product_id));
+        } else {
+          const missing = (editProducts || []).find(p => p.id == prefill.product_id);
+          if (missing) {
+            productSelect.append($('<option>').val(String(missing.id)).text(missing.name));
+            productSelect.val(String(missing.id));
+          }
+        }
+      }
+      productSelect.trigger('change');
+      
+      const prodObj = (editProducts || []).find(p => p.id == prefill.product_id);
+      
+    }
+    const product = editProducts.find(p => p.id == prefill.product_id);
+    if (product) {
+      buildVariantGroups(product, row, productIndex);
+      
+      if (product.is_bundle && prefill.bundle_variants) {
+        try {
+          const entries = Object.entries(prefill.bundle_variants);
+          entries.forEach(([idx, bv]) => {
+            ['size_variant_id','color_variant_id','style_variant_id'].forEach(field => {
+              const val = bv[field];
+              if (val) {
+                row.find(`.bundle-variant-select[data-bundle-item-idx="${idx}"][data-field="${field}"]`).val(String(val));
+              }
+            });
+          });
+        } catch(e) {}
+      }
+      const setById = (id) => {
+        if (!id) return;
+        const v = product.variants.find(x => x.id === id);
+        if (!v) return;
+        row.find(`.group-select[data-group="${v.group_name}"]`).val(v.variant_name);
+        if (v.group_name === 'مقاس') row.data('size_variant_id', id);
+        if (v.group_name === 'لون') row.data('color_variant_id', id);
+        if (v.group_name === 'شكل') row.data('style_variant_id', id);
+      };
+      setById(prefill.size_variant_id);
+      setById(prefill.color_variant_id);
+      setById(prefill.style_variant_id);
+      if (prefill.variant_id && !prefill.size_variant_id && !prefill.color_variant_id && !prefill.style_variant_id) {
+        const v = product.variants.find(x => x.id === prefill.variant_id);
+        if (v) row.find(`.group-select[data-group="${v.group_name}"]`).val(v.variant_name);
+      }
+    }
+    if (prefill.quantity) row.find('.quantity-input').val(prefill.quantity);
+    if (prefill.price != null) row.find('.price-input').val(prefill.price);
+    row.data('id', prefill.id);
+  }
+
+  productIndex++;
+  calculateTotals();
+}
+
+function checkRowStock(row){
+  const pid = row.find('.product-select').val();
+  const product = editProducts.find(p=> String(p.id) === String(pid));
+  
+  row.find('.out-of-stock-badge, .inline-oos-indicator').remove();
+  
+  if (product && product.is_bundle) {
+    row.removeClass('border border-danger');
+    return;
+  }
+  if (product && (product.stock === 0 || product.stock === null)) {
+    row.addClass('border border-danger rounded');
+  } else {
+    row.removeClass('border border-danger');
+  }
+}
+function validateAllStock(){
+  
+  const zeroStockNames = [];
+  $('#productsContainer .product-row').each(function(){
+    checkRowStock($(this));
+    const pid = $(this).find('.product-select').val();
+    const product = editProducts.find(p=> String(p.id) === String(pid));
+    
+    if (product && product.is_bundle) return;
+    if (product && (product.stock === 0 || product.stock === null)) {
+      zeroStockNames.push(product.name);
+    }
+  });
+  return zeroStockNames;
+}
+whenJQueryReady(($)=>{
+  $(document).on('change', '.product-select', function(){
+    checkRowStock($(this).closest('.product-row'));
+  });
+});
+
+whenJQueryReady(($)=>{
+  $(document).on('blur', '.price-input', function() {
+    const row = $(this).closest('.product-row');
+    const productId = row.find('.product-select').val();
+    const price = parseFloat($(this).val()) || 0;
+    if (!productId) return;
+    row.data('price-valid', false);
+    if (!price) return;
+    const baseUrl = "{{ url_for('main.validate_price', product_id=0) }}";
+    const apiUrl = baseUrl.replace('0', productId) + '?price=' + price + '&_=' + Date.now();
+    $.ajax({
+        url: apiUrl,
+        dataType: 'json',
+        cache: false,
+        success: function(data) {
+            const err = row.find('.price-error');
+            if (data.valid) {
+                err.addClass('d-none');
+                row.data('price-valid', true);
+            } else {
+                err.removeClass('d-none').text('السعر أقل من سعر الشراء');
+            }
+        }
+    });
+  });
+
+  $(document).on('input', '.price-input', function() {
+    window._pricesValidated = false;
+    $(this).closest('.product-row').data('price-valid', false);
+  });
+});
+
+function updateZeroStockBanner(){
+  const zeroStockNames = validateAllStock();
+  const banner = $('#zeroStockInfo');
+  if (zeroStockNames.length && $('#status').val() === 'جديد'){
+    banner.removeClass('d-none');
+  } else {
+    banner.addClass('d-none');
+  }
+}
+
+whenJQueryReady(($)=>{ $('#status').on('change', function(){
+  const newStatus = $(this).val();
+  const zeroStockNames = validateAllStock();
+  const saveBtn = $('button[type="submit"].btn-primary');
+  
+  const customerFields = $('.customer-field');
+  if (newStatus === 'جديد') {
+    customerFields.prop('readonly', false).prop('disabled', false).removeClass('bg-light');
+    $('#customerGovernorate').prop('disabled', false);
+    $('#deliveryFees').prop('readonly', false).removeClass('bg-light');
+  } else {
+    customerFields.prop('readonly', true).addClass('bg-light');
+    $('#customerGovernorate').prop('disabled', true);
+    $('#deliveryFees').prop('readonly', true).addClass('bg-light');
+  }
+  
+  if (newStatus === 'خرج للتوصيل' && zeroStockNames.length){
+    const list = zeroStockNames.map(n => `- ${n}`).join('\n');
+    alert(`لا يمكن تغيير الحالة إلى "خرج للتوصيل" لوجود منتجات غير متوفرة:\n${list}\nيرجى توفير المخزون أو إزالة هذه المنتجات أولاً.`);
+    $(this).val('جديد');
+    updateZeroStockBanner();
+    
+    customerFields.prop('readonly', false).prop('disabled', false).removeClass('bg-light');
+    $('#customerGovernorate').prop('disabled', false);
+    $('#deliveryFees').prop('readonly', false).removeClass('bg-light');
+    if (saveBtn.length){
+      saveBtn.attr('data-bs-toggle','tooltip')
+             .attr('data-bs-placement','top')
+             .attr('data-bs-title','لا يمكن الحفظ كـ خرج للتوصيل بسبب منتجات غير متوفرة')
+             .addClass('position-relative');
+      initOrRefreshTooltip(saveBtn[0]);
+    }
+  } else if (saveBtn.length) {
+    
+    disposeTooltip(saveBtn[0]);
+    saveBtn.removeAttr('data-bs-toggle data-bs-placement data-bs-title');
+  }
+}); });
+
+function initOrRefreshTooltip(el){
+  if (!window.bootstrap || !bootstrap.Tooltip) return; 
+  let tip = bootstrap.Tooltip.getInstance(el);
+  if (tip){ tip.setContent({'.tooltip-inner': el.getAttribute('data-bs-title')}); }
+  else { new bootstrap.Tooltip(el); }
+}
+function disposeTooltip(el){
+  if (!window.bootstrap || !bootstrap.Tooltip) return;
+  let tip = bootstrap.Tooltip.getInstance(el);
+  if (tip) tip.dispose();
+}
+
+let _oosConfirmed = false;
+
+whenJQueryReady(($)=>{ $('#editOrderForm').on('submit', function(e){
+  const zeroStockNames = validateAllStock();
+  const statusVal = $('#status').val();
+  if (statusVal === 'خرج للتوصيل' && zeroStockNames.length){
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    const list = zeroStockNames.map(n => `- ${n}`).join('\n');
+    showConfirmDialog({ message: 'لا يمكن حفظ الطلب بحالة "خرج للتوصيل" بسبب المنتجات غير المتوفرة:\n' + list, type: 'warning', confirmText: 'حسنا' });
+    return false;
+  }
+  
+  if (zeroStockNames.length && statusVal === 'جديد'){
+    if (!_oosConfirmed) {
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      _oosConfirmed = true;
+      const list = zeroStockNames.map(n => `- ${n}`).join('\n');
+      showConfirmDialog({ message: 'تنبيه: توجد منتجات غير متوفرة حالياً:\n' + list + '\nسيتم حفظ الطلب كـ (جديد). متابعة الحفظ؟', type: 'warning', confirmText: 'متابعة وحفظ' }).then(function(confirmed) {
+        if (confirmed) {
+          $('#editOrderForm').trigger('submit');
+        } else {
+          _oosConfirmed = false;
+        }
+      });
+      return false;
+    }
+  }
+}); });
+
+whenJQueryReady(($)=>{
+  const _origAdd = addProductRow;
+  addProductRow = function(prefill){
+    _origAdd(prefill);
+    const lastRow = $('#productsContainer .product-row').last();
+    checkRowStock(lastRow);
+  };
+});
+
+function calculateTotals() {
+  let productsTotal = 0;
+  $('#productsContainer .product-row').each(function() {
+    const price = parseFloat($(this).find('.price-input').val()) || 0;
+    const qty = parseInt($(this).find('.quantity-input').val()) || 0;
+    productsTotal += price * qty;
+  });
+  const delivery = parseFloat($('input[name="delivery_fees"]').val()) || 0;
+  const codFee = parseFloat($('#codFeeApplied').val()) || 0;
+  const paid = parseFloat($('#amountPaid').val()) || 0;
+  const totalAmount = productsTotal + delivery + codFee;
+  const remaining = totalAmount - paid;
+  $('#totalAmount').val(totalAmount.toFixed(0));
+  $('#remainingAmount').val(remaining.toFixed(0));
+}
+
+function serializeItems() {
+  const items = [];
+  $('#productsContainer .product-row').each(function() {
+    const row = $(this);
+    const pid = parseInt(row.find('.product-select').val());
+    const qty = parseInt(row.find('.quantity-input').val()) || 1;
+    const price = parseFloat(row.find('.price-input').val()) || 0;
+    const payload = {
+      id: row.data('id') || null,
+      product_id: pid || null,
+      variant_id: null,
+      size_variant_id: row.data('size_variant_id') || null,
+      color_variant_id: row.data('color_variant_id') || null,
+      style_variant_id: row.data('style_variant_id') || null,
+      quantity: qty,
+      price: price,
+      bundle_variants: null
+    };
+    
+    const bundles = {};
+    row.find('.bundle-variant-select').each(function(){
+      const sel = $(this);
+      const itemIdx = String(sel.data('bundle-item-idx'));
+      const prodId = parseInt(sel.data('bundle-item-product-id'));
+      const field = sel.data('field');
+      const val = sel.val();
+      if (!itemIdx || !field) return;
+      if (!(itemIdx in bundles)) bundles[itemIdx] = { product_id: prodId };
+      if (val) bundles[itemIdx][field] = parseInt(val);
+    });
+    if (Object.keys(bundles).length) {
+      payload.bundle_variants = bundles;
+    }
+    if (!payload.size_variant_id && !payload.color_variant_id && !payload.style_variant_id) {
+      const selects = row.find('.group-select');
+      if (selects.length === 1) {
+        const group = selects.data('group');
+        const value = selects.val();
+        const product = editProducts.find(p => p.id === pid);
+        if (product) {
+          const v = product.variants.find(x => x.group_name === group && x.variant_name === value);
+          if (v) payload.variant_id = v.id;
+        }
+      }
+    }
+    items.push(payload);
+  });
+  $('#order_items_data').val(JSON.stringify(items));
+}
+
+whenJQueryReady(($)=>{
+  $(function(){
+  
+  $('head').append('<link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.rtl.min.css" rel="stylesheet" />');
+      
+      if ($('#customerGovernorate').length) {
+        $('#customerGovernorate').on('change', function() {
+          const governorate = $(this).val();
+          const deliveryFeesInput = $('input[name="delivery_fees"]');
+          if (governorate && governorateFees[governorate] !== undefined) {
+            deliveryFeesInput.val(governorateFees[governorate]);
+            calculateTotals();
+          }
+        });
+      }
+      
+      $('#amountPaid').on('input change', calculateTotals);
+      $('#addProductBtn').on('click', () => addProductRow());
+      if (Array.isArray(initialOrderItems) && initialOrderItems.length) {
+        initialOrderItems.forEach(it => addProductRow(it));
+      } else {
+        addProductRow();
+      }
+      calculateTotals();
+      
+      if (returnedProductIds.length) {
+        setTimeout(function() {
+          $('#productsContainer .product-row').each(function() {
+            const pid = parseInt($(this).find('.product-select').val());
+            if (returnedProductIds.indexOf(pid) !== -1) {
+              const sel2 = $(this).find('.select2-container');
+              if (sel2.length) {
+                sel2.css('border', '2px solid #dc3545').css('border-radius', '0.375rem');
+                sel2.after('<span class="badge bg-danger me-1" style="font-size:0.7rem;">مرتجع</span>');
+              }
+            }
+          });
+        }, 100);
+      }
+      
+      setTimeout(updateZeroStockBanner, 50);
+      let priceSubmitInProgress = false;
+      $('#editOrderForm').on('submit', function(e) {
+        if (priceSubmitInProgress) {
+          e.preventDefault();
+          return false;
+        }
+
+        if (!window._pricesValidated) {
+          if ($('.price-error:not(.d-none)').length > 0) {
+            e.preventDefault();
+            alert('يرجى تصحيح أسعار المنتجات الأقل من سعر الشراء');
+            return false;
+          }
+          let needsValidation = false;
+          $('#productsContainer .product-row').each(function() {
+            const pid = $(this).find('.product-select').val();
+            const price = parseFloat($(this).find('.price-input').val()) || 0;
+            const lastValid = $(this).data('price-valid');
+            if (pid && price > 0 && lastValid !== true) needsValidation = true;
+          });
+          if (needsValidation) {
+            e.preventDefault();
+            priceSubmitInProgress = true;
+            const validateUrl = "{{ url_for('main.validate_order_prices') }}";
+            const items = [];
+            $('#productsContainer .product-row').each(function() {
+              const pid = parseInt($(this).find('.product-select').val());
+              const price = parseFloat($(this).find('.price-input').val()) || 0;
+              if (pid) items.push({product_id: pid, price: price});
+            });
+            $.ajax({
+              url: validateUrl,
+              method: 'POST',
+              contentType: 'application/json',
+              data: JSON.stringify(items),
+              cache: false,
+              success: function(response) {
+                priceSubmitInProgress = false;
+                if (response.all_valid) {
+                  $('#productsContainer .product-row').each(function() {
+                    $(this).data('price-valid', true);
+                  });
+                  window._pricesValidated = true;
+                  $('#editOrderForm').submit();
+                } else {
+                  response.results.forEach(function(r) {
+                    if (!r.valid) {
+                      $('.product-row').each(function() {
+                        if ($(this).find('.product-select').val() == r.product_id) {
+                          $(this).find('.price-error').removeClass('d-none').text('السعر أقل من سعر الشراء');
+                        }
+                      });
+                    }
+                  });
+                  alert('يرجى تصحيح أسعار المنتجات الأقل من سعر الشراء');
+                }
+              },
+              error: function() {
+                priceSubmitInProgress = false;
+                window._pricesValidated = true;
+                $('#editOrderForm').submit();
+              }
+            });
+            return false;
+          }
+        } else {
+          window._pricesValidated = false;
+        }
+
+        let zero = false; 
+        $('#productsContainer .quantity-input').each(function(){
+          const q = parseInt($(this).val());
+          if (!q || q <= 0){ zero = true; $(this).val(1); }
+        });
+        if (zero){
+          alert('تم تصحيح بعض الكميات التي كانت صفر. يرجى المراجعة قبل الحفظ.');
+          return false;
+        }
+        serializeItems(); 
+        updateZeroStockBanner();
+
+        const serializedData = JSON.parse($('#order_items_data').val() || '[]');
+        if (serializedData.length === 0 && initialOrderItems.length > 0) {
+          alert('خطأ في البيانات: لم يتم العثور على منتجات في النموذج. يرجى تحديث الصفحة والمحاولة مرة أخرى.');
+          return false;
+        }
+        
+        if ($('#status').val() !== 'خرج للتوصيل'){
+          const saveBtn = $('button[type="submit"].btn-primary');
+          if (saveBtn.length){ disposeTooltip(saveBtn[0]); }
+        }
+
+        // اكتشاف تعديل بيانات العميل وعرض المودال
+        if (originalCustomerData) {
+          const alreadyChosen = $('#updateCustomerProfile').val();
+          if (alreadyChosen === '0' || alreadyChosen === '') {
+            const changes = [];
+            const curName = $('#customerName').val() || '';
+            const curPhone = $('#customerPhone').val() || '';
+            const curGov = $('#customerGovernorate').val() || '';
+            const curAddr = $('#customerAddressDetails').val() || '';
+
+            if (curName !== originalCustomerData.name) changes.push('الاسم: من "' + originalCustomerData.name + '" إلى "' + curName + '"');
+            if (curPhone !== originalCustomerData.phone) changes.push('رقم الهاتف: من "' + originalCustomerData.phone + '" إلى "' + curPhone + '"');
+            if (curGov !== originalCustomerData.governorate) changes.push('المحافظة: من "' + originalCustomerData.governorate + '" إلى "' + curGov + '"');
+            if (curAddr !== originalCustomerData.address) changes.push('العنوان: من "' + originalCustomerData.address + '" إلى "' + curAddr + '"');
+
+            if (changes.length > 0) {
+              e.preventDefault();
+              const list = $('#customerChangesList');
+              list.empty();
+              changes.forEach(function(c) {
+                list.append('<li class="list-group-item"><i class="fas fa-exchange-alt text-warning me-2"></i>' + c + '</li>');
+              });
+              openCustomerUpdateModal();
+              return false;
+            }
+          }
+        }
+      });
+
+      window.openCustomerUpdateModal = function() {
+        const modal = document.getElementById('customerUpdateModal');
+        if (modal) {
+          modal.style.display = 'flex';
+          document.body.style.overflow = 'hidden';
+        }
+      };
+
+      window.closeCustomerUpdateModal = function() {
+        const modal = document.getElementById('customerUpdateModal');
+        if (modal) {
+          modal.style.display = 'none';
+          document.body.style.overflow = '';
+        }
+      };
+
+      const customerUpdateModal = document.getElementById('customerUpdateModal');
+      if (customerUpdateModal) {
+        customerUpdateModal.addEventListener('click', function(e) {
+          if (e.target === this) closeCustomerUpdateModal();
+        });
+
+        $('#btnUpdateOrderOnly').on('click', function() {
+          $('#updateCustomerProfile').val('order_only');
+          closeCustomerUpdateModal();
+          $('#editOrderForm').submit();
+        });
+        $('#btnUpdateOrderAndCustomer').on('click', function() {
+          $('#updateCustomerProfile').val('order_and_customer');
+          closeCustomerUpdateModal();
+          $('#editOrderForm').submit();
+        });
+      }
+  });
+});
+</script>
+{% endblock %}

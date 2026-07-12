@@ -1,0 +1,1177 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<style>
+  .card-box {
+    border-radius: 1rem;
+    box-shadow: 0 0 15px rgba(0,0,0,0.08);
+    transition: all 0.3s ease;
+    position: relative; /* للسماح بطبقة التأثير داخل الكارت */
+    overflow: hidden;  /* إبقاء التأثير داخل حدود الكارت */
+  }
+  .card-box:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 0 20px rgba(0,0,0,0.12);
+  }
+  /* تأثير أصفر ناعم يتحرك مع الماوس داخل الكارت */
+  .card-box::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(
+      circle at var(--mx, 50%) var(--my, 50%),
+      rgba(215, 153, 33, 0.28) 0%,
+      rgba(215, 153, 33, 0.18) 35%,
+      rgba(215, 153, 33, 0.00) 70%
+    );
+    opacity: 0;
+    transform: scale(1.15);
+    transition: opacity 0.25s ease, transform 0.35s ease;
+    pointer-events: none;
+    will-change: opacity, transform;
+  }
+  .card-box:hover::before { opacity: 1; transform: scale(1); }
+  
+  /* تأثير بسيط للعناصر */
+  .stats-field {
+    transition: all 0.3s ease;
+  }
+  
+  /* تحسين مظهر حقول الإحصائيات */
+  .stats-field {
+    transition: all 0.3s ease;
+    border: 2px solid transparent;
+  }
+  
+  .stats-field:hover {
+    transform: translateY(-2px);
+    border-color: rgba(255, 255, 255, 0.3);
+  }
+
+  .orders-actions .btn {
+    transition: all 0.3s ease;
+  }
+  .orders-actions .btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(0,0,0,0.18) !important;
+  }
+  
+  /* تأثيرات بصرية إضافية */
+  .goal-achieved {
+    background: linear-gradient(45deg, #28a745, #20c997) !important;
+    color: white !important;
+  }
+  
+  .goal-exceeded {
+    background: linear-gradient(45deg, #ffc107, #fd7e14) !important;
+    color: white !important;
+  }
+  
+  .goal-pending {
+    background: linear-gradient(45deg, #dc3545, #e83e8c) !important;
+    color: white !important;
+  }
+
+  /* Small circular overdue dot on status cards */
+  .status-overdue-dot {
+    position: absolute;
+  /* وضع الشارة بالكامل داخل الكارت حتى لا تُقص بسبب overflow:hidden */
+  top: 4px; /* أقرب للزاوية اليسرى العلي NebaxusBeta */
+  left: 4px;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #ff3b30; /* red notification color */
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+  font-weight: 700;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.18);
+  z-index: 50;
+  border: 2px solid #fff; /* إطار أبيض بسيط للحفاظ على الوضوح */
+  pointer-events: none; /* لا تعيق الضغط على الكارت */
+  }
+  .status-overdue-dot .overdue-count { line-height: 1; }
+  
+  /* حقل الباقي - ألوان مخصصة */
+  #remainingField.remaining-red {
+    background: #dc3545 !important;
+    color: white !important;
+    border: 1px solid #dc3545 !important;
+  }
+  
+  #remainingField.remaining-green {
+    background: #28a745 !important;
+    color: white !important;
+    border: 1px solid #28a745 !important;
+  }
+  /* Mobile-only UI parity with customers list */
+  .btn-add-mobile { display: none; }
+  .orders-actions .btn { display: inline-flex; align-items: center; }
+  @media (max-width: 576px) {
+  /* Tighten page container sides on mobile */
+  .container.py-4 { padding-left: 0.2rem !important; padding-right: 0.2rem !important; }
+  /* Edge-fill the entire orders page rows like dashboard */
+  .orders-page .row { margin-left: -0.25rem !important; margin-right: -0.25rem !important; }
+  .orders-page .row > [class*="col-"] { padding-left: 0.25rem !important; padding-right: 0.25rem !important; }
+  /* Edge-fill table area and compact table cells */
+  .orders-page .table-responsive { margin-left: -0.25rem !important; margin-right: -0.25rem !important; }
+  .orders-page table.table th,
+  .orders-page table.table td { padding: 0.55rem 0.6rem !important; }
+    :root { --orders-action-height: 46px; }
+    /* Unify control heights */
+    .orders-actions .btn { height: var(--orders-action-height) !important; }
+    /* Make search button icon-only on mobile */
+    #searchTrackingBtn span { display: none !important; }
+    #searchTrackingBtn i { margin: 0 !important; }
+    #ordersFeesCalcBtn span { display: none !important; }
+    #ordersFeesCalcBtn i { margin: 0 !important; }
+    #ordersFeesCalcBtn { width: var(--orders-action-height) !important; padding: 0 !important; justify-content: center; }
+    /* Show mobile add button; hide desktop add */
+    .btn-add-mobile { display: inline-flex !important; height: var(--orders-action-height); align-items: center; justify-content: center; padding: 0 0.9rem; }
+    .orders-actions .btn-add-desktop { display: none !important; }
+    /* Actions row: space between on mobile */
+    .orders-actions { display: flex; align-items: center; justify-content: space-between !important; gap: 0.5rem; width: 100%; }
+    /* Status cards grid spacing like customers */
+    .orders-grid { row-gap: 0.4rem !important; --bs-gutter-y: 0.4rem; --bs-gutter-x: 0.5rem; }
+    .orders-grid > [class*="col-"] { padding-left: 0.25rem !important; padding-right: 0.25rem !important; }
+
+  /* Put ALL top buttons in one row with consistent gap (match replacements gap ~0.5rem) */
+  .orders-top-row { display: flex !important; flex-wrap: wrap !important; align-items: center !important; gap: 0.5rem !important; }
+  .orders-top-row > .col-md-7,
+  .orders-top-row > .col-md-4,
+  .orders-top-row .d-flex { display: contents !important; }
+  .orders-top-row .btn { margin: 0 !important; }
+  /* Ensure stats fields match height with actions for visual consistency */
+  .orders-top-row .stats-field { height: var(--orders-action-height) !important; display: inline-flex !important; align-items: center !important; }
+  }
+  @media (min-width: 577px) { .btn-add-mobile { display: none !important; } }
+
+  /* Dark mode support for orders page */
+
+  /* Make status cards match dashboard on mobile */
+  @media (max-width: 576px) {
+  .status-cards { --bs-gutter-x: 0.5rem !important; --bs-gutter-y: 0.4rem !important; }
+  .status-cards > [class*="col-"] { flex: 0 0 100% !important; max-width: 100% !important; padding-left: 0.25rem !important; padding-right: 0.25rem !important; }
+    .status-cards .card-box { border-radius: 1rem !important; padding: 0.75rem 0.55rem !important; }
+    .status-cards i { font-size: 1.4rem !important; }
+    .status-cards h5 { font-size: 1rem !important; margin-top: 0.3rem !important; }
+    .status-cards .mb-3 { margin-bottom: 0.5rem !important; }
+  }
+
+  /* Modal Styles */
+  .stats-modal {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.6); z-index: 9999; display: none;
+    align-items: center; justify-content: center; backdrop-filter: blur(5px);
+  }
+  .stats-modal-content {
+    background: #fff; width: 95%; max-width: 800px; padding: 2rem;
+    border-radius: 1.5rem; position: relative; box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    border-top: 5px solid #D79921; max-height: 90vh; display: flex; flex-direction: column;
+  }
+  .stats-modal .close-btn {
+    position: absolute; left: 1rem; top: 1rem; border: none;
+    background: #fff3cd; font-size: 1.5rem; color: #333;
+    width: 40px; height: 40px; border-radius: 50%; display: flex;
+    align-items: center; justify-content: center; cursor: pointer; transition: all 0.3s ease;
+  }
+  .stats-modal .close-btn:hover { background: #D79921; }
+  .stats-modal .modal-title { font-weight: 700; font-size: 1.5rem; color: #2c3e50; margin-bottom: 1rem; padding-bottom: 0.75rem; border-bottom: 3px solid #D79921; }
+  .stats-modal .modal-body { overflow-y: auto; padding-right: 0.5rem; overscroll-behavior: contain; }
+</style>
+<div class="container py-4 orders-page" dir="rtl">
+  
+  <div class="text-center mb-4">
+    <h2 class="fw-bold">إدارة <span class="text-warning">الطلبات</span></h2>
+    <p class="text-muted">كل الطلبات المسجلة في النظام</p>
+  </div>
+  
+  <div class="row mb-4 align-items-center orders-top-row">
+    <div class="col-md-7">
+      <div class="d-flex gap-3 align-items-center">
+        
+        <div class="btn btn-primary d-inline-flex align-items-center justify-content-center gap-2 px-4 shadow stats-field" style="min-width: 120px;">
+          <i class="fas fa-chart-bar"></i>
+          <span id="totalMonthOrders">0</span>
+        </div>
+        
+        <div class="btn btn-warning d-inline-flex align-items-center justify-content-center gap-2 px-4 shadow stats-field" 
+             id="goalField" 
+             onclick="window.editGoal()" 
+             style="min-width: 120px; cursor: pointer;">
+          <i class="fas fa-bullseye"></i>
+          <span>{{ monthly_goal|default(100) }}</span>
+        </div>
+        
+          <div class="btn d-inline-flex align-items-center justify-content-center gap-2 px-4 shadow stats-field" 
+               id="remainingField"
+               style="min-width: 120px;">
+          <i class="fas fa-calculator"></i>
+          <span>{{ (monthly_goal|default(100) - current_month_orders|default(0)) }}</span>
+        </div>
+        
+        <button type="button" class="btn btn-warning me-2" data-bs-toggle="modal" data-bs-target="#importOldOrdersModal" style="display: none;">
+          <i class="fas fa-file-excel"></i> استيراد شيت الشهور السابقة
+        </button>
+  
+      </div>
+    </div>
+    <div class="col-md-5">
+      <div class="d-flex gap-2 align-items-center justify-content-end orders-actions">
+        
+  <button id="searchTrackingBtn" class="btn btn-primary text-white d-inline-flex align-items-center gap-2 px-3 shadow" aria-label="بحث" style="white-space:nowrap;">
+          <i class="fas fa-search text-white"></i> <span class="text-white">بحث</span>
+        </button>
+
+        <button id="ordersFeesCalcBtn" class="btn btn-warning d-inline-flex align-items-center gap-2 px-3 shadow" aria-label="حساب رسوم التوصيل" style="white-space:nowrap;" onclick="openOrdersFeesCalcModal()">
+          <i class="fas fa-calculator"></i> <span>حساب رسوم التوصيل</span>
+        </button>
+        
+        <a href="{{ url_for('main.add_order') }}" class="btn btn-success d-inline-flex align-items-center gap-2 px-4 shadow btn-add-desktop" style="white-space:nowrap;">
+          <i class="fas fa-plus"></i> <span>طلب جديد</span>
+        </a>
+        
+        <a href="{{ url_for('main.add_order') }}" class="btn btn-success btn-add-mobile" aria-label="طلب جديد">
+          <i class="fas fa-plus"></i>
+        </a>
+      </div>
+    </div>
+  </div>
+  
+  <div class="row g-4 mb-4 justify-content-center mt-3 orders-grid status-cards">
+    {% set statuses = [
+  {'name': 'جديد', 'icon': 'fas fa-hourglass-half text-secondary'},
+  {'name': 'خرج للتوصيل', 'icon': 'fas fa-shipping-fast text-success'},
+  {'name': 'وصل', 'icon': 'fas fa-check-circle text-primary'},
+  {'name': 'رفض الاستلام', 'icon': 'fas fa-times-circle text-danger'}
+    ] %}
+    {% for s in statuses %}
+      <div class="col-12 col-sm-6 col-md-3 d-flex align-items-stretch">
+        <a href="{{ url_for('main.orders_by_status', status=s.name) }}" class="text-decoration-none w-100">
+          <div class="card card-box p-4 bg-white h-100 d-flex flex-column justify-content-center align-items-center mb-3 position-relative">
+    <i class="{{ s.icon }} fa-3x mb-2"></i>
+            <h5 class="fw-bold text-dark mb-1">{{ s.name }}</h5>
+            <div class="small text-muted status-count" data-status="{{ s.name }}">{{ daily_status_counts.get(s.name, 0) }}</div>
+            {% if s.name == 'جديد' %}
+            <div id="overdueNewWrap" class="status-overdue-dot" style="display:none;" title="طلبات جديدة متأخرة">
+              <span class="overdue-count" id="overdueNewNumber">0</span>
+            </div>
+            {% endif %}
+          </div>
+        </a>
+      </div>
+    {% endfor %}
+  </div>
+
+</div>
+
+<div class="modal fade" id="importOldOrdersModal" tabindex="-1" aria-labelledby="importOldOrdersModalLabel" aria-hidden="true" style="display: none;">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="importOldOrdersModalLabel">
+                    <i class="fas fa-file-excel text-warning"></i> استيراد شيت الشهور السابقة
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-warning">
+                    <h6><i class="fas fa-exclamation-triangle"></i> تنبيه:</h6>
+                    <p class="mb-0">هذه الميزة مؤقتة لاستيراد الطلبات القديمة. سيتم حذفها بعد الاستيراد.</p>
+                </div>
+                
+                <div class="alert alert-info">
+                    <h6><i class="fas fa-info-circle"></i> تعليمات الاستيراد:</h6>
+                    <p>تأكد من أن الأعمدة بالترتيب التالي:</p>
+                    <ol class="mb-0">
+                        <li><strong>اسم العميل</strong> (مطلوب)</li>
+                        <li><strong>رقم التليفون</strong> (مطلوب)</li>
+                        <li><strong>الطلب</strong> (مطلوب - تفاصيل الطلب)</li>
+                        <li>تم سداد (اختياري - المبلغ المدفوع)</li>
+                        <li>باقي حساب (اختياري - المبلغ المتبقي)</li>
+                        <li>العنوان (اختياري)</li>
+                        <li>المحافظة (اختياري)</li>
+                        <li>الرقم التتبعي (اختياري)</li>
+                    </ol>
+                </div>
+                
+                <form method="POST" action="{{ url_for('main.import_old_orders') }}" enctype="multipart/form-data" id="importForm">
+                    <div class="mb-3">
+                        <label for="csv_file_old" class="form-label fw-semibold">اختر ملف CSV:</label>
+                        <input type="file" class="form-control" id="csv_file_old" name="file" accept=".csv" required>
+                        <div class="form-text">يجب أن يكون الملف بصيغة CSV</div>
+                    </div>
+                    
+                    <div id="filePreview" class="mb-3" style="display: none;">
+                        <label class="form-label fw-semibold">معاينة الملف:</label>
+                        <div class="border rounded p-3 bg-light">
+                            <div id="previewContent" class="small"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                        <button type="submit" class="btn btn-warning" id="submitImportBtn">
+                            <i class="fas fa-upload"></i> استيراد الطلبات القديمة
+                        </button>
+                    </div>
+                    
+                    <div id="importProgress" class="mt-3" style="display: none;">
+                        <div class="progress">
+                            <div class="progress-bar progress-bar-striped progress-bar-animated bg-warning" 
+                                 role="progressbar" style="width: 0%" id="progressBar">
+                                جاري الاستيراد...
+                            </div>
+                        </div>
+                        <small class="text-muted mt-1" id="progressText">جاري معالجة الملف...</small>
+                    </div>
+                </form>
+
+<script>
+
+document.getElementById('importForm').addEventListener('submit', function(e) {
+    
+    
+    
+    const fileInput = document.getElementById('csv_file_old');
+    if (fileInput.files.length === 0) {
+        
+        alert('يرجى اختيار ملف CSV');
+        e.preventDefault();
+        return;
+    }
+    
+    const file = fileInput.files[0];
+    
+    
+    
+    
+    console.log('=== DEBUG: إرسال النموذج إلى:', '{{ url_for("main.import_old_orders") }}');
+    
+    const progressDiv = document.getElementById('importProgress');
+    const progressBar = document.getElementById('progressBar');
+    const progressText = document.getElementById('progressText');
+    const submitBtn = document.getElementById('submitImportBtn');
+    
+    progressDiv.style.display = 'block';
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري الاستيراد...';
+    
+    let progress = 0;
+    const progressInterval = setInterval(() => {
+        progress += Math.random() * 15;
+        if (progress > 90) progress = 90;
+        progressBar.style.width = progress + '%';
+        progressText.textContent = `جاري معالجة الملف... ${Math.round(progress)}%`;
+    }, 500);
+    
+    setTimeout(() => {
+        clearInterval(progressInterval);
+        progressBar.style.width = '100%';
+        progressText.textContent = 'تم إرسال الملف، جاري المعالجة...';
+    }, 3000);
+});
+
+document.getElementById('csv_file_old').addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    const previewDiv = document.getElementById('filePreview');
+    const previewContent = document.getElementById('previewContent');
+    
+    if (file) {
+        
+        const maxSize = 10 * 1024 * 1024; 
+        if (file.size > maxSize) {
+            alert('حجم الملف كبير جداً. الحد الأقصى 10 ميجابايت');
+            e.target.value = '';
+            previewDiv.style.display = 'none';
+            return;
+        }
+        
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const content = e.target.result;
+            const lines = content.split('\n').slice(0, 5); 
+            previewContent.innerHTML = lines.map(line => 
+                `<div class="text-muted">${line}</div>`
+            ).join('');
+            previewDiv.style.display = 'block';
+        };
+        reader.readAsText(file);
+    } else {
+        previewDiv.style.display = 'none';
+    }
+});
+
+document.addEventListener('DOMContentLoaded', function() {
+    const modal = document.getElementById('importOldOrdersModal');
+    if (modal) {
+        modal.addEventListener('show.bs.modal', function() {
+            
+            
+            document.getElementById('importForm').reset();
+            document.getElementById('importProgress').style.display = 'none';
+            document.getElementById('filePreview').style.display = 'none';
+            document.getElementById('submitImportBtn').disabled = false;
+            document.getElementById('submitImportBtn').innerHTML = '<i class="fas fa-upload"></i> استيراد الطلبات القديمة';
+        });
+    }
+});
+</script>
+</script>
+            </div>
+        </div>
+    </div>
+</div>
+
+            <div class="stats-modal" id="searchTrackingModal" tabindex="-1">
+              <div class="stats-modal-content">
+                <button type="button" class="close-btn" data-bs-dismiss="modal" id="searchTrackingCloseBtn" aria-label="Close"><i class="fas fa-times"></i></button>
+                <h4 class="modal-title" id="searchTrackingModalLabel">بحث</h4>
+                <div class="modal-body">
+                  <div class="mb-3">
+                    <label class="form-label">أدخل رقم التتبع أو رقم الهاتف</label>
+                    <input id="searchTrackingInput" class="form-control" placeholder="أدخل رقم التتبع أو الهاتف..." style="border: 2px solid #e9ecef; border-radius: 0.5rem;">
+                  </div>
+                  <div id="searchTrackingResults" class="mt-4">
+                    
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <script>
+            
+            document.addEventListener('DOMContentLoaded', function(){
+              const openBtn = document.getElementById('searchTrackingBtn');
+              const modalEl = document.getElementById('searchTrackingModal');
+              const input = document.getElementById('searchTrackingInput');
+              const results = document.getElementById('searchTrackingResults');
+
+              if(!openBtn || !modalEl) return; 
+
+              function renderResults(list){
+                if(!list || list.length === 0){
+                  results.innerHTML = '<div class="alert alert-info">لا توجد نتائج</div>';
+                  return;
+                }
+                let html = '<div class="list-group">';
+                list.forEach(o => {
+                  html += `<a href="/orders/${o.id}/edit" class="list-group-item list-group-item-action search-result-item" data-order-id="${o.id}" style="border-radius: 0.75rem; margin-bottom: 0.5rem; border: 1px solid #e9ecef; transition: all 0.2s;">
+                    <div class="d-flex w-100 justify-content-between align-items-center mb-2">
+                      <h5 class="mb-0 text-primary fw-bold">${o.customer_name || 'عميل مجهول'}</h5>
+                      <small class="text-muted"><i class="far fa-clock"></i> ${o.date || ''}</small>
+                    </div>
+                    <p class="mb-1">
+                      <span class="badge bg-secondary me-2"><i class="fas fa-barcode"></i> ${o.tracking_number || 'بدون تتبع'}</span>
+                      <span class="badge bg-info text-dark me-2"><i class="fas fa-phone"></i> ${o.customer_phone || 'بدون هاتف'}</span>
+                      <span class="badge bg-warning text-dark"><i class="fas fa-info-circle"></i> الحالة: ${o.status || ''}</span>
+                    </p>
+                    <div class="d-flex w-100 justify-content-between align-items-center mt-2">
+                      <small class="text-muted"><i class="fas fa-user-tie"></i> المسئول: <strong>${o.employee_name || 'غير محدد'}</strong></small>
+                      <small><strong>${o.total_amount} ج.م</strong> إجمالي</small>
+                    </div>
+              </a>`;
+                });
+                html += '</div>';
+                results.innerHTML = html;
+              }
+
+              function doSearch(){
+                const q = (input.value || '').trim();
+                if(!q){
+                  results.innerHTML = '';
+                  return;
+                }
+                results.innerHTML = '<div class="text-center py-3"><i class="fas fa-spinner fa-spin"></i> جاري البحث...</div>';
+                fetch('{{ url_for("main.search_orders_by_tracking") }}', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ tracking_number: q })
+                }).then(r => r.json()).then(j => {
+                  if(j && j.success){
+                    renderResults(j.orders);
+                  } else {
+                    results.innerHTML = '<div class="alert alert-danger">حدث خطأ أثناء البحث</div>';
+                  }
+                }).catch(e => {
+                  results.innerHTML = '<div class="alert alert-danger">خطأ في الاتصال</div>';
+                });
+              }
+
+              var searchDebounceTimer;
+              input.addEventListener('input', function() {
+                if (searchDebounceTimer) clearTimeout(searchDebounceTimer);
+                searchDebounceTimer = setTimeout(doSearch, 800);
+              });
+              results.addEventListener('click', function(ev){
+                const a = ev.target.closest('.search-result-item');
+                if(!a) return;
+                window.location = a.getAttribute('href');
+              });
+
+              openBtn.addEventListener('click', function(e){
+                e.preventDefault();
+                input.value = '';
+                results.innerHTML = '';
+                modalEl.style.display = 'flex';
+                document.body.style.overflow = 'hidden';
+                input.focus();
+              });
+
+              modalEl.addEventListener('click', function(e){
+                if(e.target === modalEl || e.target.closest('#searchTrackingCloseBtn')){
+                  modalEl.style.display = 'none';
+                  document.body.style.overflow = '';
+                }
+              });
+            });
+            </script>
+
+<script>
+function fetchOverdueNewCount() {
+  fetch('{{ url_for("main.overdue_new_count") }}')
+    .then(r => r.json())
+    .then(d => {
+      if (!d || !d.success) return;
+      const wrap = document.getElementById('overdueNewWrap');
+      const numEl = document.getElementById('overdueNewNumber');
+      if (!wrap || !numEl) return;
+      numEl.textContent = d.count;
+      wrap.style.display = (d.count > 0) ? 'inline-flex' : 'none';
+    }).catch(()=>{});
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  setTimeout(fetchOverdueNewCount, 200);
+});
+</script>
+
+<script>
+
+window.editGoal = function() {
+  
+  
+  const goalField = document.getElementById('goalField');
+  if (!goalField) {
+    console.error('Goal field not found');
+    return;
+  }
+  
+  const currentGoal = goalField.querySelector('span').textContent.trim();
+  
+  
+  const input = document.createElement('input');
+  input.type = 'number';
+  input.value = currentGoal;
+  input.className = 'form-control form-control-sm text-center';
+  input.style.width = '80px';
+  input.style.fontSize = '1.25rem';
+  input.style.fontWeight = 'bold';
+  input.style.color = '#fff';
+  input.style.backgroundColor = 'transparent';
+  input.style.border = 'none';
+  input.style.outline = 'none';
+  
+  goalField.originalContent = goalField.innerHTML;
+  
+  goalField.innerHTML = '';
+  goalField.appendChild(input);
+  input.focus();
+  input.select();
+  
+  
+  
+  function saveGoal() {
+    const newGoal = parseInt(input.value) || 0;
+    
+    
+    if (newGoal >= 0) {
+      
+      goalField.innerHTML = `<i class="fas fa-bullseye"></i><span>${newGoal}</span>`;
+      
+      localStorage.setItem('monthlyGoal', newGoal);
+      
+      updateRemainingField();
+      
+      saveGoalToServer(newGoal);
+      
+      
+    } else {
+      
+      goalField.innerHTML = goalField.originalContent;
+      
+    }
+  }
+  
+  input.addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+      
+      saveGoal();
+    }
+  });
+  
+  input.addEventListener('blur', function() {
+    
+    saveGoal();
+  });
+  
+  document.addEventListener('click', function(e) {
+    if (e.target !== input && e.target !== goalField) {
+      
+      saveGoal();
+    }
+  });
+  
+  const removeClickListener = function(e) {
+    if (e.target !== input && e.target !== goalField) {
+      
+      saveGoal();
+      document.removeEventListener('click', removeClickListener);
+    }
+  };
+  
+  document.addEventListener('click', removeClickListener);
+};
+
+function calculateTotalOrders() {
+  
+  
+  const statusCounts = document.querySelectorAll('.status-count');
+  
+  
+  if (statusCounts.length === 0) {
+    
+    return 0;
+  }
+  
+  let total = 0;
+  
+  statusCounts.forEach((countElement, index) => {
+    const countText = countElement.textContent.trim();
+    const count = parseInt(countText) || 0;
+    const status = countElement.dataset.status;
+    if (status === 'رفض الاستلام') {
+      return;
+    }
+    total += count;
+  });
+  
+  
+  
+  const totalField = document.getElementById('totalMonthOrders');
+  if (totalField) {
+    totalField.textContent = total;
+    
+  } else {
+    console.error('Total field not found');
+    console.log('totalField:', totalField);
+  }
+  
+  return total;
+}
+
+function fetchMonthlyOrdersTotal() {
+  
+  
+  const currentTotal = document.getElementById('totalMonthOrders')?.textContent;
+  const cardsTotal = calculateTotalOrders();
+  
+  if (currentTotal && parseInt(currentTotal) === cardsTotal) {
+    
+    return;
+  }
+  
+  fetch('/orders/monthly_total')
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        const total = data.total;
+        const totalAmount = data.total_amount || 0;
+        const monthlyGoal = data.monthly_goal || 100;
+        const remaining = data.remaining || 0;
+        
+        
+        
+        
+        
+        
+        const totalField = document.getElementById('totalMonthOrders');
+        if (totalField) {
+          
+          const cardsTotal = calculateTotalOrders();
+          if (total === cardsTotal) {
+            totalField.textContent = total;
+            
+          } else {
+            
+            
+            totalField.textContent = cardsTotal;
+          }
+        }
+        
+        const goalField = document.getElementById('goalField');
+        if (goalField && goalField.querySelector('span')) {
+          const currentGoal = goalField.querySelector('span').textContent.trim();
+          if (parseInt(currentGoal) !== monthlyGoal) {
+            goalField.innerHTML = `<i class="fas fa-bullseye"></i><span>${monthlyGoal}</span>`;
+            
+          }
+        }
+        
+        updateRemainingField();
+        
+        localStorage.setItem('monthlyGoal', monthlyGoal);
+        
+      } else {
+        console.error('Failed to fetch monthly total:', data.error);
+      }
+    })
+    .catch(error => {
+      console.error('Server connection error:', error);
+      
+      calculateTotalOrders();
+    });
+}
+
+function calculateTotalOrdersAlternative() {
+  
+  
+  let total = 0;
+  
+  const statusCounts = document.querySelectorAll('.status-count');
+  if (statusCounts.length > 0) {
+    statusCounts.forEach((countElement) => {
+      const countText = countElement.textContent.trim();
+      const count = parseInt(countText) || 0;
+      const status = countElement.dataset.status;
+      if (status === 'رفض الاستلام') {
+        return;
+      }
+      total += count;
+    });
+    
+    return total;
+  }
+  
+  const orderRows = document.querySelectorAll('tbody tr');
+  if (orderRows.length > 0) {
+    total = orderRows.length;
+    
+    return total;
+  }
+  
+  
+  return 0;
+}
+
+function updateRemainingField() {
+  
+  
+  const goalField = document.getElementById('goalField');
+  const remainingField = document.getElementById('remainingField');
+  
+  if (!goalField || !remainingField) {
+    console.error('Goal/Remaining fields not found');
+    return;
+  }
+  
+  const currentGoal = parseInt(goalField.querySelector('span').textContent.trim()) || 0;
+  
+  
+  const totalField = document.getElementById('totalMonthOrders');
+  if (!totalField) {
+    console.error('Total field not found');
+    return;
+  }
+  
+  const currentMonthOrders = parseInt(totalField.textContent) || 0;
+  
+  
+  const remaining = currentGoal - currentMonthOrders;
+  
+  
+  const remainingSpan = remainingField.querySelector('span');
+  if (remainingSpan) {
+    remainingSpan.textContent = remaining;
+    
+  }
+  
+  let colorDescription = '';
+  
+  if (remaining > 0) {
+    
+    remainingField.classList.remove('remaining-green');
+    remainingField.classList.add('remaining-red');
+    colorDescription = 'أحمر (لم يتم تحقيق الهدف)';
+  } else {
+    
+    remainingField.classList.remove('remaining-red');
+    remainingField.classList.add('remaining-green');
+    colorDescription = 'أخضر (تم تحقيق الهدف)';
+  }
+  
+  
+  remainingField.style.transition = 'all 0.3s ease';
+}
+
+function updateDashboard() {
+  
+  
+  updateRemainingField();
+  
+  fetchMonthlyOrdersTotal();
+  
+  
+}
+
+function saveGoalToServer(goal) {
+  
+  
+  const formData = new FormData();
+  formData.append('target', goal);
+  
+  fetch('/orders/update_goal', {
+    method: 'POST',
+    body: formData
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.success) {
+      
+      
+      updateDashboard();
+    } else {
+      console.error('Failed to save goal:', data.error);
+      
+      const goalField = document.getElementById('goalField');
+      if (goalField && goalField.originalContent) {
+        goalField.innerHTML = goalField.originalContent;
+      }
+    }
+  })
+  .catch(error => {
+    console.error('Server connection error:', error);
+    
+    const goalField = document.getElementById('goalField');
+    if (goalField && goalField.originalContent) {
+      goalField.innerHTML = goalField.originalContent;
+    }
+  });
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  
+  
+  document.querySelectorAll('.card-box').forEach((card) => {
+    const updateMousePos = (e) => {
+      const rect = card.getBoundingClientRect();
+      const x = ((e.clientX - rect.left) / rect.width) * 100;
+      const y = ((e.clientY - rect.top) / rect.height) * 100;
+      card.style.setProperty('--mx', x.toFixed(0) + '%');
+      card.style.setProperty('--my', y.toFixed(0) + '%');
+    };
+    card.addEventListener('mousemove', updateMousePos, { passive: true });
+    card.addEventListener('mouseenter', updateMousePos, { passive: true });
+    card.addEventListener('mouseleave', () => {
+      card.style.setProperty('--mx', '50%');
+      card.style.setProperty('--my', '50%');
+    }, { passive: true });
+  });
+  
+  setTimeout(() => {
+    
+    
+    console.log('- حقل طلبات الشهر:', document.getElementById('totalMonthOrders'));
+    console.log('- حقل الهدف:', document.getElementById('goalField'));
+    console.log('- حقل الباقي:', document.getElementById('remainingField'));
+    console.log('- كروت الحالات:', document.querySelectorAll('.status-count').length);
+    
+    
+    const statusCards = document.querySelectorAll('.status-count');
+    statusCards.forEach((card, index) => {
+      console.log(`- كرت ${index + 1}:`, {
+        text: card.textContent.trim(),
+        status: card.dataset.status,
+        element: card
+      });
+    });
+    
+    const initialTotal = calculateTotalOrders();
+    
+    
+    const totalField = document.getElementById('totalMonthOrders');
+    if (totalField) {
+      totalField.textContent = initialTotal;
+      
+    }
+    
+    const savedGoal = localStorage.getItem('monthlyGoal');
+    if (savedGoal) {
+      const goalField = document.getElementById('goalField');
+      if (goalField) {
+        goalField.querySelector('span').textContent = savedGoal;
+        
+      }
+    }
+    
+    const remainingField = document.getElementById('remainingField');
+    if (remainingField) {
+      remainingField.className = 'btn d-inline-flex align-items-center justify-content-center gap-2 px-4 shadow stats-field remaining-red';
+      
+    }
+    
+    updateRemainingField();
+    
+  
+  setTimeout(() => {
+    fetchMonthlyOrdersTotal();
+  }, 500); 
+    
+    
+  }, 100); 
+  
+  setTimeout(() => {
+    
+    const currentTotal = document.getElementById('totalMonthOrders')?.querySelector('span')?.textContent;
+    
+    
+    
+    
+    
+    
+    
+    const statusCards = document.querySelectorAll('.status-count');
+    statusCards.forEach((card, index) => {
+      console.log(`- كرت ${index + 1}:`, card.textContent.trim(), 'الحالة:', card.dataset.status);
+    });
+    
+    
+    
+    
+    statusCards.forEach((card, index) => {
+      const text = card.textContent.trim();
+      const status = card.dataset.status;
+      const count = parseInt(text) || 0;
+      
+    });
+    
+      
+      window.updateRemainingField = updateRemainingField;
+      window.calculateTotalOrders = calculateTotalOrders;
+      
+      window.fetchMonthlyOrdersTotal = fetchMonthlyOrdersTotal;
+      
+      window.updateDashboard = updateDashboard;
+  
+  
+  
+  
+  
+  
+        
+      
+      
+      
+      
+      
+      
+      
+      
+  }, 2000);
+});
+</script>
+
+<!-- Modal حساب رسوم التوصيل -->
+<style>
+
+  /* جداول الحساب */
+  .ofees-modern-table {
+    border-radius: 0.85rem;
+    overflow: hidden;
+    background: #fff;
+    border: 1px solid #000 !important;
+    width: 100%;
+  }
+  .ofees-modern-table th {
+    background: #D79921 !important;
+    font-size: 0.95rem;
+    color: #333;
+    vertical-align: middle;
+    border-bottom: 1px solid #000 !important;
+  }
+  .ofees-modern-table td {
+    vertical-align: middle;
+    font-size: 0.9rem;
+    background: #fff;
+    border-bottom: 1px solid #000 !important;
+  }
+  .ofees-modern-table tbody tr:hover td { background: #fff3cd !important; transition: background 0.2s; }
+  .ofees-table-responsive {
+    overflow-x: auto;
+    scrollbar-width: thin;
+    scrollbar-color: #000 #eee;
+  }
+  .ofees-table-responsive::-webkit-scrollbar { height: 7px; background: #eee; }
+  .ofees-table-responsive::-webkit-scrollbar-thumb { background: #000; border-radius: 8px; }
+</style>
+
+<div class="stats-modal" id="ordersFeesCalcModal" tabindex="-1">
+  <div class="stats-modal-content" style="max-width: 900px; padding: 2rem;">
+    <button type="button" class="close-btn" onclick="closeOrdersFeesCalcModal()"><i class="fas fa-times"></i></button>
+    <h4 class="modal-title" id="ordersFeesCalcModalLabel">حساب رسوم التوصيل</h4>
+    <div class="modal-body" id="ordersFeesCalcModalBody">
+      <div class="text-center py-3"><i class="fas fa-spinner fa-spin"></i> جاري التحميل...</div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function() {
+  window.openOrdersFeesCalcModal = function() {
+    const modal = document.getElementById('ordersFeesCalcModal');
+    const body  = document.getElementById('ordersFeesCalcModalBody');
+    if (!modal || !body) return;
+    modal.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+    // جلب البيانات
+    const today = new Date();
+    const yyyy = today.getFullYear();
+    const mm = String(today.getMonth()+1).padStart(2,'0');
+    const dd = String(today.getDate()).padStart(2,'0');
+    const dateStr = `${yyyy}-${mm}-${dd}`;
+    body.innerHTML = '<div class="text-center py-3"><i class="fas fa-spinner fa-spin"></i> جاري التحميل...</div>';
+    fetch(`/api/daily_fees_breakdown?date=${dateStr}`)
+      .then(r => r.json())
+      .then(data => {
+        if (!data.success) throw new Error(data.error || 'خطأ');
+        const merged = mergeReplacementsIntoOrdersBreakdown(
+          data.orders_breakdown || [],
+          data.replacements_breakdown || []
+        );
+        body.innerHTML = buildOrdersFeesCalcHTML(merged);
+        body.querySelectorAll('.ofees-calc-input').forEach(inp => {
+          inp.addEventListener('input', recalcOrdersFees);
+        });
+      })
+      .catch(err => {
+        body.innerHTML = `<div class="text-center text-danger py-3"><i class="fas fa-exclamation-circle me-1"></i> حدث خطأ: ${err.message}</div>`;
+      });
+  };
+
+  // دمج طلبات الاستبدال في صفوف الطلبات العادية بناءً على المحافظة
+  function mergeReplacementsIntoOrdersBreakdown(ordersBreakdown, replacementsBreakdown) {
+    // تجميع طلبات الاستبدال حسب المحافظة
+    const repByGov = {};
+    (replacementsBreakdown || []).forEach(rep => {
+      const gov = rep.governorate || 'غير محدد';
+      repByGov[gov] = (repByGov[gov] || 0) + 1;
+    });
+
+    // نسخ الصفوف وإضافة عدد الاستبدالات
+    const result = ordersBreakdown.map(row => ({
+      governorates: row.governorates,
+      count: row.count,
+      fees: row.fees,
+      repCount: 0
+    }));
+
+    const handledGovs = new Set();
+    Object.entries(repByGov).forEach(([gov, repCount]) => {
+      const rowIdx = result.findIndex(row =>
+        Array.isArray(row.governorates)
+          ? row.governorates.includes(gov)
+          : row.governorate === gov
+      );
+      if (rowIdx >= 0) {
+        result[rowIdx].count += repCount;
+        result[rowIdx].repCount += repCount;
+      } else {
+        // محافظة غير موجودة — أضفها كصف جديد
+        result.push({ governorates: [gov], count: repCount, fees: 0, repCount });
+      }
+      handledGovs.add(gov);
+    });
+
+    return result;
+  }
+
+  function buildOrdersFeesCalcHTML(breakdown) {
+    if (!breakdown.length) {
+      return '<div class="text-center text-muted py-3">لا توجد طلبات خرجت للتوصيل اليوم</div>';
+    }
+    let rows = '';
+    breakdown.forEach((row, i) => {
+      const govsText = Array.isArray(row.governorates) ? row.governorates.join(' – ') : (row.governorate || '');
+      const repBadge = row.repCount > 0
+        ? ` <span class="badge bg-warning text-dark" title="منهم ${row.repCount} استبدال" style="font-size:0.75rem;">${row.repCount} استبدال</span>`
+        : '';
+      rows += `<tr>
+        <td style="text-align:right; padding-right:8px; word-break:break-word;">${govsText}</td>
+        <td style="white-space:nowrap;">${row.count}${repBadge}</td>
+        <td><input type="number" min="0" step="0.01" class="ofees-calc-input form-control form-control-sm text-center"
+          data-count="${row.count}" data-idx="${i}" placeholder="0.00"
+          style="min-width:80px; border:1px solid #000; border-radius:0.4rem;"></td>
+        <td class="ofees-calc-subtotal fw-bold" data-idx="${i}">–</td>
+      </tr>`;
+    });
+    return `
+      <div class="ofees-table-responsive">
+        <table class="table ofees-modern-table table-hover align-middle mb-0" style="table-layout:fixed; width:100%;">
+          <colgroup><col style="width:46%;"><col style="width:14%;"><col style="width:20%;"><col style="width:20%;"></colgroup>
+          <thead><tr>
+            <th style="text-align:right; padding-right:8px;">المحافظة</th>
+            <th>العدد</th>
+            <th>رسوم التوصيل</th>
+            <th>الإجمالي الفرعي</th>
+          </tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
+      <div class="mt-3 p-3 rounded d-flex justify-content-between align-items-center fw-bold fs-5"
+           style="background:linear-gradient(135deg,#4facfe 0%,#00f2fe 100%); color:#fff; border:1px solid #000; border-radius:0.85rem !important;">
+        <span>إجمالي رسوم التوصيل</span>
+        <span id="ordersFeesCalcTotal">0.00 ج.م</span>
+      </div>`;
+  }
+
+  function recalcOrdersFees() {
+    const body = document.getElementById('ordersFeesCalcModalBody');
+    if (!body) return;
+    let grand = 0;
+    body.querySelectorAll('.ofees-calc-input').forEach(inp => {
+      const count    = parseInt(inp.dataset.count) || 0;
+      const feeVal   = parseFloat(inp.value) || 0;
+      const subtotal = count * feeVal;
+      grand += subtotal;
+      const el = body.querySelector(`.ofees-calc-subtotal[data-idx="${inp.dataset.idx}"]`);
+      if (el) el.textContent = subtotal > 0 ? subtotal.toFixed(0) + ' ج.م' : '–';
+    });
+    const totalEl = document.getElementById('ordersFeesCalcTotal');
+    if (totalEl) totalEl.textContent = grand.toFixed(0) + ' ج.م';
+  }
+
+  window.closeOrdersFeesCalcModal = function() {
+    const modal = document.getElementById('ordersFeesCalcModal');
+    if (modal) {
+      modal.style.display = 'none';
+      document.body.style.overflow = '';
+    }
+  };
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') closeOrdersFeesCalcModal();
+  });
+  
+  const modalEl = document.getElementById('ordersFeesCalcModal');
+  if (modalEl) {
+    modalEl.addEventListener('click', function(e) {
+      if(e.target === this) closeOrdersFeesCalcModal();
+    });
+  }
+})();
+</script>
+
+{% endblock %}

@@ -1,0 +1,146 @@
+{% extends 'base.html' %}
+{% block content %}
+<style>
+  #type.form-select,
+  #type.form-select option {
+    color: #212529 !important;
+    background-color: #ffffff !important;
+  }
+  #type.form-select {
+    color-scheme: light;
+  }
+  @-moz-document url-prefix() {
+    #type.form-select,
+    #type.form-select option {
+      color: #212529 !important;
+      background-color: #ffffff !important;
+    }
+  }
+</style>
+<div class="container py-4" dir="rtl">
+  <div class="text-center mb-4">
+    <h3 class="fw-bold text-dark">سجل العميل: <span class="text-primary">{{ customer.name }}</span></h3>
+  </div>
+  <form method="post">
+    <div class="mb-3">
+      <label for="type" class="form-label">نوع السجل</label>
+      <select class="form-select text-dark" id="type" name="type" onchange="toggleReminderFields()" style="color:#212529;">
+        <option value="ملاحظة" style="color:#212529;">ملاحظة</option>
+        <option value="تحديث حول المشكلة" style="color:#212529;">تحديث حول المشكلة</option>
+        <option value="تنبيه بالمتابعة" style="color:#212529;">تنبيه بالمتابعة</option>
+        <option value="تحويل رسوم توصيل" style="color:#212529;">تحويل رسوم توصيل</option>
+      </select>
+    </div>
+    
+        <div id="reminderFields" style="display: none;">
+          <div class="mb-3">
+            <label for="reminder_duration" class="form-label">مدة التنبيه</label>
+            <div class="row">
+              <div class="col-md-6">
+                <input type="number" class="form-control" id="reminder_duration" name="reminder_duration" min="1" placeholder="أدخل الرقم">
+              </div>
+              <div class="col-md-6">
+                <select class="form-select" id="reminder_duration_type" name="reminder_duration_type">
+                  <option value="دقائق">دقائق</option>
+                  <option value="ساعات">ساعات</option>
+                  <option value="أيام">أيام</option>
+                </select>
+              </div>
+            </div>
+            <small class="form-text text-muted">سيتم التنبيه بعد هذه المدة من الآن</small>
+          </div>
+        </div>
+    
+    <div id="transferFields" style="display: none;">
+      <div class="mb-3">
+        <label for="replacement_order_id" class="form-label">طلب الاستبدال</label>
+        <select class="form-select" id="replacement_order_id" name="replacement_order_id">
+          <option value="">اختر طلب الاستبدال</option>
+          {% for ro in replacement_orders %}
+            <option value="{{ ro.id }}">طلب استبدال رقم {{ ro.id }}{% if ro.date %} - {{ ro.date.strftime('%Y-%m-%d') }}{% endif %}</option>
+          {% endfor %}
+        </select>
+        {% if not replacement_orders %}
+          <small class="form-text text-muted">لا يوجد طلبات استبدال لهذا العميل.</small>
+        {% endif %}
+      </div>
+      <div class="mb-3">
+        <label for="transferred_delivery_fees" class="form-label">قيمة الرسوم المحوّلة</label>
+        <input type="number" class="form-control" id="transferred_delivery_fees" name="transferred_delivery_fees" step="0.01" min="0.01" placeholder="0.00">
+      </div>
+      <div class="mb-3">
+        <label for="transfer_note" class="form-label">ملاحظة (اختياري)</label>
+        <textarea class="form-control" id="transfer_note" name="transfer_note" rows="2"></textarea>
+      </div>
+    </div>
+
+    <div class="mb-3" id="contentFields">
+      <label for="content" class="form-label">محتوى السجل</label>
+      <textarea class="form-control" id="content" name="content" rows="3"></textarea>
+    </div>
+    <div class="d-flex gap-2">
+      <button type="submit" class="btn btn-success"><i class="fas fa-plus"></i> إضافة السجل</button>
+      <a href="{{ url_for('main.customer_history', customer_id=customer.id) }}" class="btn btn-secondary d-inline-flex align-items-center gap-1 px-4"><i class="fas fa-arrow-left"></i> <span>رجوع</span></a>
+    </div>
+  </form>
+</div>
+
+<script>
+        function toggleReminderFields() {
+          const type = document.getElementById('type').value;
+          const reminderFields = document.getElementById('reminderFields');
+          const transferFields = document.getElementById('transferFields');
+          const contentFields = document.getElementById('contentFields');
+          const contentInput = document.getElementById('content');
+          const replacementOrderInput = document.getElementById('replacement_order_id');
+          const transferFeesInput = document.getElementById('transferred_delivery_fees');
+          
+          if (type === 'تنبيه بالمتابعة') {
+            reminderFields.style.display = 'block';
+            transferFields.style.display = 'none';
+            contentFields.style.display = 'block';
+            contentInput.required = true;
+            document.getElementById('reminder_duration').required = true;
+            document.getElementById('reminder_duration_type').required = true;
+            if (replacementOrderInput) replacementOrderInput.required = false;
+            if (transferFeesInput) transferFeesInput.required = false;
+          } else if (type === 'تحويل رسوم توصيل') {
+            reminderFields.style.display = 'none';
+            transferFields.style.display = 'block';
+            contentFields.style.display = 'none';
+            contentInput.required = false;
+            document.getElementById('reminder_duration').required = false;
+            document.getElementById('reminder_duration_type').required = false;
+            if (replacementOrderInput) replacementOrderInput.required = true;
+            if (transferFeesInput) transferFeesInput.required = true;
+          } else {
+            reminderFields.style.display = 'none';
+            transferFields.style.display = 'none';
+            contentFields.style.display = 'block';
+            contentInput.required = true;
+            document.getElementById('reminder_duration').required = false;
+            document.getElementById('reminder_duration_type').required = false;
+            if (replacementOrderInput) replacementOrderInput.required = false;
+            if (transferFeesInput) transferFeesInput.required = false;
+          }
+        }
+        
+        document.addEventListener('DOMContentLoaded', function() {
+          toggleReminderFields();
+          const reminderDurationInput = document.getElementById('reminder_duration');
+          const reminderDurationTypeInput = document.getElementById('reminder_duration_type');
+          
+          if (reminderDurationInput) {
+            reminderDurationInput.addEventListener('change', function() {
+              console.log('Reminder duration changed:', this.value);
+            });
+          }
+          
+          if (reminderDurationTypeInput) {
+            reminderDurationTypeInput.addEventListener('change', function() {
+              console.log('Reminder duration type changed:', this.value);
+            });
+          }
+        });
+</script>
+{% endblock %} 

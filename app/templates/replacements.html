@@ -1,0 +1,323 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<style>
+  .card-box {
+    border-radius: 1rem;
+    box-shadow: 0 0 15px rgba(0,0,0,0.08);
+    transition: all 0.3s ease;
+    position: relative; /* للسماح بطبقة التأثير داخل الكارت */
+    overflow: hidden;  /* إبقاء التأثير داخل حدود الكارت */
+  }
+  .card-box:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 0 20px rgba(0,0,0,0.12);
+  }
+  /* تأثير أصفر ناعم يتحرك مع الماوس داخل الكارت */
+  .card-box::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(
+      circle at var(--mx, 50%) var(--my, 50%),
+      rgba(215, 153, 33, 0.28) 0%,
+      rgba(215, 153, 33, 0.18) 35%,
+      rgba(215, 153, 33, 0.00) 70%
+    );
+    opacity: 0;
+    transform: scale(1.15);
+    transition: opacity 0.25s ease, transform 0.35s ease;
+    pointer-events: none;
+    will-change: opacity, transform;
+  }
+  .card-box:hover::before { opacity: 1; transform: scale(1); }
+  /* Mobile-only UI parity with customers list */
+  .btn-add-mobile { display: none; }
+  .replacements-actions .btn { display: inline-flex; align-items: center; }
+  @media (max-width: 576px) {
+  /* Tighten page container sides on mobile */
+  .container.py-4 { padding-left: 0.2rem !important; padding-right: 0.2rem !important; }
+    :root { --repl-action-height: 46px; }
+    .replacements-actions .btn { height: var(--repl-action-height) !important; }
+    /* Icon-only add button on mobile; hide desktop add */
+    .btn-add-mobile { display: inline-flex !important; height: var(--repl-action-height); align-items: center; justify-content: center; padding: 0 0.9rem; }
+    .replacements-actions .btn-add-desktop { display: none !important; }
+  /* Make search button icon-only on mobile */
+  #searchReplTrackingBtn span { display: none !important; }
+  #searchReplTrackingBtn { padding: 0 0.9rem !important; }
+  #searchReplTrackingBtn i { margin: 0 !important; }
+    /* Actions row spacing */
+    .replacements-actions { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; width: 100%; }
+    /* Grid spacing like customers */
+    .replacements-grid { row-gap: 0.4rem !important; --bs-gutter-y: 0.4rem; --bs-gutter-x: 0.5rem; }
+    .replacements-grid > [class*="col-"] { padding-left: 0.25rem !important; padding-right: 0.25rem !important; }
+  }
+  @media (min-width: 577px) { .btn-add-mobile { display: none !important; } }
+
+  /* Make status cards match dashboard on mobile */
+  @media (max-width: 576px) {
+  .status-cards { --bs-gutter-x: 0.5rem !important; --bs-gutter-y: 0.4rem !important; }
+  .status-cards > [class*="col-"] { flex: 0 0 100% !important; max-width: 100% !important; padding-left: 0.25rem !important; padding-right: 0.25rem !important; }
+    .status-cards .card-box { border-radius: 1rem !important; padding: 0.75rem 0.55rem !important; }
+    .status-cards i { font-size: 1.4rem !important; }
+    .status-cards h5 { font-size: 1rem !important; margin-top: 0.3rem !important; }
+    .status-cards .mb-3 { margin-bottom: 0.5rem !important; }
+  }
+
+  /* Small circular overdue dot on status cards (match orders page) */
+  .status-overdue-dot {
+    position: absolute;
+    top: 4px;
+    left: 4px;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: #ff3b30;
+    color: #fff;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.85rem;
+    font-weight: 700;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.18);
+    z-index: 50;
+    border: 2px solid #fff;
+    pointer-events: none;
+  }
+  .status-overdue-dot .overdue-count { line-height: 1; }
+  
+  /* Dark mode support for replacements page */
+
+  /* Modal Styles */
+  .stats-modal {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.6); z-index: 9999; display: none;
+    align-items: center; justify-content: center; backdrop-filter: blur(5px);
+  }
+  .stats-modal-content {
+    background: #fff; width: 95%; max-width: 800px; padding: 2rem;
+    border-radius: 1.5rem; position: relative; box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    border-top: 5px solid #D79921; max-height: 90vh; display: flex; flex-direction: column;
+  }
+  .stats-modal .close-btn {
+    position: absolute; left: 1rem; top: 1rem; border: none;
+    background: #fff3cd; font-size: 1.5rem; color: #333;
+    width: 40px; height: 40px; border-radius: 50%; display: flex;
+    align-items: center; justify-content: center; cursor: pointer; transition: all 0.3s ease;
+  }
+  .stats-modal .close-btn:hover { background: #D79921; }
+  .stats-modal .modal-title { font-weight: 700; font-size: 1.5rem; color: #2c3e50; margin-bottom: 1rem; padding-bottom: 0.75rem; border-bottom: 3px solid #D79921; }
+  .stats-modal .modal-body { overflow-y: auto; padding-right: 0.5rem; overscroll-behavior: contain; }
+</style>
+
+<div class="container py-4" dir="rtl">
+  
+  <div class="text-center mb-4">
+    <h2 class="fw-bold">إدارة <span class="text-warning">طلبات الاستبدال</span></h2>
+    <p class="text-muted">كل طلبات الاستبدال المسجلة في النظام</p>
+  </div>
+  
+  <div class="row mb-4">
+    <div class="col-12">
+      <div class="d-flex justify-content-between align-items-center flex-row-reverse replacements-actions">
+        <div class="d-flex gap-2">
+          
+          <button id="searchReplTrackingBtn" class="btn btn-primary text-white d-inline-flex align-items-center gap-2 px-3 shadow" aria-label="بحث">
+            <i class="fas fa-search text-white"></i> <span class="text-white">بحث</span>
+          </button>
+
+          {% if has_permission('can_view_returns') %}
+          <button class="btn btn-info text-white d-inline-flex align-items-center gap-2 px-3 shadow" onclick="openReturnsPopup()">
+            <i class="fas fa-undo-alt"></i> <span>مرتجع</span>
+          </button>
+          {% endif %}
+          
+          <a href="{{ url_for('main.replacement_drafts') }}" class="btn btn-warning text-white d-inline-flex align-items-center gap-2 px-3 shadow position-relative">
+            <i class="fas fa-file-alt text-white"></i> <span class="text-white">المسودات</span>
+            {% if drafts_count > 0 %}
+            <span class="position-absolute top-0 start-0 translate-middle badge rounded-pill bg-danger">
+              {{ drafts_count }}
+            </span>
+            {% endif %}
+          </a>
+          
+          <a href="{{ url_for('main.add_replacement_order') }}" class="btn btn-success d-inline-flex align-items-center gap-2 px-4 shadow btn-add-desktop">
+            <i class="fas fa-plus"></i> <span>إضافة طلب استبدال جديد</span>
+          </a>
+          
+          <a href="{{ url_for('main.add_replacement_order') }}" class="btn btn-success btn-add-mobile" aria-label="طلب استبدال جديد">
+            <i class="fas fa-plus"></i>
+          </a>
+        </div>
+        <div class="d-flex gap-2">
+          <button type="button" class="btn btn-danger d-inline-flex align-items-center gap-2 shadow" title="إجمالي خسارة رسوم التوصيل">
+            <i class="fas fa-truck"></i>
+            <span>{{ (total_delivery_fees_loss or 0)|round(2) }} ج.م</span>
+          </button>
+          <button type="button" class="btn btn-danger d-inline-flex align-items-center gap-2 shadow" title="إجمالي تكلفة المنتجات التالفة">
+            <i class="fas fa-warehouse"></i>
+            <span>{{ (total_damaged_products_cost or 0)|round(2) }} ج.م</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-4 mb-4 justify-content-center mt-3 replacements-grid status-cards">
+    <div class="col-12 col-sm-6 col-md-4 d-flex align-items-stretch">
+      <a href="{{ url_for('main.replacement_orders_by_status', status='جديد') }}" class="text-decoration-none w-100">
+        <div class="card card-box p-4 bg-white h-100 d-flex flex-column justify-content-center align-items-center mb-3 position-relative">
+          <i class="fas fa-hourglass-half fa-3x text-secondary mb-2"></i>
+          <h5 class="fw-bold text-dark mb-1">جديد</h5>
+          <div class="small text-muted">{{ new_count }}</div>
+          <div id="replOverdueNewWrap" class="status-overdue-dot" style="display:none;" title="طلبات استبدال جديدة متأخرة">
+            <span class="overdue-count" id="replOverdueNewNumber">0</span>
+          </div>
+        </div>
+      </a>
+    </div>
+    <div class="col-12 col-sm-6 col-md-4 d-flex align-items-stretch">
+      <a href="{{ url_for('main.replacement_orders_by_status', status='خرج للتوصيل') }}" class="text-decoration-none w-100">
+        <div class="card card-box p-4 bg-white h-100 d-flex flex-column justify-content-center align-items-center mb-3">
+          <i class="fas fa-shipping-fast fa-3x text-success mb-2"></i>
+          <h5 class="fw-bold text-dark mb-1">خرج للتوصيل</h5>
+          <div class="small text-muted">{{ shipped_count }}</div>
+        </div>
+      </a>
+    </div>
+    <div class="col-12 col-sm-6 col-md-4 d-flex align-items-stretch">
+      <a href="{{ url_for('main.replacement_orders_by_status', status='وصل') }}" class="text-decoration-none w-100">
+        <div class="card card-box p-4 bg-white h-100 d-flex flex-column justify-content-center align-items-center mb-3">
+          <i class="fas fa-check-circle fa-3x text-primary mb-2"></i>
+          <h5 class="fw-bold text-dark mb-1">وصل</h5>
+          <div class="small text-muted">{{ delivered_count }}</div>
+        </div>
+      </a>
+    </div>
+  </div>
+</div>
+
+<div class="stats-modal" id="searchReplTrackingModal" tabindex="-1">
+  <div class="stats-modal-content">
+    <button type="button" class="close-btn" data-bs-dismiss="modal" id="searchReplTrackingCloseBtn" aria-label="Close"><i class="fas fa-times"></i></button>
+    <h4 class="modal-title" id="searchReplTrackingModalLabel">بحث</h4>
+    <div class="modal-body">
+      <div class="mb-3">
+        <label class="form-label">أدخل رقم التتبع أو رقم الهاتف</label>
+        <div class="input-group">
+          <input id="searchReplTrackingInput" class="form-control form-control-lg" placeholder="أدخل رقم التتبع أو الهاتف..." style="border-radius: 0 0.5rem 0.5rem 0; border: 2px solid #e9ecef;">
+          <button id="searchReplTrackingSubmit" type="button" class="btn btn-primary" style="border-radius: 0.5rem 0 0 0.5rem; padding: 0 1.5rem;"><i class="fas fa-search"></i> بحث</button>
+        </div>
+      </div>
+      <div id="searchReplTrackingResults" class="mt-4"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function(){
+  
+  document.querySelectorAll('.card-box').forEach((card) => {
+    const updateMousePos = (e) => {
+      const rect = card.getBoundingClientRect();
+      const x = ((e.clientX - rect.left) / rect.width) * 100;
+      const y = ((e.clientY - rect.top) / rect.height) * 100;
+      card.style.setProperty('--mx', x.toFixed(0) + '%');
+      card.style.setProperty('--my', y.toFixed(0) + '%');
+    };
+    card.addEventListener('mousemove', updateMousePos, { passive: true });
+    card.addEventListener('mouseenter', updateMousePos, { passive: true });
+    card.addEventListener('mouseleave', () => {
+      card.style.setProperty('--mx', '50%');
+      card.style.setProperty('--my', '50%');
+    }, { passive: true });
+  });
+
+  const openBtn = document.getElementById('searchReplTrackingBtn');
+  const modalEl = document.getElementById('searchReplTrackingModal');
+  const input = document.getElementById('searchReplTrackingInput');
+  const submit = document.getElementById('searchReplTrackingSubmit');
+  const results = document.getElementById('searchReplTrackingResults');
+  if(!openBtn || !modalEl) return;
+
+  function renderResults(list){
+    if(!list || list.length === 0){
+      results.innerHTML = '<div class="alert alert-info">لا توجد نتائج</div>';
+      return;
+    }
+    let html = '<div class="list-group">';
+    list.forEach(o => {
+      const href = `/orders/replacement/${o.id}`;
+      html += `<a href="${href}" class="list-group-item list-group-item-action search-result-item" data-order-id="${o.id}" style="border-radius: 0.75rem; margin-bottom: 0.5rem; border: 1px solid #e9ecef; transition: all 0.2s;">
+        <div class="d-flex w-100 justify-content-between align-items-center mb-2">
+          <h5 class="mb-0 text-primary fw-bold">${o.customer_name || 'عميل مجهول'}</h5>
+          <small class="text-muted"><i class="far fa-clock"></i> ${o.date || ''}</small>
+        </div>
+        <p class="mb-1">
+          <span class="badge bg-secondary me-2"><i class="fas fa-barcode"></i> ${o.tracking_number || 'بدون تتبع'}</span>
+          <span class="badge bg-info text-dark me-2"><i class="fas fa-phone"></i> ${o.customer_phone || 'بدون هاتف'}</span>
+          <span class="badge bg-warning text-dark"><i class="fas fa-info-circle"></i> الحالة: ${o.status || ''}</span>
+        </p>
+        <div class="d-flex w-100 justify-content-between align-items-center mt-2">
+          <small class="text-muted"><i class="fas fa-user-tie"></i> المسئول: <strong>${o.employee_name || 'غير محدد'}</strong></small>
+          <small><strong>${o.total_amount} ج.م</strong> إجمالي</small>
+        </div>
+      </a>`;
+    });
+    html += '</div>';
+    results.innerHTML = html;
+  }
+
+  function doSearch(){
+    const q = (input.value || '').trim();
+    if(!q){ results.innerHTML = '<div class="alert alert-warning">أدخل رقم تتبعي</div>'; return; }
+    results.innerHTML = '<div class="text-center py-3"><i class="fas fa-spinner fa-spin"></i> جاري البحث...</div>';
+    fetch('{{ url_for("main.search_replacement_orders_by_tracking") }}', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tracking_number: q })
+    }).then(r => r.json()).then(j => {
+      if(j && j.success){ renderResults(j.orders); } else { results.innerHTML = '<div class="alert alert-danger">حدث خطأ أثناء البحث</div>'; }
+    }).catch(() => { results.innerHTML = '<div class="alert alert-danger">خطأ في الاتصال</div>'; });
+  }
+
+  submit.addEventListener('click', doSearch);
+  input.addEventListener('keypress', function(e){ if(e.key === 'Enter') doSearch(); });
+  results.addEventListener('click', function(ev){
+    const a = ev.target.closest('.search-result-item');
+    if(!a) return; window.location = a.getAttribute('href');
+  });
+
+  openBtn.addEventListener('click', function(e){
+    e.preventDefault();
+    modalEl.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+    input.focus();
+  });
+
+  modalEl.addEventListener('click', function(e){
+    if(e.target === modalEl || e.target.closest('#searchReplTrackingCloseBtn')){
+      modalEl.style.display = 'none';
+      document.body.style.overflow = '';
+    }
+  });
+
+  function fetchReplOverdueNewCount(){
+    fetch('{{ url_for("main.replacement_overdue_new_count") }}')
+      .then(r => r.json())
+      .then(d => {
+        if(!d || !d.success) return;
+        const wrap = document.getElementById('replOverdueNewWrap');
+        const num = document.getElementById('replOverdueNewNumber');
+        if(!wrap || !num) return;
+        const c = parseInt(d.count) || 0;
+        num.textContent = c;
+        wrap.style.display = c > 0 ? 'inline-flex' : 'none';
+      })
+      .catch(()=>{});
+  }
+  setTimeout(fetchReplOverdueNewCount, 250);
+});
+</script>
+
+{% include 'returns_popup.html' %}
+{% endblock %} 

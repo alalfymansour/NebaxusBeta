@@ -1,0 +1,452 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container py-4" dir="rtl">
+
+  <div class="text-center mb-4">
+    <h2 class="fw-bold">إضافة <span class="text-warning">منتج جديد</span></h2>
+    <p class="text-muted">أدخل بيانات المنتج وأنواعه المختلفة</p>
+  </div>
+
+  <form method="POST" id="add-product-form">
+
+    <div class="row mb-4">
+      <div class="col-md-12">
+        <label class="form-label fw-semibold">نوع المنتج</label>
+        <div class="form-check">
+          <input class="form-check-input" type="radio" name="product_type" id="normal_product" value="normal" checked onchange="toggleProductType()">
+          <label class="form-check-label" for="normal_product">
+            منتج عادي
+          </label>
+        </div>
+        <div class="form-check">
+          <input class="form-check-input" type="radio" name="product_type" id="bundle_product" value="bundle" onchange="toggleProductType()">
+          <label class="form-check-label" for="bundle_product">
+            Bundle Product (مجموعة منتجات)
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <div class="row mb-3" id="normal-product-fields">
+      <div class="col-md-3">
+        <label for="name" class="form-label fw-semibold">اسم المنتج</label>
+        <input type="text" class="form-control" id="name" name="name" required>
+      </div>
+      <div class="col-md-3">
+        <label for="purchase_price" class="form-label fw-semibold">سعر الشراء</label>
+        <input type="number" step="0.01" class="form-control" id="purchase_price" name="purchase_price" required>
+      </div>
+      <div class="col-md-3">
+        <label for="price" class="form-label fw-semibold">سعر البيع</label>
+        <input type="number" step="0.01" class="form-control" id="price" name="price" required>
+      </div>
+      <div class="col-md-3">
+        <label for="stock" class="form-label fw-semibold">الكمية</label>
+        <input type="number" class="form-control" id="stock" name="stock" required>
+      </div>
+    </div>
+
+    <div id="bundle-product-fields" style="display: none;">
+      <div class="row mb-3 g-3">
+        <div class="col-md-8">
+          <label for="bundle_name" class="form-label fw-semibold">اسم البندل</label>
+          <input type="text" class="form-control" id="bundle_name" name="bundle_name">
+        </div>
+        <div class="col-md-4">
+          <label class="form-label fw-semibold">إجمالي سعر البندل</label>
+          <input type="text" class="form-control fw-bold text-success bg-light" id="bundle-total-price" readonly value="0.00 ج.م">
+        </div>
+      </div>
+      
+      <div class="mb-3">
+        <h5 class="fw-bold mb-3">
+          <i class="fas fa-box-open text-primary me-2"></i>المنتجات داخل البندل
+        </h5>
+        <div id="bundle-items-container"></div>
+        <button type="button" class="btn btn-success my-2 px-4 d-inline-flex align-items-center gap-1 rounded" onclick="addBundleItem()">
+          <i class="fas fa-plus me-1"></i> إضافة منتج للبندل
+        </button>
+      </div>
+    </div>
+
+    <div class="mb-3" id="variants-section">
+      <h5 class="fw-bold">أنواع المنتج</h5>
+      <div id="variantGroupsContainer"></div>
+      <button type="button" class="btn btn-success my-2 px-4 d-inline-flex align-items-center gap-1 rounded" onclick="addVariantGroup()">
+        <i class="fas fa-plus me-1"></i> إضافة نوع
+      </button>
+    </div>
+
+    <hr class="my-4">
+    <div class="d-flex gap-2 align-items-center" id="action-row">
+      <button type="submit" class="btn btn-primary d-flex align-items-center gap-1" id="submit-btn">
+        <i class="fas fa-check me-1"></i> إضافة المنتج
+      </button>
+      <a href="{{ url_for('main.products') }}" class="btn btn-secondary d-inline-flex align-items-center gap-1 px-4">
+        <i class="fas fa-arrow-left"></i> <span>رجوع</span>
+      </a>
+    </div>
+  </form>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.rtl.min.css" rel="stylesheet" />
+
+<style>
+  .select2-container { width: 100% !important; }
+  .select2-container--bootstrap-5 .select2-selection--single { 
+    border: 1px solid #ced4da; 
+    border-radius: .375rem; 
+    height: calc(2.25rem + 2px); 
+    min-height: calc(2.25rem + 2px); 
+    display:flex; 
+    align-items:center; 
+  }
+  .select2-container--bootstrap-5 .select2-selection--single .select2-selection__rendered { 
+    padding: 0 .75rem; 
+    line-height: 1.5; 
+  }
+  .select2-container--bootstrap-5 .select2-selection--single .select2-selection__arrow { 
+    height: 100%; 
+    display:flex; 
+    align-items:center; 
+  }
+  .select2-container--default .select2-selection--single { 
+    border: 1px solid #ced4da; 
+    border-radius: .375rem; 
+    height: calc(2.25rem + 2px); 
+    min-height: calc(2.25rem + 2px); 
+    display:flex; 
+    align-items:center; 
+  }
+  
+  /* تحسينات إضافية للجدول */
+  .table-hover tbody tr:hover {
+    background-color: #f8f9fa;
+    cursor: pointer;
+  }
+  
+  .badge-profit {
+    background: linear-gradient(45deg, #28a745, #20c997);
+    padding: 0.4em 0.8em;
+    border-radius: 0.5rem;
+    font-size: 0.95em;
+  }
+</style>
+
+<script>
+  
+  let availableProducts = [];
+
+  async function loadProducts() {
+    try {
+      const response = await fetch('/api/products');
+      if (response.ok) {
+        availableProducts = await response.json();
+      }
+    } catch (error) {
+      console.error('Error loading products:', error);
+    }
+  }
+
+  function toggleProductType() {
+    const isBundle = document.getElementById('bundle_product').checked;
+    
+    if (isBundle) {
+      
+      document.getElementById('normal-product-fields').style.display = 'none';
+      document.getElementById('variants-section').style.display = 'none';
+      
+      document.getElementById('bundle-product-fields').style.display = 'block';
+      
+      document.getElementById('name').removeAttribute('required');
+      document.getElementById('purchase_price').removeAttribute('required');
+      document.getElementById('price').removeAttribute('required');
+      document.getElementById('stock').removeAttribute('required');
+      
+      document.querySelectorAll('#variants-section input[required]').forEach(input => {
+        input.removeAttribute('required');
+      });
+      
+      document.getElementById('bundle_name').setAttribute('required', 'required');
+    } else {
+      
+      document.getElementById('normal-product-fields').style.display = 'flex';
+      document.getElementById('variants-section').style.display = 'block';
+      
+      document.getElementById('bundle-product-fields').style.display = 'none';
+      
+      document.getElementById('name').setAttribute('required', 'required');
+      document.getElementById('purchase_price').setAttribute('required', 'required');
+      document.getElementById('price').setAttribute('required', 'required');
+      document.getElementById('stock').setAttribute('required', 'required');
+      
+      document.querySelectorAll('#variants-section input[name="variant_name[]"]').forEach(input => {
+        input.setAttribute('required', 'required');
+      });
+      
+      document.getElementById('bundle_name').removeAttribute('required');
+    }
+  }
+
+  function addBundleItem() {
+    const container = document.getElementById('bundle-items-container');
+    const rowId = Date.now();
+    
+    let productOptions = '<option value="">ابحث عن منتج...</option>';
+    availableProducts.forEach(product => {
+      if (!product.is_bundle && !product.is_deleted) {
+        productOptions += `<option value="${product.id}" data-purchase-price="${product.purchase_price}">${product.name} - ${product.purchase_price} ج.م</option>`;
+      }
+    });
+    
+    const row = `
+      <div class="row g-2 mb-4 align-items-end bundle-item-row border rounded-4 p-3 bg-light position-relative" id="bundle-row-${rowId}">
+        <div class="col-md-5">
+          <label class="form-label">المنتج</label>
+          <select class="form-select bundle-product-select" name="bundle_product_ids[]" required onchange="updateBundleRow(${rowId})">
+            ${productOptions}
+          </select>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">سعر الشراء</label>
+          <input type="number" class="form-control bundle-purchase-price bg-light" readonly value="0" step="0.01">
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">سعر البيع</label>
+          <input type="number" class="form-control bundle-sale-price" name="bundle_sale_prices[]" required step="0.01" value="0" onchange="updateBundleCalculations()" placeholder="0">
+        </div>
+        <div class="col-md-1 d-flex align-items-end justify-content-start">
+          <button type="button" class="btn btn-danger" style="height:38px; margin-bottom:0;" onclick="removeBundleItem(${rowId})">
+            <i class="fas fa-trash-alt"></i>
+          </button>
+        </div>
+      </div>
+    `;
+    
+    container.insertAdjacentHTML('beforeend', row);
+    
+    const newSelect = $(`#bundle-row-${rowId} .bundle-product-select`);
+    newSelect.select2({
+      theme: 'bootstrap-5',
+      placeholder: 'ابحث عن منتج...',
+      allowClear: true,
+      dir: 'rtl',
+      width: '100%',
+      language: {
+        noResults: function() {
+          return "لا توجد نتائج";
+        },
+        searching: function() {
+          return "جاري البحث...";
+        }
+      }
+    });
+  }
+
+  function updateBundleRow(rowId) {
+    const row = document.getElementById(`bundle-row-${rowId}`);
+    const select = row.querySelector('.bundle-product-select');
+    const selectedOption = select.options[select.selectedIndex];
+    const purchasePrice = parseFloat(selectedOption.getAttribute('data-purchase-price') || 0);
+    
+    row.querySelector('.bundle-purchase-price').value = purchasePrice.toFixed(0);
+    
+    updateBundleCalculations();
+  }
+
+  function removeBundleItem(rowId) {
+    const row = document.getElementById(`bundle-row-${rowId}`);
+    if (row) {
+      row.remove();
+      updateBundleCalculations();
+    }
+  }
+
+  function updateBundleCalculations() {
+    const rows = document.querySelectorAll('.bundle-item-row');
+    let totalPrice = 0;
+    
+    rows.forEach(row => {
+      const salePrice = parseFloat(row.querySelector('.bundle-sale-price').value || 0);
+      totalPrice += salePrice;
+    });
+    
+    document.getElementById('bundle-total-price').value = totalPrice.toFixed(0) + ' ج.م';
+  }
+
+  function addVariantGroup() {
+    const groupId = Date.now(); 
+    const groupHTML = `
+      <div class="variant-group border rounded-4 p-3 mb-4 bg-light position-relative" data-group-id="${groupId}">
+        <div class="row align-items-end mb-3">
+          <div class="col-md-8">
+            <label class="form-label">نوع المنتج</label>
+            <select class="form-select group-type-select" name="group_types[]" onchange="updateGroupName(${groupId})">
+              <option value="">اختر النوع</option>
+              <option value="مقاس">مقاس</option>
+              <option value="لون">لون</option>
+              <option value="شكل">شكل</option>
+              <option value="رام">رام</option>
+              <option value="مساحة التخزين">مساحة التخزين</option>
+            </select>
+          </div>
+          <div class="col-md-4 d-flex align-items-end justify-content-start">
+            <button type="button" class="btn btn-danger ms-2" onclick="removeGroup(${groupId})">
+              <i class="fas fa-trash-alt"></i>
+            </button>
+          </div>
+        </div>
+        <div class="variant-items" id="variants-${groupId}"></div>
+        <button type="button" class="btn btn-secondary opacity-75 btn-sm mt-2 px-3 d-inline-flex align-items-center gap-1 rounded" onclick="addVariant(${groupId})">
+          <i class="fas fa-plus me-1"></i> إضافة خيار
+        </button>
+      </div>
+    `;
+    document.getElementById('variantGroupsContainer').insertAdjacentHTML('beforeend', groupHTML);
+    addVariant(groupId);
+  }
+
+  function addVariant(groupId) {
+    const container = document.getElementById(`variants-${groupId}`);
+    const groupTypeSelect = document.querySelector(`[data-group-id="${groupId}"] select[name="group_types[]"]`);
+    
+    const groupType = groupTypeSelect ? groupTypeSelect.value : '';
+
+    const variantHTML = `
+      <div class="row g-2 mb-2 align-items-end variant-row">
+        <input type="hidden" name="variant_group_type[]" value="${groupType}" class="group-type-hidden">
+        <input type="hidden" name="variant_group_name[]" value="${groupType}" class="group-name-hidden">
+        <div class="col-md-8">
+          <label class="form-label">اسم الخيار</label>
+          <input type="text" class="form-control" name="variant_name[]" required>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">السعر الإضافي</label>
+          <input type="number" step="0.01" class="form-control" name="variant_price[]" value="0" placeholder="0">
+        </div>
+        <div class="col-md-1">
+          <button type="button" class="btn btn-danger" style="height:38px; margin-bottom:0;" onclick="this.closest('.variant-row').remove()">
+            <i class="fas fa-trash"></i>
+          </button>
+        </div>
+      </div>
+    `;
+    container.insertAdjacentHTML('beforeend', variantHTML);
+  }
+
+  function updateGroupName(groupId) {
+    const groupTypeSelect = document.querySelector(`[data-group-id="${groupId}"] select[name="group_types[]"]`);
+    
+    if (groupTypeSelect) {
+      const groupType = groupTypeSelect.value;
+      if (groupType) {
+        updateGroupNames(groupId);
+      }
+    }
+  }
+
+  function updateGroupNames(groupId) {
+    const groupTypeSelect = document.querySelector(`[data-group-id="${groupId}"] select[name="group_types[]"]`);
+    
+    const groupType = groupTypeSelect ? groupTypeSelect.value : '';
+    
+    const variantRows = document.querySelectorAll(`[data-group-id="${groupId}"] .variant-row`);
+    variantRows.forEach(row => {
+      const typeHiddenInput = row.querySelector('input[name="variant_group_type[]"]');
+      const nameHiddenInput = row.querySelector('input[name="variant_group_name[]"]');
+      
+      if (typeHiddenInput) {
+        typeHiddenInput.value = groupType;
+      }
+      if (nameHiddenInput) {
+        nameHiddenInput.value = groupType;
+      }
+    });
+  }
+
+  function removeGroup(groupId) {
+    const group = document.querySelector(`[data-group-id="${groupId}"]`);
+    if (group) group.remove();
+  }
+
+  window.onload = function() {
+    loadProducts();
+    addVariantGroup();
+  };
+
+  let isSubmitting = false;
+
+  document.getElementById('add-product-form').addEventListener('submit', function(e) {
+    
+    if (isSubmitting) {
+      e.preventDefault();
+      return false;
+    }
+
+    const isBundle = document.getElementById('bundle_product').checked;
+    
+    if (isBundle) {
+      
+      const bundleItems = document.querySelectorAll('.bundle-item-row');
+      if (bundleItems.length === 0) {
+        e.preventDefault();
+        alert('يرجى إضافة منتج واحد على الأقل إلى البندل');
+        return false;
+      }
+      
+      let hasEmptyProduct = false;
+      bundleItems.forEach(row => {
+        const productSelect = row.querySelector('.bundle-product-select');
+        if (!productSelect || !productSelect.value) {
+          hasEmptyProduct = true;
+        }
+      });
+      
+      if (hasEmptyProduct) {
+        e.preventDefault();
+        alert('يرجى اختيار منتج لكل صف في البندل');
+        return false;
+      }
+      
+      let hasEmptyPrice = false;
+      bundleItems.forEach(row => {
+        const salePrice = parseFloat(row.querySelector('.bundle-sale-price').value || 0);
+        if (salePrice <= 0) {
+          hasEmptyPrice = true;
+        }
+      });
+      
+      if (hasEmptyPrice) {
+        e.preventDefault();
+        alert('يرجى إدخال سعر البيع لجميع المنتجات في البندل');
+        return false;
+      }
+    } else {
+      
+      const groups = Array.from(document.querySelectorAll('.variant-group'));
+      const validGroups = groups.filter(g => {
+        const groupType = g.querySelector('select[name="group_types[]"]').value;
+        const variants = g.querySelectorAll('input[name="variant_name[]"]');
+        return groupType && variants.length > 0;
+      });
+      
+      if (groups.length > 0 && validGroups.length === 0) {
+        e.preventDefault();
+        alert('يرجى إضافة أنواع صحيحة للمنتج أو حذف جميع الأنواع');
+        return false;
+      }
+    }
+
+    isSubmitting = true;
+    const submitBtn = document.getElementById('submit-btn');
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> جاري الإضافة...';
+    
+    return true;
+  });
+</script>
+{% endblock %}

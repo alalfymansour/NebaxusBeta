@@ -1,0 +1,74 @@
+{% extends "base.html" %} {% block title %}تسجيل دخول الموظفين{% endblock %} {%
+block content %}
+<div class="container-fluid">
+  <div class="row justify-content-center align-items-center min-vh-100">
+    <div class="col-md-6 col-lg-4">
+      <div class="card shadow-lg">
+        <div class="card-header bg-primary text-white text-center">
+          <div class="mb-3">
+            <img
+              src="/static/img/logo.svg"
+              alt="شعار NebaxusBeta"
+              height="60"
+              class="app-logo"
+            />
+          </div>
+          <h4 class="mb-0">تسجيل دخول الموظفين</h4>
+        </div>
+        <div class="card-body p-4">
+          <form method="POST">
+            <div class="mb-3">
+              <label for="username" class="form-label">اسم المستخدم</label>
+              <div class="input-group">
+                <span class="input-group-text">
+                  <i class="fas fa-user"></i>
+                </span>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="username"
+                  name="username"
+                  required
+                />
+              </div>
+            </div>
+
+            <div class="mb-4">
+              <label for="password" class="form-label">كلمة المرور</label>
+              <div class="input-group">
+                <span class="input-group-text">
+                  <i class="fas fa-lock"></i>
+                </span>
+                <input
+                  type="password"
+                  class="form-control"
+                  id="password"
+                  name="password"
+                  required
+                />
+              </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary w-100 mb-3">
+              <i class="fas fa-sign-in-alt"></i> تسجيل الدخول
+            </button>
+
+            <div class="text-center">
+              <small class="text-muted">
+                <i class="fas fa-info-circle"></i>
+                للوصول للنظام، يجب أن يكون لديك حساب موظف نشط
+              </small>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  .min-vh-100 {
+    min-height: 100vh;
+  }
+</style>
+{% endblock %}

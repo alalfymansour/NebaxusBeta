@@ -1,0 +1,780 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<style>
+  input[readonly], select[readonly], select:disabled {
+    background-color: #f8f9fa !important;
+    pointer-events: none;
+  }
+  .modern-table { border-radius: 1rem; overflow: hidden; background: #fff; border: 1px solid #000; }
+  .modern-table th { background: #D79921 !important; font-size: 1.1rem; letter-spacing: 0.5px; color: #333; vertical-align: middle; border-bottom: 1px solid #000 !important; }
+  .modern-table td { vertical-align: middle; font-size: 1rem; background: #fff; border-bottom: 1px solid #000; }
+  .modern-table tbody tr:hover td { background: #fff3cd !important; transition: background 0.2s; }
+  .product-row .form-select, .product-row .form-control { min-height: 38px; }
+  .select2-container { width: 100% !important; }
+  .select2-container--bootstrap-5 .select2-selection--single { border: 1px solid #ced4da; border-radius: .375rem; height: calc(2.25rem + 2px); min-height: calc(2.25rem + 2px); display:flex; align-items:center; }
+  .select2-container--bootstrap-5 .select2-selection--single .select2-selection__rendered { padding: 0 .75rem; line-height: 1.5; }
+  .select2-container--bootstrap-5 .select2-selection--single .select2-selection__arrow { height: 100%; display:flex; align-items:center; }
+  .variant-groups-container { min-width: 200px; }
+  .salin-row td { background-color: #f0fff0 !important; }
+  .salin-row .product-name-text { font-weight: 600; }
+</style>
+
+<div class="container py-4" dir="rtl">
+  <div class="text-center mb-4">
+    <h2 class="fw-bold">تعديل <span class="text-warning">طلب استبدال رقم {{ order.id }}</span></h2>
+  </div>
+
+  <form method="POST" id="editReplacementForm">
+
+    <div class="card border-0 shadow-sm mb-3">
+      <div class="card-header bg-primary bg-opacity-10 border-0 py-3">
+        <h6 class="mb-0 fw-semibold text-primary"><i class="fas fa-user me-2"></i>العميل</h6>
+      </div>
+      <div class="card-body">
+        <div class="row">
+          <div class="col-md-3">
+            <label class="form-label">الاسم</label>
+            <input type="text" class="form-control customer-field" name="customer_name" id="customerName" value="{{ order.customer_name }}">
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">رقم الهاتف</label>
+            <input type="text" class="form-control customer-field" name="customer_phone" id="customerPhone" value="{{ order.customer_phone }}">
+          </div>
+          <div class="col-md-2">
+            <label class="form-label">المحافظة</label>
+            <select class="form-select customer-field" name="customer_governorate" id="customerGovernorate">
+              <option value="">اختر المحافظة</option>
+              <option value="القاهرة" {% if order.customer_governorate == 'القاهرة' %}selected{% endif %}>القاهرة</option>
+              <option value="الجيزة" {% if order.customer_governorate == 'الجيزة' %}selected{% endif %}>الجيزة</option>
+              <option value="الإسكندرية" {% if order.customer_governorate == 'الإسكندرية' %}selected{% endif %}>الإسكندرية</option>
+              <option value="الدقهلية" {% if order.customer_governorate == 'الدقهلية' %}selected{% endif %}>الدقهلية</option>
+              <option value="البحر الأحمر" {% if order.customer_governorate == 'البحر الأحمر' %}selected{% endif %}>البحر الأحمر</option>
+              <option value="البحيرة" {% if order.customer_governorate == 'البحيرة' %}selected{% endif %}>البحيرة</option>
+              <option value="الفيوم" {% if order.customer_governorate == 'الفيوم' %}selected{% endif %}>الفيوم</option>
+              <option value="الغربية" {% if order.customer_governorate == 'الغربية' %}selected{% endif %}>الغربية</option>
+              <option value="الإسماعيلية" {% if order.customer_governorate == 'الإسماعيلية' %}selected{% endif %}>الإسماعيلية</option>
+              <option value="المنوفية" {% if order.customer_governorate == 'المنوفية' %}selected{% endif %}>المنوفية</option>
+              <option value="المنيا" {% if order.customer_governorate == 'المنيا' %}selected{% endif %}>المنيا</option>
+              <option value="القليوبية" {% if order.customer_governorate == 'القليوبية' %}selected{% endif %}>القليوبية</option>
+              <option value="الوادي الجديد" {% if order.customer_governorate == 'الوادي الجديد' %}selected{% endif %}>الوادي الجديد</option>
+              <option value="السويس" {% if order.customer_governorate == 'السويس' %}selected{% endif %}>السويس</option>
+              <option value="أسوان" {% if order.customer_governorate == 'أسوان' %}selected{% endif %}>أسوان</option>
+              <option value="أسيوط" {% if order.customer_governorate == 'أسيوط' %}selected{% endif %}>أسيوط</option>
+              <option value="بني سويف" {% if order.customer_governorate == 'بني سويف' %}selected{% endif %}>بني سويف</option>
+              <option value="بورسعيد" {% if order.customer_governorate == 'بورسعيد' %}selected{% endif %}>بورسعيد</option>
+              <option value="دمياط" {% if order.customer_governorate == 'دمياط' %}selected{% endif %}>دمياط</option>
+              <option value="الشرقية" {% if order.customer_governorate == 'الشرقية' %}selected{% endif %}>الشرقية</option>
+              <option value="جنوب سيناء" {% if order.customer_governorate == 'جنوب سيناء' %}selected{% endif %}>جنوب سيناء</option>
+              <option value="كفر الشيخ" {% if order.customer_governorate == 'كفر الشيخ' %}selected{% endif %}>كفر الشيخ</option>
+              <option value="مطروح" {% if order.customer_governorate == 'مطروح' %}selected{% endif %}>مطروح</option>
+              <option value="الأقصر" {% if order.customer_governorate == 'الأقصر' %}selected{% endif %}>الأقصر</option>
+              <option value="قنا" {% if order.customer_governorate == 'قنا' %}selected{% endif %}>قنا</option>
+              <option value="شمال سيناء" {% if order.customer_governorate == 'شمال سيناء' %}selected{% endif %}>شمال سيناء</option>
+              <option value="سوهاج" {% if order.customer_governorate == 'سوهاج' %}selected{% endif %}>سوهاج</option>
+            </select>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">باقي العنوان</label>
+            <input type="text" class="form-control customer-field" name="customer_address_details" id="customerAddressDetails" value="{{ order.customer_address_details }}" placeholder="مدينة، حي، شارع...">
+          </div>
+        </div>
+        {% if order.alternative_name or order.alternative_phone or order.alternative_governorate %}
+        <div class="row mt-2">
+          <div class="col-12">
+            <small class="text-muted">
+              <i class="fas fa-info-circle"></i>
+              توجد بيانات بديلة سابقة. سيتم استبدالها بالبيانات الجديدة عند الحفظ.
+            </small>
+          </div>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="card border-0 shadow-sm mb-3">
+      <div class="card-header bg-light border-0 py-3">
+        <h6 class="mb-0 fw-semibold"><i class="fas fa-box me-2"></i>المنتجات التي سيتم إرسالها</h6>
+      </div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table id="sendProductsTable" class="table table-bordered mb-0">
+            <thead class="table-light">
+              <tr>
+                <th style="width: 35%;">اسم المنتج</th>
+                <th style="width: 20%;" class="text-center">المقاس/اللون/الشكل</th>
+                <th style="width: 10%;" class="text-center">الكمية</th>
+                <th style="width: 15%;" class="text-center">السعر</th>
+                <th style="width: 12%;" class="text-center">الإجمالي</th>
+                <th style="width: 8%;"></th>
+              </tr>
+            </thead>
+            <tbody id="productsContainer"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="card-footer bg-white border-0 py-2">
+        <button type="button" class="btn btn-secondary btn-sm" id="addProductBtn"><i class="fas fa-plus"></i> إضافة منتج</button>
+      </div>
+    </div>
+
+    <div class="card border-0 shadow-sm mb-3">
+      <div class="card-header bg-danger bg-opacity-10 border-0 py-3">
+        <h6 class="mb-0 fw-semibold text-danger"><i class="fas fa-ban me-2"></i>المنتجات التالفة (لن تُرسل)</h6>
+      </div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-bordered mb-0">
+            <thead class="table-light">
+              <tr>
+                <th style="width: 50%;">اسم المنتج</th>
+                <th style="width: 15%;" class="text-center">الكمية</th>
+                <th style="width: 30%;" class="text-center">سعر البيع (مستحق للعميل)</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% set damaged_items = order.items | selectattr('state', 'equalto', 'تالف') | list %}
+              {% if damaged_items|length == 0 %}
+                <tr>
+                  <td colspan="3" class="text-center text-muted">لا توجد منتجات تالفة</td>
+                </tr>
+              {% else %}
+                {% for item in damaged_items %}
+                  {% if item.product %}
+                    {% if item.product.is_bundle %}
+                      <tr style="background-color: #f8f9fa;">
+                        <td class="text-end">
+                          <i class="fas fa-box text-primary me-1"></i>
+                          <strong>{{ item.product.name }}</strong>
+                          {% if item.product.is_deleted %}
+                            <span class="badge bg-danger ms-2" style="font-size: 0.7rem;">محذوف</span>
+                          {% endif %}
+                          <span class="badge bg-primary ms-2" style="font-size: 0.7rem;">Bundle</span>
+                          <span class="badge bg-danger ms-1" style="font-size: 0.7rem;">تالف</span>
+                        </td>
+                        <td class="text-center">{{ item.quantity }}</td>
+                        <td class="text-center">{{ item.price|round(2) }} جنيه</td>
+                      </tr>
+                      {% if item.product.bundle_items %}
+                        {% for bundle_item in item.product.bundle_items %}
+                          <tr style="background-color: #fafbfc;">
+                            <td class="text-end ps-5">
+                              <span class="text-muted me-2">├─</span>
+                              {{ bundle_item.product.name }}
+                              {% set item_variants = item.bundle_product_variants.get(bundle_item.product.id, {}) if item.bundle_product_variants else {} %}
+                              {% if item_variants %}
+                                <span class="ms-2">
+                                  {% if item_variants.size_variant %}
+                                    <span class="badge bg-secondary me-1" style="font-size: 0.7rem;"><i class="fas fa-ruler-combined me-1"></i>{{ item_variants.size_variant.variant_name }}</span>
+                                  {% endif %}
+                                  {% if item_variants.color_variant %}
+                                    <span class="badge bg-info text-dark me-1" style="font-size: 0.7rem;"><i class="fas fa-palette me-1"></i>{{ item_variants.color_variant.variant_name }}</span>
+                                  {% endif %}
+                                  {% if item_variants.style_variant %}
+                                    <span class="badge bg-warning text-dark" style="font-size: 0.7rem;"><i class="fas fa-shapes me-1"></i>{{ item_variants.style_variant.variant_name }}</span>
+                                  {% endif %}
+                                </span>
+                              {% endif %}
+                            </td>
+                            <td class="text-center text-muted" style="font-size: 0.9rem;">{{ item.quantity }}</td>
+                            <td class="text-center text-muted" style="font-size: 0.9rem;">{{ bundle_item.sale_price_in_bundle|round(2) }} جنيه</td>
+                          </tr>
+                        {% endfor %}
+                      {% endif %}
+                    {% else %}
+                      <tr>
+                        <td class="text-end">
+                          <strong>{{ item.product.name }}</strong>
+                          <span class="badge bg-danger ms-1" style="font-size: 0.7rem;">تالف</span>
+                          {% if item.size_variant or item.color_variant or item.style_variant %}
+                            <span class="ms-2">
+                              {% if item.size_variant %}
+                                <span class="badge bg-secondary me-1" style="font-size: 0.7rem;"><i class="fas fa-ruler-combined me-1"></i>{{ item.size_variant.variant_name }}</span>
+                              {% endif %}
+                              {% if item.color_variant %}
+                                <span class="badge bg-info text-dark me-1" style="font-size: 0.7rem;"><i class="fas fa-palette me-1"></i>{{ item.color_variant.variant_name }}</span>
+                              {% endif %}
+                              {% if item.style_variant %}
+                                <span class="badge bg-warning text-dark" style="font-size: 0.7rem;"><i class="fas fa-shapes me-1"></i>{{ item.style_variant.variant_name }}</span>
+                              {% endif %}
+                            </span>
+                          {% endif %}
+                        </td>
+                        <td class="text-center">{{ item.quantity }}</td>
+                        <td class="text-center">{{ item.price|round(2) }} جنيه</td>
+                      </tr>
+                    {% endif %}
+                  {% else %}
+                    <tr>
+                      <td class="text-end"><span class="text-danger">منتج محذوف</span></td>
+                      <td class="text-center">{{ item.quantity }}</td>
+                      <td class="text-center">--</td>
+                    </tr>
+                  {% endif %}
+                {% endfor %}
+              {% endif %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="card border-0 shadow-sm mb-3">
+      <div class="card-header bg-light border-0 py-3">
+        <h6 class="mb-0 fw-semibold"><i class="fas fa-calculator me-2"></i>الملخص المالي</h6>
+      </div>
+      <div class="card-body">
+        <div class="row g-2 align-items-end">
+          <div class="col-md-2">
+            <label class="form-label">رسوم التوصيل (علي نيباكسس)</label>
+            <input type="number" step="0.01" min="0" class="form-control" name="delivery_fees" value="{{ order.delivery_fees or 0 }}">
+          </div>
+          <div class="col-md-2">
+            <label class="form-label">رسوم التوصيل (على العميل)</label>
+            {% set new_products_total = 0 %}
+            {% for it in order.items %}
+              {% if it.state == 'منتج جديد' or it.state == 'جديد' %}
+                {% set new_products_total = new_products_total + (it.price or 0) * (it.quantity or 1) %}
+              {% endif %}
+            {% endfor %}
+            {% set fees_customer = (order.total_amount or 0) - new_products_total %}
+            <input type="number" step="0.01" min="0" class="form-control" name="delivery_fees_customer" id="delivery_fees_customer_input" value="{{ (order.delivery_fees_customer if order.delivery_fees_customer is not none else fees_customer)|round(2) }}">
+          </div>
+          <div class="col-md-2">
+            <label class="form-label">مبلغ مستحق للعميل</label>
+            <input type="number" step="0.01" min="0" class="form-control" id="customer_refund_edit" value="{{ order.customer_refund_amount or 0 }}" readonly tabindex="-1" style="background:#f8f9fa;pointer-events:none;">
+          </div>
+          <div class="col-md-2">
+            <label class="form-label">المبلغ المدفوع</label>
+            <input type="number" step="0.01" min="0" class="form-control" name="amount_paid" value="{{ order.amount_paid or 0 }}">
+          </div>
+          <div class="col-md-2">
+            <label class="form-label">الإجمالي</label>
+            <input type="number" step="0.01" min="0" class="form-control" id="order_total_edit" value="{{ ((order.total_amount or 0) + (order.delivery_fees or 0) + (order.cod_fee_applied or 0))|round(2) }}" readonly tabindex="-1" style="background:#f8f9fa;pointer-events:none;">
+          </div>
+          <div class="col-md-2">
+            <label class="form-label">المتبقي</label>
+            <input type="number" step="0.01" min="0" class="form-control" id="order_remaining_edit" value="{{ order.remaining_amount|round(2) }}" readonly tabindex="-1" style="background:#f8f9fa;pointer-events:none;">
+            {% if order.cod_fee_applied and order.cod_fee_applied > 0 %}
+            <small class="text-muted d-block mt-1">
+              <i class="fas fa-info-circle"></i> يشمل رسوم تحصيل: {{ order.cod_fee_applied|round(2) }} ج.م
+            </small>
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="row g-2 align-items-end mt-2">
+          <div class="col-md-3">
+            <label class="form-label">الحالة</label>
+            <select class="form-select" name="status" id="replacement_status_select">
+              {% for s in all_statuses %}
+                {% if s in valid_next_statuses %}
+                <option value="{{ s }}" {% if order.status == s %}selected{% endif %}>{{ s }}</option>
+                {% endif %}
+              {% endfor %}
+            </select>
+            {% if order.status == 'جديد' %}
+            <div class="form-check mt-2">
+              <input class="form-check-input" type="checkbox" id="is_urgent" name="is_urgent" value="1" {% if order.is_urgent %}checked{% endif %}>
+              <label class="form-check-label" for="is_urgent">طلب مستعجل</label>
+            </div>
+            {% endif %}
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">رقم تتبّع</label>
+            <input type="text" class="form-control" name="tracking_number" id="tracking_number_input" value="{{ order.tracking_number|default('', true) }}">
+          </div>
+        </div>
+        <div class="row mt-2">
+          <div class="col-12">
+            <label class="form-label">ملاحظات</label>
+            <input type="text" class="form-control" name="notes" placeholder="ملاحظات إضافية" value="{{ order.notes or '' }}">
+          </div>
+        </div>
+        <div class="row mt-2">
+          <div class="col-md-4">
+            <label for="weight" class="form-label">وزن الشحنة (جرام)</label>
+            <input type="number" class="form-control" id="weight" name="weight" min="0" step="0.1" value="{{ order.weight or '' }}" placeholder="مثال: 500">
+          </div>
+          <div class="col-md-4">
+            <label for="package_volume" class="form-label">حجم الشحنة</label>
+            <select class="form-select" id="package_volume" name="package_volume">
+                <option value="">-- اختر الحجم --</option>
+                <option value="Small"        {% if order.package_volume == 'Small'        %}selected{% endif %}>Small</option>
+                <option value="medium"       {% if order.package_volume == 'medium'       %}selected{% endif %}>Medium</option>
+                <option value="Large"        {% if order.package_volume == 'Large'        %}selected{% endif %}>Large</option>
+                <option value="Extra Weight" {% if order.package_volume == 'Extra Weight' %}selected{% endif %}>Extra Weight</option>
+            </select>
+          </div>
+          <div class="col-md-4">
+            <label for="delivery_notes" class="form-label">ملاحظات التوصيل</label>
+            <input type="text" class="form-control" id="delivery_notes" name="delivery_notes" placeholder="ملاحظات خاصة بالمندوب أو التوصيل" value="{{ order.delivery_notes or '' }}">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="d-flex gap-2 mt-3 justify-content-center">
+      <input type="hidden" name="order_items_data" id="order_items_data">
+      <input type="hidden" name="update_customer_profile" id="updateCustomerProfile" value="0">
+      <button type="submit" class="btn btn-primary"><i class="fas fa-save me-1"></i> حفظ التعديلات</button>
+      <a href="{{ url_for('main.customer_profile', customer_id=order.customer_id, return_to=request.path) }}" class="btn btn-warning text-dark"><i class="fas fa-user me-1"></i> ملف العميل</a>
+      <a href="{{ url_for('main.replacement_order_status_history', order_id=order.id) }}" class="btn btn-info"><i class="fas fa-history me-1"></i> تاريخ الحالات</a>
+      <button type="button" class="btn btn-danger delete-btn" data-confirm="هل أنت متأكد أنك تريد حذف طلب الاستبدال هذا؟ هذا الإجراء لا يمكن التراجع عنه." data-form-id="deleteReplacementForm"><i class="fas fa-trash me-1"></i> حذف الطلب</button>
+      <a href="{{ next_url or url_for('main.replacement_orders') }}" class="btn btn-secondary"><i class="fas fa-arrow-left me-1"></i> رجوع</a>
+    </div>
+
+  </form>
+
+  <form id="deleteReplacementForm" method="POST" action="{{ url_for('main.delete_replacement_order', order_id=order.id) }}" style="display: none;"></form>
+</div>
+
+<!-- Modal: اختيار تحديث بيانات العميل -->
+<div class="stats-modal" id="customerUpdateModal" tabindex="-1">
+  <div class="stats-modal-content">
+    <button type="button" class="close-btn" onclick="closeCustomerUpdateModal()"><i class="fas fa-times"></i></button>
+    <h4 class="modal-title fw-bold"><i class="fas fa-user-edit me-2"></i>تم تعديل بيانات العميل</h4>
+    <div class="modal-body">
+      <p class="mb-3">لقد قمت بتعديل البيانات التالية للعميل:</p>
+      <ul id="customerChangesList" class="list-group mb-3"></ul>
+      <p class="fw-semibold">هل تريد تحديث هذه البيانات على مستوى:</p>
+    </div>
+    <div class="d-flex justify-content-center gap-2 mt-4">
+      <button type="button" class="btn btn-outline-primary px-4" id="btnUpdateOrderOnly">
+        <i class="fas fa-file-alt me-1"></i> الطلب فقط
+      </button>
+      <button type="button" class="btn btn-primary px-4" id="btnUpdateOrderAndCustomer">
+        <i class="fas fa-user-check me-1"></i> الطلب وبيانات العميل
+      </button>
+    </div>
+  </div>
+</div>
+
+<script id="editProductsData" type="application/json">{{ products_data|tojson }}</script>
+<script id="initialReplacementItemsData" type="application/json">{{ items_data|tojson }}</script>
+<script>
+
+const editProducts = JSON.parse(document.getElementById('editProductsData')?.textContent || '[]');
+const initialItems = JSON.parse(document.getElementById('initialReplacementItemsData')?.textContent || '[]');
+let productIndex = 0;
+
+const originalCustomerData = document.getElementById('customerName') ? {
+  name: document.getElementById('customerName')?.value || '',
+  phone: document.getElementById('customerPhone')?.value || '',
+  governorate: document.getElementById('customerGovernorate')?.value || '',
+  address: document.getElementById('customerAddressDetails')?.value || ''
+} : null;
+
+function whenJQueryReady(cb){
+  if (window.jQuery) { cb(window.jQuery); return; }
+  setTimeout(()=> whenJQueryReady(cb), 40);
+}
+
+function buildVariantGroups(product, row, index) {
+  const groupsContainer = row.find('.variant-groups-container');
+  groupsContainer.empty();
+
+  if (!product || !product.variants || product.variants.length === 0) {
+    groupsContainer.html('<span class="text-muted small">لا توجد أنواع</span>');
+    return;
+  }
+  const groupOrder = ["مقاس", "لون", "شكل"].filter(g => product.variants.some(v => v.group_name === g));
+  groupOrder.forEach(groupName => {
+    const values = [...new Set(product.variants.filter(v => v.group_name === groupName).map(v => v.variant_name))];
+    const selectContainer = $('<div>').addClass('flex-grow-1');
+    const label = $('<label>').addClass('form-label mb-1 fw-semibold').text(groupName);
+    const select = $('<select>').addClass('form-select group-select')
+      .attr('data-group', groupName)
+      .attr('data-index', index);
+    select.append($('<option>').val('').text(`اختر ${groupName}`));
+    values.forEach(val => select.append($('<option>').val(val).text(val)));
+    selectContainer.append(label).append(select);
+    groupsContainer.append(selectContainer);
+  });
+  groupsContainer.removeClass('row').addClass('d-flex align-items-end gap-2');
+}
+
+function addProductRow(prefill) {
+  if (!window.jQuery) { return; }
+  const container = $('#productsContainer');
+  const isSalin = prefill && prefill.state === 'سليم';
+  const row = $('<tr>').addClass('product-row' + (isSalin ? ' salin-row' : '')).attr('data-index', productIndex);
+
+  let productOptions = '<option value=""></option>';
+  (editProducts || []).forEach(p => {
+    productOptions += `<option value="${p.id}">${p.name}</option>`;
+  });
+
+  if (isSalin) {
+    const prodName = prefill.product_name || 'منتج';
+    row.html(`
+      <td class="text-end">
+        <span class="product-name-text">${prodName}</span>
+        <span class="badge bg-success ms-1" style="font-size:0.7rem;">سليم</span>
+        <input type="hidden" class="product-select-salin" value="${prefill.product_id}">
+      </td>
+      <td class="text-center">
+        <div class="variant-groups-container d-flex align-items-end gap-2 justify-content-center"></div>
+      </td>
+      <td class="text-center">
+        <span class="qty-text">${prefill.quantity}</span>
+        <input type="hidden" class="quantity-input" value="${prefill.quantity}">
+      </td>
+      <td class="text-center"><span class="text-success">منتج استبدال سليم</span><input type="hidden" class="price-input" value="0"></td>
+      <td class="text-center"><span class="text-success">--</span></td>
+      <td></td>
+    `);
+    container.append(row);
+    row.data('id', prefill.id);
+    row.data('product_id', prefill.product_id);
+    row.data('quantity', prefill.quantity);
+    row.data('state', 'سليم');
+
+    const product = editProducts.find(p => p.id == prefill.product_id);
+    if (product) {
+      buildVariantGroups(product, row, productIndex);
+      const setById = (id) => {
+        if (!id) return;
+        const v = product.variants.find(x => x.id === id);
+        if (!v) return;
+        row.find(`.group-select[data-group="${v.group_name}"]`).val(v.variant_name);
+        if (v.group_name === 'مقاس') row.data('size_variant_id', id);
+        if (v.group_name === 'لون') row.data('color_variant_id', id);
+        if (v.group_name === 'شكل') row.data('style_variant_id', id);
+      };
+      setById(prefill.size_variant_id);
+      setById(prefill.color_variant_id);
+      setById(prefill.style_variant_id);
+    }
+  } else {
+    row.html(`
+      <td class="text-end" style="min-width:200px;">
+        <select class="form-select product-select" required><option value=""></option>${productOptions}</select>
+        <input type="hidden" class="item-state-input" value="${prefill ? prefill.state : 'منتج جديد'}">
+      </td>
+      <td class="text-center">
+        <div class="variant-groups-container d-flex align-items-end gap-2 justify-content-center"></div>
+      </td>
+      <td class="text-center">
+        <div class="position-relative d-inline-block" style="max-width:90px;">
+          <input type="number" class="form-control pe-4 ps-4 text-center quantity-input" min="1" value="${prefill ? prefill.quantity : 1}" required style="width:80px;">
+          <button type="button" class="btn btn-link btn-sm position-absolute start-0 top-0 h-100 text-secondary" style="border:none;background:transparent;z-index:5;width:25px;padding:0;">
+            <i class="fas fa-minus"></i>
+          </button>
+          <button type="button" class="btn btn-link btn-sm position-absolute end-0 top-0 h-100 text-secondary" style="border:none;background:transparent;z-index:5;width:25px;padding:0;">
+            <i class="fas fa-plus"></i>
+          </button>
+        </div>
+      </td>
+      <td class="text-center">
+        <input type="number" step="0.01" class="form-control price-input" style="max-width:120px;" value="${prefill ? prefill.price : 0}" required>
+        <div class="price-error text-danger small d-none"></div>
+      </td>
+      <td class="text-center"><span class="row-total">${prefill ? (prefill.price * prefill.quantity).toFixed(2) : '0'}</span></td>
+      <td class="text-center"><button type="button" class="btn btn-danger btn-sm remove-row"><i class="fas fa-times"></i></button></td>
+    `);
+    container.append(row);
+
+    row.find('.start-0').on('click', () => {
+      const q = row.find('.quantity-input');
+      const v = Math.max(1, (parseInt(q.val())||1) - 1);
+      q.val(v).trigger('input');
+    });
+    row.find('.end-0').on('click', () => {
+      const q = row.find('.quantity-input');
+      const v = (parseInt(q.val())||1) + 1;
+      q.val(v).trigger('input');
+    });
+    row.find('.remove-row').on('click', () => { row.remove(); calculateTotals(); });
+
+    const productSelect = row.find('.product-select');
+    productSelect.select2({
+      theme: 'bootstrap-5',
+      width: '100%',
+      placeholder: 'ابحث باسم المنتج',
+      allowClear: true,
+      dir: 'rtl',
+      minimumInputLength: 0,
+      dropdownParent: row
+    });
+    productSelect.on('change', function() {
+      const pid = parseInt($(this).val());
+      const product = editProducts.find(p => p.id === pid);
+      buildVariantGroups(product, row, productIndex);
+      const price = product ? (product.price > 0 ? product.price : (product.wholesale_price||0)) : 0;
+      row.find('.price-input').val(price);
+      row.find('.price-error').addClass('d-none');
+      row.data('price-valid', true);
+      calculateTotals();
+    });
+
+    row.on('change', '.group-select', function() {
+      const group = $(this).data('group');
+      const value = $(this).val();
+      const pid = parseInt(productSelect.val());
+      const product = editProducts.find(p => p.id === pid);
+      if (!product) return;
+      const variant = product.variants.find(v => v.group_name === group && v.variant_name === value);
+      if (!variant) return;
+      if (group === 'مقاس') row.data('size_variant_id', variant.id);
+      if (group === 'لون') row.data('color_variant_id', variant.id);
+      if (group === 'شكل') row.data('style_variant_id', variant.id);
+    });
+
+    row.on('input change', '.quantity-input, .price-input', calculateTotals);
+
+    row.on('input change', '.quantity-input', function(){
+      let v = parseInt($(this).val());
+      if (!isNaN(v) && v <= 0){
+        alert('⚠️ لا يمكن تعيين كمية المنتج بصفر. سيتم التغيير إلى 1.');
+        $(this).val(1);
+        calculateTotals();
+      }
+    });
+
+    if (prefill) {
+      if (prefill.product_id) {
+        productSelect.val(String(prefill.product_id));
+        if (!productSelect.val()) {
+          if (prefill.product_name) {
+            productSelect.append($('<option>').val(String(prefill.product_id)).text(prefill.product_name));
+            productSelect.val(String(prefill.product_id));
+          }
+        }
+        productSelect.trigger('change');
+      }
+      const product = editProducts.find(p => p.id == prefill.product_id);
+      if (product) {
+        buildVariantGroups(product, row, productIndex);
+        const setById = (id) => {
+          if (!id) return;
+          const v = product.variants.find(x => x.id === id);
+          if (!v) return;
+          row.find(`.group-select[data-group="${v.group_name}"]`).val(v.variant_name);
+          if (v.group_name === 'مقاس') row.data('size_variant_id', id);
+          if (v.group_name === 'لون') row.data('color_variant_id', id);
+          if (v.group_name === 'شكل') row.data('style_variant_id', id);
+        };
+        setById(prefill.size_variant_id);
+        setById(prefill.color_variant_id);
+        setById(prefill.style_variant_id);
+        if (prefill.variant_id && !prefill.size_variant_id && !prefill.color_variant_id && !prefill.style_variant_id) {
+          const v = product.variants.find(x => x.id === prefill.variant_id);
+          if (v) row.find(`.group-select[data-group="${v.group_name}"]`).val(v.variant_name);
+        }
+      }
+      if (prefill.quantity) row.find('.quantity-input').val(prefill.quantity);
+      if (prefill.price != null) row.find('.price-input').val(prefill.price);
+      row.data('id', prefill.id);
+    }
+  }
+
+  productIndex++;
+  calculateTotals();
+}
+
+function calculateTotals() {
+  let newProductsTotal = 0;
+  $('#productsContainer .product-row').each(function() {
+    const row = $(this);
+    const isSalin = row.hasClass('salin-row');
+    if (isSalin) return;
+    const price = parseFloat(row.find('.price-input').val()) || 0;
+    const qty = parseInt(row.find('.quantity-input').val()) || 0;
+    const total = price * qty;
+    row.find('.row-total').text(total.toFixed(2));
+    newProductsTotal += total;
+  });
+  const feesCustomer = parseFloat(document.getElementById('delivery_fees_customer_input')?.value) || 0;
+  const orderTotal = newProductsTotal + feesCustomer;
+  const totalInput = document.getElementById('order_total_edit');
+  if (totalInput) totalInput.value = orderTotal.toFixed(0);
+  const paid = parseFloat(document.querySelector('input[name="amount_paid"]').value) || 0;
+  const refund = parseFloat(document.getElementById('customer_refund_edit')?.value) || 0;
+  const remaining = orderTotal - paid - refund;
+  const remInput = document.getElementById('order_remaining_edit');
+  if (remInput) remInput.value = remaining.toFixed(0);
+}
+
+function serializeItems() {
+  const items = [];
+  $('#productsContainer .product-row').each(function() {
+    const row = $(this);
+    const isSalin = row.hasClass('salin-row');
+    if (isSalin) {
+      const sid = row.data('id');
+      const spid = row.data('product_id');
+      const sqty = row.data('quantity');
+      items.push({
+        id: sid || null,
+        product_id: spid || null,
+        variant_id: row.data('variant_id') || null,
+        size_variant_id: row.data('size_variant_id') || null,
+        color_variant_id: row.data('color_variant_id') || null,
+        style_variant_id: row.data('style_variant_id') || null,
+        quantity: sqty,
+        price: 0,
+        state: 'سليم'
+      });
+      return;
+    }
+    const pid = parseInt(row.find('.product-select').val());
+    const qty = parseInt(row.find('.quantity-input').val()) || 1;
+    const price = parseFloat(row.find('.price-input').val()) || 0;
+    const state = row.find('.item-state-input').val() || 'منتج جديد';
+    const payload = {
+      id: row.data('id') || null,
+      product_id: pid || null,
+      variant_id: null,
+      size_variant_id: row.data('size_variant_id') || null,
+      color_variant_id: row.data('color_variant_id') || null,
+      style_variant_id: row.data('style_variant_id') || null,
+      quantity: qty,
+      price: price,
+      state: state
+    };
+    if (!payload.size_variant_id && !payload.color_variant_id && !payload.style_variant_id) {
+      const selects = row.find('.group-select');
+      if (selects.length === 1) {
+        const group = selects.data('group');
+        const value = selects.val();
+        const product = editProducts.find(p => p.id === pid);
+        if (product) {
+          const v = product.variants.find(x => x.group_name === group && x.variant_name === value);
+          if (v) payload.variant_id = v.id;
+        }
+      }
+    }
+    items.push(payload);
+  });
+  $('#order_items_data').val(JSON.stringify(items));
+}
+
+whenJQueryReady(($)=>{
+  $(function(){
+
+    $('head').append('<link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.rtl.min.css" rel="stylesheet" />');
+
+    $('#addProductBtn').on('click', () => addProductRow());
+
+    if (Array.isArray(initialItems) && initialItems.length) {
+      initialItems.forEach(it => addProductRow(it));
+    }
+
+    calculateTotals();
+
+    const delInput = document.querySelector('input[name="delivery_fees"]');
+    const paidInput = document.querySelector('input[name="amount_paid"]');
+    const feesCustomerInput = document.getElementById('delivery_fees_customer_input');
+    if (delInput) delInput.addEventListener('input', calculateTotals);
+    if (paidInput) paidInput.addEventListener('input', calculateTotals);
+    if (feesCustomerInput) feesCustomerInput.addEventListener('input', calculateTotals);
+
+    const statusSelect = document.getElementById('replacement_status_select');
+    const trackingInput = document.getElementById('tracking_number_input');
+    function toggleTracking() {
+      const canEdit = statusSelect && statusSelect.value === 'خرج للتوصيل';
+      if (trackingInput) {
+        trackingInput.readOnly = !canEdit;
+        trackingInput.style.background = canEdit ? '' : '#f8f9fa';
+        if (!canEdit) trackingInput.value = '';
+      }
+    }
+    if (statusSelect) {
+      statusSelect.addEventListener('change', toggleTracking);
+      toggleTracking();
+    }
+
+    $('#editReplacementForm').on('submit', function(e) {
+      let zero = false;
+      $('#productsContainer .quantity-input').each(function(){
+        const q = parseInt($(this).val());
+        if (!q || q <= 0){ zero = true; $(this).val(1); }
+      });
+      if (zero){
+        alert('تم تصحيح بعض الكميات التي كانت صفر. يرجى المراجعة قبل الحفظ.');
+        return false;
+      }
+      serializeItems();
+
+      if (originalCustomerData) {
+        const alreadyChosen = $('#updateCustomerProfile').val();
+        if (alreadyChosen === '0' || alreadyChosen === '') {
+          const changes = [];
+          const curName = $('#customerName').val() || '';
+          const curPhone = $('#customerPhone').val() || '';
+          const curGov = $('#customerGovernorate').val() || '';
+          const curAddr = $('#customerAddressDetails').val() || '';
+
+          if (curName !== originalCustomerData.name) changes.push('الاسم: من "' + originalCustomerData.name + '" إلى "' + curName + '"');
+          if (curPhone !== originalCustomerData.phone) changes.push('رقم الهاتف: من "' + originalCustomerData.phone + '" إلى "' + curPhone + '"');
+          if (curGov !== originalCustomerData.governorate) changes.push('المحافظة: من "' + originalCustomerData.governorate + '" إلى "' + curGov + '"');
+          if (curAddr !== originalCustomerData.address) changes.push('العنوان: من "' + originalCustomerData.address + '" إلى "' + curAddr + '"');
+
+          if (changes.length > 0) {
+            e.preventDefault();
+            const list = $('#customerChangesList');
+            list.empty();
+            changes.forEach(function(c) {
+              list.append('<li class="list-group-item"><i class="fas fa-exchange-alt text-warning me-2"></i>' + c + '</li>');
+            });
+            openCustomerUpdateModal();
+            return false;
+          }
+        }
+      }
+    });
+
+    window.openCustomerUpdateModal = function() {
+      const modal = document.getElementById('customerUpdateModal');
+      if (modal) {
+        modal.style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+      }
+    };
+
+    window.closeCustomerUpdateModal = function() {
+      const modal = document.getElementById('customerUpdateModal');
+      if (modal) {
+        modal.style.display = 'none';
+        document.body.style.overflow = '';
+      }
+    };
+
+    const customerUpdateModal = document.getElementById('customerUpdateModal');
+    if (customerUpdateModal) {
+      customerUpdateModal.addEventListener('click', function(e) {
+        if (e.target === this) closeCustomerUpdateModal();
+      });
+
+      $('#btnUpdateOrderOnly').on('click', function() {
+        $('#updateCustomerProfile').val('order_only');
+        closeCustomerUpdateModal();
+        $('#editReplacementForm').submit();
+      });
+      $('#btnUpdateOrderAndCustomer').on('click', function() {
+        $('#updateCustomerProfile').val('order_and_customer');
+        closeCustomerUpdateModal();
+        $('#editReplacementForm').submit();
+      });
+    }
+  });
+});
+
+document.addEventListener('DOMContentLoaded', function() {
+  document.querySelectorAll('.delete-btn').forEach(btn => {
+    btn.addEventListener('click', function(e) {
+      e.preventDefault();
+      const msg = this.dataset.confirm || 'تأكيد الحذف؟';
+      const formId = this.dataset.formId;
+      showConfirmDialog({ message: msg, type: 'danger', confirmText: 'حذف' }).then(function(confirmed) {
+        if (confirmed) {
+          const form = document.getElementById(formId);
+          if (form) form.submit();
+        }
+      });
+    });
+  });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,83 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<style>
+  /* Hide number input spinners for all browsers */
+  input[type=number]::-webkit-inner-spin-button,
+  input[type=number]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  input[type=number] {
+    -moz-appearance: textfield;
+  }
+</style>
+<div class="container py-4" dir="rtl">
+
+    <div class="text-center mb-4">
+        <h2 class="fw-bold">إضافة <span class="text-warning">عميل جديد</span></h2>
+        <p class="text-muted">يرجى إدخال بيانات العميل بشكل صحيح</p>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            <form method="POST" class="bg-white border rounded-4 shadow-sm p-4">
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">الاسم</label>
+                    <input type="text" name="name" class="form-control" required placeholder="">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">رقم الهاتف</label>
+                    <input type="text" name="phone" class="form-control" required placeholder="">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">المحافظة</label>
+                    <select name="governorate" class="form-select" required>
+                        <option value="">اختر المحافظة</option>
+                        <option value="القاهرة">القاهرة</option>
+                        <option value="الجيزة">الجيزة</option>
+                        <option value="الإسكندرية">الإسكندرية</option>
+                        <option value="الدقهلية">الدقهلية</option>
+                        <option value="البحر الأحمر">البحر الأحمر</option>
+                        <option value="البحيرة">البحيرة</option>
+                        <option value="الفيوم">الفيوم</option>
+                        <option value="الغربية">الغربية</option>
+                        <option value="الإسماعيلية">الإسماعيلية</option>
+                        <option value="المنوفية">المنوفية</option>
+                        <option value="المنيا">المنيا</option>
+                        <option value="القليوبية">القليوبية</option>
+                        <option value="الوادي الجديد">الوادي الجديد</option>
+                        <option value="السويس">السويس</option>
+                        <option value="أسوان">أسوان</option>
+                        <option value="أسيوط">أسيوط</option>
+                        <option value="بني سويف">بني سويف</option>
+                        <option value="بورسعيد">بورسعيد</option>
+                        <option value="دمياط">دمياط</option>
+                        <option value="الشرقية">الشرقية</option>
+                        <option value="جنوب سيناء">جنوب سيناء</option>
+                        <option value="كفر الشيخ">كفر الشيخ</option>
+                        <option value="مطروح">مطروح</option>
+                        <option value="الأقصر">الأقصر</option>
+                        <option value="قنا">قنا</option>
+                        <option value="شمال سيناء">شمال سيناء</option>
+                        <option value="سوهاج">سوهاج</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">باقي العنوان</label>
+                    <input type="text" name="address_details" class="form-control" required placeholder="">
+                </div>
+
+                <div class="d-flex justify-content-between mt-4">
+                    <button type="submit" class="btn btn-success">
+                        <i class="fas fa-user-plus"></i> إضافة العميل
+                    </button>
+                    <a href="{{ url_for('main.customers') }}" class="btn btn-secondary d-inline-flex align-items-center gap-1 px-4">
+                        <i class="fas fa-arrow-left"></i> <span>رجوع</span>
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

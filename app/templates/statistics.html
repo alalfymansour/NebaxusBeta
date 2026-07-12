@@ -1,0 +1,4223 @@
+{% extends 'base.html' %} {% block content %}
+<style>
+  .stats-card {
+    border-radius: 1rem;
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.08);
+    transition: all 0.3s ease;
+    background: #fff;
+    border: 2px solid #e9ecef;
+  }
+
+  .stats-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.12);
+    border-color: #D79921;
+    cursor: pointer;
+  }
+
+  .stats-icon {
+    font-size: 2.5rem;
+    color: #D79921;
+  }
+
+  .stats-number {
+    font-size: 2rem;
+    font-weight: bold;
+    color: #333;
+  }
+
+  .stats-label {
+    font-size: 1rem;
+    color: #6c757d;
+    font-weight: 500;
+  }
+
+  .profit-positive {
+    color: #28a745;
+  }
+
+  .profit-negative {
+    color: #dc3545;
+  }
+
+  .text-primary {
+    color: #007bff !important;
+  }
+
+  .text-info {
+    color: #17a2b8 !important;
+  }
+
+  .text-warning {
+    color: #ffc107 !important;
+  }
+
+  .text-success {
+    color: #28a745 !important;
+  }
+
+  .text-danger {
+    color: #dc3545 !important;
+  }
+
+  .text-secondary {
+    color: #6c757d !important;
+  }
+
+  .low-stock-warning {
+    background: #fff3cd;
+    border-color: #ffeaa7;
+  }
+
+  .modern-table {
+    border-radius: 1rem;
+    overflow: hidden;
+    background: #fff;
+    border: 1px solid #000;
+  }
+  .modern-table th {
+    background: #D79921 !important;
+    font-size: 1.1rem;
+    letter-spacing: 0.5px;
+    color: #333;
+    vertical-align: middle;
+    border-bottom: 1px solid #000 !important;
+  }
+  .modern-table td {
+    vertical-align: middle;
+    font-size: 1rem;
+    background: #fff;
+    border-bottom: 1px solid #000;
+  }
+  .modern-table tbody tr:hover td {
+    background: #fff3cd !important;
+    transition: background 0.2s;
+  }
+  .custom-yellow {
+    color: #D79921 !important;
+  }
+  .custom-yellow-bg {
+    background-color: #D79921 !important;
+  }
+  .card-box {
+    border-radius: 1rem;
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.08);
+    transition: all 0.3s ease;
+  }
+  .card-box:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.12);
+  }
+
+  .section-title {
+    color: #2c3e50;
+    font-weight: 700;
+    margin-bottom: 1.5rem;
+    text-align: center;
+    position: relative;
+  }
+
+  .section-title::after {
+    content: "";
+    position: absolute;
+    bottom: -10px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 60px;
+    height: 3px;
+    background: linear-gradient(90deg, #D79921, #ffb347);
+    border-radius: 2px;
+  }
+
+  /* Modal Styles */
+  .stats-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.6);
+    z-index: 9999;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(5px);
+    animation: fadeIn 0.2s ease;
+  }
+  .stats-modal-content {
+    background: #fff;
+    width: 98%;
+    max-width: 1600px;
+    padding: 2rem;
+    border-radius: 1.5rem;
+    position: relative;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    border-top: 5px solid #D79921;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+    direction: rtl;
+  }
+  #statsModal .stats-modal-content,
+  #feesCalcModal .stats-modal-content {
+    width: 98%;
+    max-width: 1600px;
+  }
+  @media (max-width: 992px) {
+    .stats-modal-content {
+      max-width: 100%;
+      padding: 1.5rem;
+    }
+  }
+  .stats-modal .close-btn {
+    position: absolute;
+    left: 1rem;
+    top: 1rem;
+    border: none;
+    background: #fff3cd;
+    font-size: 1.2rem;
+    color: #333;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    z-index: 10;
+  }
+  .stats-modal .close-btn:hover {
+    background: #D79921;
+    transform: rotate(90deg);
+  }
+  .stats-modal .modal-title {
+    font-weight: 700;
+    font-size: 1.5rem;
+    color: #2c3e50;
+    margin-bottom: 1rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 3px solid #D79921;
+  }
+  .stats-modal .modal-body {
+    overflow-y: auto;
+    padding-right: 0.5rem;
+    flex-grow: 1;
+  }
+  .stats-modal .modal-body::-webkit-scrollbar {
+    width: 8px;
+  }
+  .stats-modal .modal-body::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 10px;
+  }
+  .stats-modal .modal-body::-webkit-scrollbar-thumb {
+    background: #D79921;
+    border-radius: 10px;
+  }
+  .stats-modal .modal-body::-webkit-scrollbar-thumb:hover {
+    background: #ffb347;
+  }
+
+  /* تحسين تصميم العناصر داخل البوب أب */
+  .stats-modal .form-label {
+    font-weight: 600;
+    color: #495057;
+    font-size: 0.95rem;
+  }
+  .stats-modal .form-control {
+    border: 2px solid #e9ecef;
+    border-radius: 0.5rem;
+    padding: 0.625rem 0.875rem;
+    transition: all 0.2s ease;
+  }
+  .stats-modal .form-control:focus {
+    border-color: #D79921;
+    box-shadow: 0 0 0 0.2rem rgba(215, 153, 33, 0.25);
+  }
+  .stats-modal .btn {
+    border-radius: 0.5rem;
+    padding: 0.5rem 1rem;
+    font-weight: 600;
+    transition: all 0.2s ease;
+  }
+  .stats-modal .btn-outline-primary {
+    border: 2px solid #007bff;
+  }
+  .stats-modal .btn-outline-primary:hover {
+    background: #007bff;
+  }
+  .stats-modal .list-unstyled li {
+    padding: 0.5rem 0;
+    border-bottom: 1px solid #e9ecef;
+  }
+  .stats-modal .list-unstyled li:last-child {
+    border-bottom: none;
+  }
+  .stats-modal .border-bottom {
+    border-color: #e9ecef !important;
+  }
+  .stats-modal .table {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    border-radius: 0.75rem;
+    overflow: hidden;
+  }
+  .stats-modal .table thead {
+    background: linear-gradient(135deg, #D79921 0%, #ffb347 100%);
+  }
+  .stats-modal .table thead th {
+    font-weight: 600;
+    color: #333;
+    border: none;
+    padding: 1rem;
+  }
+  .stats-modal .table tbody tr {
+    transition: all 0.2s ease;
+  }
+  .stats-modal .table tbody tr:hover {
+    background: #fff3cd;
+  }
+
+  .stats-modal .losses-summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+  }
+  .stats-modal .losses-summary-btn {
+    border: 2px solid #000;
+    border-radius: 0.75rem;
+    background: #fff;
+    text-align: right;
+    padding: 0.65rem 0.85rem;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+    cursor: default;
+  }
+  .stats-modal .losses-summary-btn .summary-label {
+    display: block;
+    font-size: 0.84rem;
+    color: #495057;
+    margin-bottom: 0.2rem;
+    font-weight: 600;
+  }
+  .stats-modal .losses-summary-btn .summary-value {
+    display: block;
+    font-size: 1rem;
+    font-weight: 700;
+    color: #2c3e50;
+  }
+  .stats-modal .losses-summary-btn.loss-products {
+    background: linear-gradient(135deg, #fff7f7 0%, #ffffff 100%);
+    border-right: 5px solid #dc3545;
+  }
+  .stats-modal .losses-summary-btn.loss-delivery {
+    background: linear-gradient(135deg, #fffdf2 0%, #ffffff 100%);
+    border-right: 5px solid #ffc107;
+  }
+
+  .stats-modal .profit-summary-block {
+    display: grid;
+    gap: 1rem;
+  }
+  .stats-modal .profit-summary-group {
+    border: 1px solid #e9ecef;
+    border-radius: 0.9rem;
+    padding: 0.9rem;
+    background: #fff;
+  }
+  .stats-modal .profit-group-title {
+    font-weight: 700;
+    color: #2c3e50;
+    font-size: 1rem;
+    margin-bottom: 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .stats-modal .profit-summary-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 0.9rem;
+  }
+  .stats-modal .profit-summary-card {
+    border: 1px solid #000;
+    border-radius: 0.9rem;
+    padding: 0.95rem 1.05rem;
+    background: linear-gradient(135deg, #fffef8 0%, #ffffff 100%);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+  }
+  .stats-modal .profit-summary-card .summary-label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.95rem;
+    color: #495057;
+    font-weight: 600;
+  }
+  .stats-modal .profit-summary-card .summary-value {
+    display: block;
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: #2c3e50;
+    margin-top: 0.35rem;
+  }
+  .stats-modal .profit-summary-card .summary-icon {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: #fff3cd;
+    color: #c27d00;
+  }
+  .stats-modal .profit-summary-card.is-revenue {
+    border-right: 5px solid #28a745;
+    background: linear-gradient(135deg, #f4fff7 0%, #ffffff 100%);
+  }
+  .stats-modal .profit-summary-card.is-total {
+    border-right: 5px solid #007bff;
+    background: linear-gradient(135deg, #f2f7ff 0%, #ffffff 100%);
+  }
+  .stats-modal .profit-summary-card.is-expense {
+    border-right: 5px solid #dc3545;
+    background: linear-gradient(135deg, #fff5f5 0%, #ffffff 100%);
+  }
+  .stats-modal .profit-summary-card.is-net {
+    border-right: 5px solid #2c3e50;
+    background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+  }
+
+  /* ─── جدول تفاصيل رسوم التوصيل ─── */
+  .fees-breakdown-wrapper {
+    padding: 6px 0;
+  }
+  .fees-section-title {
+    font-weight: 700;
+    font-size: 0.95rem;
+    color: #2c3e50;
+    margin-bottom: 8px;
+    padding-right: 4px;
+  }
+  .fees-table-responsive {
+    overflow-x: auto;
+    scrollbar-width: thin;
+    scrollbar-color: #000 #eee;
+  }
+  .fees-table-responsive::-webkit-scrollbar {
+    height: 7px;
+    background: #eee;
+  }
+  .fees-table-responsive::-webkit-scrollbar-thumb {
+    background: #000;
+    border-radius: 8px;
+  }
+  .fees-modern-table {
+    border-radius: 0.85rem;
+    overflow: hidden;
+    background: #fff;
+    border: 1px solid #000 !important;
+    width: 100%;
+  }
+  .fees-modern-table th {
+    background: #D79921 !important;
+    font-size: 0.95rem;
+    letter-spacing: 0.3px;
+    color: #333;
+    vertical-align: middle;
+    border-bottom: 1px solid #000 !important;
+  }
+  .fees-modern-table td {
+    vertical-align: middle;
+    font-size: 0.9rem;
+    background: #fff;
+    border-bottom: 1px solid #000 !important;
+  }
+  .fees-modern-table tbody tr:hover td {
+    background: #fff3cd !important;
+    transition: background 0.2s;
+  }
+</style>
+
+<div
+  class="container py-4"
+  dir="rtl"
+  data-month="{{ selected_month }}"
+  data-year="{{ selected_year }}"
+>
+  <div class="text-center mb-5">
+    <h2 class="fw-bold"><span class="text-warning">الإحصائيات العامة</span></h2>
+    <p class="text-muted">نظرة شاملة على أداء المتجر</p>
+
+    {% set months = ['', 'يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو',
+    'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'] %}
+    <div class="row justify-content-center mt-3">
+      <div class="col-md-6">
+        <form
+          method="get"
+          action="{{ url_for('main.statistics') }}"
+          class="d-flex flex-wrap gap-2 justify-content-center align-items-end"
+        >
+          <div style="width: 130px">
+            <label for="month" class="form-label">الشهر</label>
+            <select id="month" name="month" class="form-select">
+              {% for m in range(1,13) %}
+              <option value="{{ m }}" {% if selected_month == m %}selected{% endif %}>
+                {{ months[m] }}
+              </option>
+              {% endfor %}
+            </select>
+          </div>
+          <div style="width: 130px">
+            <label for="year" class="form-label">السنة</label>
+            <select id="year" name="year" class="form-select">
+              {% for y in range(2025, current_year + 1) %}
+              <option value="{{ y }}" {% if selected_year == y %}selected{% endif %}>
+                {{ y }}
+              </option>
+              {% endfor %}
+            </select>
+          </div>
+          <div>
+            <button type="submit" class="btn btn-primary mt-2">
+              <i class="fas fa-filter me-1"></i>عرض الإحصائيات
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <h3 class="section-title mt-5">القيم الإجمالية</h3>
+    <div class="row g-4 mb-5">
+      <div class="col-lg-3 col-md-6">
+        {% if can_view_stats_stock %}
+        <div
+          class="stats-card p-4 text-center h-100"
+          role="button"
+          tabindex="0"
+          data-card="stock"
+          data-title="إجمالي قيمة المخزون"
+          data-total-stock-value="{{ '%.2f'|format(total_stock_value) }}"
+          data-total-products="{{ total_products }}"
+        >
+          <div class="stats-icon">
+            <i class="fas fa-warehouse"></i>
+          </div>
+          <div class="stats-number text-success">
+            {{ "%.2f"|format(total_stock_value) }} ج.م
+          </div>
+          <div class="stats-label">إجمالي قيمة المخزون</div>
+        </div>
+        {% else %}
+        <div
+          class="stats-card p-4 text-center h-100 opacity-50"
+          style="cursor: default; filter: blur(3px)"
+        >
+          <div class="stats-icon">
+            <i class="fas fa-lock text-secondary"></i>
+          </div>
+          <div class="stats-number text-muted">--</div>
+          <div class="stats-label">إجمالي قيمة المخزون</div>
+        </div>
+        {% endif %}
+      </div>
+
+      <div class="col-lg-3 col-md-6">
+        {% if can_view_stats_fixed_assets %}
+        <div
+          class="stats-card p-4 text-center h-100"
+          role="button"
+          tabindex="0"
+          data-card="fixed_assets"
+          data-title="إجمالي تكلفة الأصول الثابتة"
+          data-total-fixed-assets-value="{{ '%.2f'|format(total_fixed_assets_value) }}"
+        >
+          <div class="stats-icon">
+            <i class="fas fa-landmark"></i>
+          </div>
+          <div class="stats-number text-info">
+            {{ "%.2f"|format(total_fixed_assets_value) }} ج.م
+          </div>
+          <div class="stats-label">إجمالي تكلفة الأصول الثابتة</div>
+        </div>
+        {% else %}
+        <div
+          class="stats-card p-4 text-center h-100 opacity-50"
+          style="cursor: default; filter: blur(3px)"
+        >
+          <div class="stats-icon">
+            <i class="fas fa-lock text-secondary"></i>
+          </div>
+          <div class="stats-number text-muted">--</div>
+          <div class="stats-label">إجمالي تكلفة الأصول الثابتة</div>
+        </div>
+        {% endif %}
+      </div>
+
+      <div class="col-lg-3 col-md-6">
+        {% if can_view_stats_total_debt %}
+        <div
+          class="stats-card p-4 text-center h-100"
+          role="button"
+          tabindex="0"
+          data-card="total_debt"
+          data-title="إجمالي الدين"
+          data-total-debt="{{ '%.2f'|format(total_debt) }}"
+        >
+          <div class="stats-icon">
+            <i class="fas fa-hand-holding-usd"></i>
+          </div>
+          <div class="stats-number text-danger">
+            {{ "%.2f"|format(total_debt) }} ج.م
+          </div>
+          <div class="stats-label">إجمالي الدين</div>
+        </div>
+        {% else %}
+        <div
+          class="stats-card p-4 text-center h-100 opacity-50"
+          style="cursor: default; filter: blur(3px)"
+        >
+          <div class="stats-icon">
+            <i class="fas fa-lock text-secondary"></i>
+          </div>
+          <div class="stats-number text-muted">--</div>
+          <div class="stats-label">إجمالي الدين</div>
+        </div>
+        {% endif %}
+      </div>
+
+      <div class="col-lg-3 col-md-6">
+        {% if can_view_stats_capital_growth %}
+        <div
+          class="stats-card p-4 text-center h-100"
+          role="button"
+          tabindex="0"
+          id="capital-growth-card"
+          data-card="capital_growth"
+        >
+            <div id="capital-growth-content">
+            <div class="stats-icon">
+              <i class="fas fa-chart-line"></i>
+            </div>
+            <div class="stats-number text-primary">
+              <span class="sk sk-text sk-inline" style="width:80px; height:1.5rem; margin:0;"></span>
+            </div>
+            <div class="stats-label">معدل نمو رأس المال</div>
+          </div>
+        </div>
+        {% else %}
+        <div
+          class="stats-card p-4 text-center h-100 opacity-50"
+          style="cursor: default; filter: blur(3px)"
+        >
+          <div class="stats-icon">
+            <i class="fas fa-lock text-secondary"></i>
+          </div>
+          <div class="stats-number text-muted">--</div>
+          <div class="stats-label">معدل نمو رأس المال</div>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <h3 class="section-title">
+      إحصائيات {{ months[selected_month] }} {{ selected_year }}
+    </h3>
+
+    <div class="row g-4 mb-5">
+      <div class="col-lg-3 col-md-6">
+        {% if can_view_stats_daily %}
+        <div
+          class="stats-card p-4 text-center h-100"
+          role="button"
+          tabindex="0"
+          data-card="daily"
+          data-title="إحصائيات اليوم"
+          title="الطلبات العادية + طلبات الاستبدال"
+        >
+          <div class="stats-icon">
+            <i class="fas fa-calendar-day"></i>
+          </div>
+          <div class="stats-number text-info">
+            <span class="sk sk-text sk-inline" style="width:60px; height:1.5rem; margin:0;" id="daily-loading"></span>
+            <span id="daily-total" style="display: none">0</span>
+          </div>
+          <div class="stats-label">يومية</div>
+        </div>
+        {% else %}
+        <div
+          class="stats-card p-4 text-center h-100 opacity-50"
+          style="cursor: default; filter: blur(3px)"
+        >
+          <div class="stats-icon">
+            <i class="fas fa-lock text-secondary"></i>
+          </div>
+          <div class="stats-number text-muted">--</div>
+          <div class="stats-label">يومية</div>
+        </div>
+        {% endif %}
+      </div>
+
+      <div class="col-lg-3 col-md-6">
+        {% if can_view_stats_pending_orders %}
+        <div
+          class="stats-card p-4 text-center h-100"
+          role="button"
+          tabindex="0"
+          data-card="pending_orders"
+          data-title="قيمة الطلبات المعلقة خلال الشهر"
+          data-total-pending="{{ '%.2f'|format(total_pending_orders_value) }}"
+          data-delivery-pending="{{ '%.2f'|format(delivery_orders_pending_value) }}"
+          data-replacement-delivery-pending="{{ '%.2f'|format(replacement_delivery_orders_pending_value) }}"
+        >
+          <div class="stats-icon">
+            <i class="fas fa-hourglass-half"></i>
+          </div>
+          <div class="stats-number text-warning">
+            {{ "%.2f"|format(total_pending_orders_value) }} ج.م
+          </div>
+          <div class="stats-label">قيمة الطلبات المعلقة خلال الشهر</div>
+        </div>
+        {% else %}
+        <div
+          class="stats-card p-4 text-center h-100 opacity-50"
+          style="cursor: default; filter: blur(3px)"
+        >
+          <div class="stats-icon">
+            <i class="fas fa-lock text-secondary"></i>
+          </div>
+          <div class="stats-number text-muted">--</div>
+          <div class="stats-label">قيمة الطلبات المعلقة خلال الشهر</div>
+        </div>
+        {% endif %}
+      </div>
+      {% if can_view_stats_net_profit %}
+      <div class="col-lg-3 col-md-6">
+        <div
+          class="stats-card p-4 text-center h-100"
+          role="button"
+          tabindex="0"
+          data-card="net_profit"
+          data-title="صافي الربح المتوقع"
+          data-net-profit="{{ '%.2f'|format(net_profit) }}"
+          data-monthly-cogs="{{ '%.2f'|format(monthly_cogs or 0) }}"
+          data-monthly-fixed-assets-expenses="{{ '%.2f'|format(monthly_fixed_assets_expenses or 0) }}"
+          data-monthly-operational-expenses="{{ '%.2f'|format(monthly_operational_expenses or 0) }}"
+          data-monthly-employee-salaries="{{ '%.2f'|format(monthly_employee_salaries or 0) }}"
+          data-total-sales="{{ '%.2f'|format(total_sales_value or 0) }}"
+          data-total-losses="{{ '%.2f'|format(total_losses or 0) }}"
+        >
+          <div class="stats-icon">
+            <i class="fas fa-hand-holding-usd"></i>
+          </div>
+          <div
+            class="stats-number {% if net_profit >= 0 %}profit-positive{% else %}profit-negative{% endif %}"
+          >
+            {{ "%.2f"|format(net_profit) }} ج.م
+          </div>
+          <div class="stats-label">صافي الربح المتوقع</div>
+        </div>
+      </div>
+      {% endif %}
+
+      <div class="col-lg-3 col-md-6">
+        {% if can_view_stats_losses %}
+        <div
+          class="stats-card p-4 text-center h-100"
+          role="button"
+          tabindex="0"
+          data-card="losses"
+          data-title="إجمالي الخسائر"
+          data-total-losses="{{ '%.2f'|format(total_losses) }}"
+          data-damaged-stock-loss="{{ '%.2f'|format(damaged_stock_loss) }}"
+          data-delivery-fees-loss="{{ '%.2f'|format(delivery_fees_loss) }}"
+        >
+          <div class="stats-icon">
+            <i class="fas fa-exclamation-triangle"></i>
+          </div>
+          <div class="stats-number profit-negative">
+            {{ "%.2f"|format(total_losses) }} ج.م
+          </div>
+          <div class="stats-label">إجمالي الخسائر</div>
+        </div>
+        {% else %}
+        <div
+          class="stats-card p-4 text-center h-100 opacity-50"
+          style="cursor: default; filter: blur(3px)"
+        >
+          <div class="stats-icon">
+            <i class="fas fa-lock text-secondary"></i>
+          </div>
+          <div class="stats-number text-muted">--</div>
+          <div class="stats-label">إجمالي الخسائر</div>
+        </div>
+        {% endif %}
+      </div>
+
+      <div class="col-lg-3 col-md-6">
+        {% if can_view_stats_losses %}
+        <div
+          class="stats-card p-4 text-center h-100"
+          role="button"
+          tabindex="0"
+          data-card="returns"
+          data-title="مرتجعات العملاء"
+          data-return-orders-count="{{ return_orders_count }}"
+          data-return-refund-total="{{ '%.2f'|format(return_order_refund_total) }}"
+        >
+          <div class="stats-icon">
+            <i class="fas fa-undo-alt"></i>
+          </div>
+          <div class="stats-number text-info">
+            {{ return_orders_count }} طلب
+          </div>
+          <div class="stats-label">مرتجعات العملاء</div>
+        </div>
+        {% else %}
+        <div
+          class="stats-card p-4 text-center h-100 opacity-50"
+          style="cursor: default; filter: blur(3px)"
+        >
+          <div class="stats-icon">
+            <i class="fas fa-lock text-secondary"></i>
+          </div>
+          <div class="stats-number text-muted">--</div>
+          <div class="stats-label">مرتجعات العملاء</div>
+        </div>
+        {% endif %}
+      </div>
+
+      <div class="col-lg-3 col-md-6">
+        {% if can_view_stats_delivery_rate %}
+        <div
+          class="stats-card p-4 text-center h-100"
+          role="button"
+          tabindex="0"
+          data-card="delivery_rate"
+          data-title="ملخص طلبات الشهر"
+          data-delivered-percentage="{{ delivered_percentage }}"
+          data-delivered-orders-count="{{ delivered_orders_count }}"
+          data-total-orders-count="{{ total_orders_count }}"
+          data-monthly-orders-created-count="{{ monthly_orders_created_count }}"
+          data-monthly-orders-new-count="{{ monthly_orders_new_count }}"
+          data-monthly-orders-delivery-count="{{ monthly_orders_delivery_count }}"
+          data-monthly-orders-delivered-count="{{ monthly_orders_delivered_count }}"
+          data-monthly-orders-other-count="{{ monthly_orders_other_count }}"
+          data-monthly-replacements-created-count="{{ monthly_replacements_created_count }}"
+          data-monthly-replacements-new-count="{{ monthly_replacements_new_count }}"
+          data-monthly-replacements-delivery-count="{{ monthly_replacements_delivery_count }}"
+          data-monthly-replacements-delivered-count="{{ monthly_replacements_delivered_count }}"
+          data-monthly-replacements-other-count="{{ monthly_replacements_other_count }}"
+        >
+          <div class="stats-icon">
+            <i class="fas fa-shipping-fast"></i>
+          </div>
+          <div class="stats-number text-success">
+            {{ delivered_percentage }}%
+          </div>
+          <div class="stats-label">ملخص طلبات الشهر</div>
+        </div>
+        {% else %}
+        <div
+          class="stats-card p-4 text-center h-100 opacity-50"
+          style="cursor: default; filter: blur(3px)"
+        >
+          <div class="stats-icon">
+            <i class="fas fa-lock text-secondary"></i>
+          </div>
+          <div class="stats-number text-muted">--</div>
+          <div class="stats-label">ملخص طلبات الشهر</div>
+        </div>
+        {% endif %}
+      </div>
+
+      <div class="col-lg-3 col-md-6">
+        {% if can_view_stats_sales %}
+        <div
+          class="stats-card p-4 text-center h-100"
+          role="button"
+          tabindex="0"
+          data-card="sales"
+          data-title="إجمالي مبيعات الشهر"
+          data-total-sales="{{ '%.2f'|format(total_sales_value) }}"
+        >
+          <div class="stats-icon">
+            <i class="fas fa-chart-line"></i>
+          </div>
+          <div class="stats-number text-primary">
+            {{ "%.2f"|format(total_sales_value) }} ج.م
+          </div>
+          <div class="stats-label">إجمالي مبيعات الشهر</div>
+        </div>
+        {% else %}
+        <div
+          class="stats-card p-4 text-center h-100 opacity-50"
+          style="cursor: default; filter: blur(3px)"
+        >
+          <div class="stats-icon">
+            <i class="fas fa-lock text-secondary"></i>
+          </div>
+          <div class="stats-number text-muted">--</div>
+          <div class="stats-label">إجمالي مبيعات الشهر</div>
+        </div>
+        {% endif %}
+      </div>
+
+      <div class="col-lg-3 col-md-6">
+        {% if can_view_stats_amount_paid %}
+        <div
+          class="stats-card p-4 text-center h-100"
+          role="button"
+          tabindex="0"
+          data-card="amount_paid"
+          data-title="إجمالي المبالغ المدفوعة لطلبات الشهر"
+          data-total-amount-paid="{{ '%.2f'|format(total_amount_paid) }}"
+        >
+          <div class="stats-icon">
+            <i class="fas fa-money-bill-wave"></i>
+          </div>
+          <div class="stats-number text-success">
+            {{ "%.2f"|format(total_amount_paid) }} ج.م
+          </div>
+          <div class="stats-label">إجمالي المبالغ المدفوعة لطلبات الشهر</div>
+        </div>
+        {% else %}
+        <div
+          class="stats-card p-4 text-center h-100 opacity-50"
+          style="cursor: default; filter: blur(3px)"
+        >
+          <div class="stats-icon">
+            <i class="fas fa-lock text-secondary"></i>
+          </div>
+          <div class="stats-number text-muted">--</div>
+          <div class="stats-label">إجمالي المبالغ المدفوعة لطلبات الشهر</div>
+        </div>
+        {% endif %}
+      </div>
+
+      <div class="col-lg-3 col-md-6">
+        {% if can_view_stats_monthly_delivered %}
+        <div
+          class="stats-card p-4 text-center h-100"
+          role="button"
+          tabindex="0"
+          data-card="monthly_delivered"
+          data-title="ما تم تسليمه من الطلبات العادية خلال {{ months[selected_month] }}"
+          data-monthly-delivered-value="{{ '%.2f'|format(monthly_delivered_value) }}"
+        >
+          <div class="stats-icon">
+            <i class="fas fa-truck-loading"></i>
+          </div>
+          <div class="stats-number text-primary">
+            {{ "%.2f"|format(monthly_delivered_value) }} ج.م
+          </div>
+          <div class="stats-label">ما تم تسليمه من الطلبات العادية خلال الشهر</div>
+        </div>
+        {% else %}
+        <div
+          class="stats-card p-4 text-center h-100 opacity-50"
+          style="cursor: default; filter: blur(3px)"
+        >
+          <div class="stats-icon">
+            <i class="fas fa-lock text-secondary"></i>
+          </div>
+          <div class="stats-number text-muted">--</div>
+          <div class="stats-label">ما تم تسليمه من الطلبات العادية خلال الشهر</div>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <h3 class="section-title">الفواتير والمصروفات الشهرية</h3>
+    <div class="row g-4 mb-5">
+      <div class="col-lg-3 col-md-6">
+        {% if can_view_stats_monthly_invoices %}
+        <div
+          class="stats-card p-4 text-center h-100"
+          role="button"
+          tabindex="0"
+          data-card="monthly_invoices"
+          data-title="إجمالي قيمة الفواتير"
+          data-monthly-inventory-purchases="{{ '%.2f'|format(monthly_inventory_purchases or 0) }}"
+        >
+          <div class="stats-icon">
+            <i class="fas fa-file-invoice-dollar"></i>
+          </div>
+          <div class="stats-number text-primary">
+            {{ "%.2f"|format(monthly_inventory_purchases) }} ج.م
+          </div>
+          <div class="stats-label">إجمالي قيمة الفواتير</div>
+        </div>
+        {% else %}
+        <div
+          class="stats-card p-4 text-center h-100 opacity-50"
+          style="cursor: default; filter: blur(3px)"
+        >
+          <div class="stats-icon">
+            <i class="fas fa-lock text-secondary"></i>
+          </div>
+          <div class="stats-number text-muted">--</div>
+          <div class="stats-label">إجمالي قيمة الفواتير</div>
+        </div>
+        {% endif %}
+      </div>
+
+      <div class="col-lg-3 col-md-6">
+        {% if can_view_stats_fixed_assets_expenses %}
+        <div
+          class="stats-card p-4 text-center h-100"
+          role="button"
+          tabindex="0"
+          data-card="monthly_fixed_assets_expenses"
+          data-title="مصروفات الأصول الثابتة"
+          data-monthly-fixed-assets-expenses="{{ '%.2f'|format(monthly_fixed_assets_expenses or 0) }}"
+        >
+          <div class="stats-icon">
+            <i class="fas fa-wrench"></i>
+          </div>
+          <div class="stats-number text-info">
+            {{ "%.2f"|format(monthly_fixed_assets_expenses) }} ج.م
+          </div>
+          <div class="stats-label">مصروفات الأصول الثابتة</div>
+        </div>
+        {% else %}
+        <div
+          class="stats-card p-4 text-center h-100 opacity-50"
+          style="cursor: default; filter: blur(3px)"
+        >
+          <div class="stats-icon">
+            <i class="fas fa-lock text-secondary"></i>
+          </div>
+          <div class="stats-number text-muted">--</div>
+          <div class="stats-label">مصروفات الأصول الثابتة</div>
+        </div>
+        {% endif %}
+      </div>
+
+      <div class="col-lg-3 col-md-6">
+        {% if can_view_stats_employee_salaries %}
+        <div
+          class="stats-card p-4 text-center h-100"
+          role="button"
+          tabindex="0"
+          data-card="monthly_employee_salaries"
+          data-title="إجمالي المستحق حتى اليوم"
+          data-monthly-employee-salaries="{{ '%.2f'|format(monthly_employee_salaries or 0) }}"
+        >
+          <div class="stats-icon">
+            <i class="fas fa-user-tie"></i>
+          </div>
+          <div class="stats-number text-primary">
+            {{ "%.2f"|format(monthly_employee_salaries or 0) }} ج.م
+          </div>
+          <div class="stats-label">إجمالي المستحق حتى اليوم</div>
+        </div>
+        {% else %}
+        <div
+          class="stats-card p-4 text-center h-100 opacity-50"
+          style="cursor: default; filter: blur(3px)"
+        >
+          <div class="stats-icon">
+            <i class="fas fa-lock text-secondary"></i>
+          </div>
+          <div class="stats-number text-muted">--</div>
+          <div class="stats-label">إجمالي المستحق حتى اليوم</div>
+        </div>
+        {% endif %}
+      </div>
+
+      <div class="col-lg-3 col-md-6">
+        {% if can_view_stats_operational_expenses %}
+        <div
+          class="stats-card p-4 text-center h-100"
+          role="button"
+          tabindex="0"
+          data-card="monthly_operational_expenses"
+          data-title="المصروفات التشغيلية"
+          data-monthly-operational-expenses="{{ '%.2f'|format(monthly_operational_expenses or 0) }}"
+        >
+          <div class="stats-icon">
+            <i class="fas fa-receipt"></i>
+          </div>
+          <div class="stats-number text-warning">
+            {{ "%.2f"|format(monthly_operational_expenses) }} ج.م
+          </div>
+          <div class="stats-label">المصروفات التشغيلية</div>
+        </div>
+        {% else %}
+        <div
+          class="stats-card p-4 text-center h-100 opacity-50"
+          style="cursor: default; filter: blur(3px)"
+        >
+          <div class="stats-icon">
+            <i class="fas fa-lock text-secondary"></i>
+          </div>
+          <div class="stats-number text-muted">--</div>
+          <div class="stats-label">المصروفات التشغيلية</div>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    {% if can_view_sold_products_by_quantity %}
+    <h3 class="section-title">
+      المنتجات المباعة مرتبة حسب الكمية في شهر {{ months[selected_month] }} {{
+      selected_year }}
+    </h3>
+    <div class="row mb-5">
+      <div class="col-12">
+        <div class="modern-table table-responsive">
+          <table class="table table-striped mb-0 text-center align-middle">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>المنتج</th>
+                <th>الكمية المباعة</th>
+                <th>إجمالي الربح</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for prod in top_products %}
+              <tr>
+                <td>{{ loop.index }}</td>
+                <td class="text-start" dir="rtl">{{ prod.product_name }}</td>
+                <td>{{ prod.total_quantity }}</td>
+                <td
+                  class="fw-bold {% if prod.total_profit >= 0 %}text-success{% else %}text-danger{% endif %}"
+                >
+                  {{ '%.2f'|format(prod.total_profit) }}
+                </td>
+              </tr>
+              {% else %}
+              <tr>
+                <td colspan="4" class="text-muted">
+                  لا توجد مبيعات لهذا الشهر.
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+  <div id="details-stock" style="display: none">
+    <h6 class="mb-3">تفاصيل المخزون</h6>
+    <div class="mb-2">
+      <strong>إجمالي قيمة المخزون:</strong> {{ '%.2f'|format(total_stock_value)
+      }} ج.م
+    </div>
+    <div class="mb-2"><strong>عدد المنتجات:</strong> {{ total_products }}</div>
+    <div class="modern-table table-responsive mt-3">
+      <table class="table table-striped mb-0 text-center align-middle">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>اسم المنتج</th>
+            <th>العدد المتوفر</th>
+            <th>سعر الوحدة</th>
+            <th>إجمالي القيمة</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for p in products_for_stock %}
+          <tr>
+            <td>{{ loop.index }}</td>
+            <td class="text-start" dir="rtl">{{ p.name }}</td>
+            <td>{{ p.stock }}</td>
+            <td>{{ '%.2f'|format(p.purchase_price or 0) }}</td>
+            <td class="fw-bold">
+              {{ '%.2f'|format((p.purchase_price or 0) * (p.stock or 0)) }}
+            </td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="5" class="text-muted">لا توجد منتجات.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+        <tfoot>
+          <tr>
+            <td colspan="4" class="text-end fw-bold">الإجمالي:</td>
+            <td class="fw-bold text-success">
+              {{ '%.2f'|format(total_stock_value) }}
+            </td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  </div>
+
+  <div id="details-pending_orders" style="display: none">
+    <h6 class="mb-3">تفاصيل قيمة الطلبات المعلقة خلال الشهر</h6>
+
+    <div class="mb-2">
+      <strong>الإجمالي:</strong> {{ '%.2f'|format(total_pending_orders_value) }}
+      ج.م
+    </div>
+    <div class="mb-2">
+      <strong>قيمة طلبات خرج للتوصيل:</strong> {{
+      '%.2f'|format(delivery_orders_pending_value) }} ج.م
+    </div>
+    <div class="mb-3">
+      <strong>قيمة طلبات استبدال خرجت للتوصيل:</strong> {{
+      '%.2f'|format(replacement_delivery_orders_pending_value) }} ج.م
+    </div>
+
+    <h6 class="mb-2">منتجات الطلبات التي خرجت للتوصيل</h6>
+    <div class="modern-table table-responsive mb-3">
+      <table class="table table-striped mb-0 text-center align-middle">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>المنتج</th>
+            <th>إجمالي الكمية</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in pending_delivery_products_rows %}
+          <tr>
+            <td>{{ loop.index }}</td>
+            <td class="text-start" dir="rtl">{{ row.product_name }}</td>
+            <td class="fw-bold">{{ row.total_quantity }}</td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="3" class="text-muted">
+              لا توجد منتجات ضمن الطلبات التي خرجت للتوصيل في هذا الشهر.
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <h6 class="mb-2">المنتجات الجديدة في طلبات الاستبدال التي خرجت للتوصيل</h6>
+    <div class="modern-table table-responsive">
+      <table class="table table-striped mb-0 text-center align-middle">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>المنتج</th>
+            <th>إجمالي الكمية</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in pending_replacement_new_products_rows %}
+          <tr>
+            <td>{{ loop.index }}</td>
+            <td class="text-start" dir="rtl">{{ row.product_name }}</td>
+            <td class="fw-bold">{{ row.total_quantity }}</td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="3" class="text-muted">
+              لا توجد منتجات جديدة في طلبات الاستبدال التي خرجت للتوصيل في هذا
+              الشهر.
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div id="details-fixed_assets" style="display: none">
+    <h6 class="mb-3">جميع الأصول الثابتة</h6>
+    {% if all_fixed_assets_list %}
+    <div class="modern-table table-responsive">
+      <table class="table table-striped mb-0 text-center align-middle">
+        <thead>
+          <tr>
+            <th>الأصل</th>
+            <th>إجمالي القيمة</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for asset in all_fixed_assets_list %}
+          <tr>
+            <td>{{ asset.name }}</td>
+            <td>{{ '%.2f'|format(asset.total_value) }} ج.م</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+        <tfoot>
+          <tr>
+            <td><strong>الإجمالي</strong></td>
+            <td>
+              <strong>{{ '%.2f'|format(total_fixed_assets_value) }} ج.م</strong>
+            </td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+    {% else %}
+    <p class="text-muted">لا توجد أصول ثابتة حتى الآن.</p>
+    {% endif %}
+  </div>
+
+  {% if can_view_stats_net_profit %}
+  <div id="details-net_profit" style="display: none">
+    <h6 class="mb-3">
+      تفاصيل صافي الربح لشهر {{ selected_month }}/{{ selected_year }}
+    </h6>
+    <div class="row g-3">
+      <div class="col-12">
+        <strong>عناصر حساب صافي الربح:</strong>
+        <div class="profit-summary-block mt-2">
+          <div class="profit-summary-group">
+            <div class="profit-group-title"><i class="fas fa-coins text-success"></i>الإيرادات</div>
+            <div class="profit-summary-grid">
+              <div class="profit-summary-card is-revenue">
+                <span class="summary-label">
+                  <span class="summary-icon"><i class="fas fa-check-circle"></i></span>
+                  إجمالي مبيعات الطلبات التي وصلت
+                </span>
+                <span class="summary-value">{{ '%.2f'|format(total_sales_orders or 0) }} ج.م</span>
+              </div>
+              <div class="profit-summary-card is-revenue">
+                <span class="summary-label">
+                  <span class="summary-icon"><i class="fas fa-retweet"></i></span>
+                  صافي إيراد الاستبدالات (بعد خصم التوصيل والمرتجع)
+                </span>
+                <span class="summary-value">{{ '%.2f'|format(total_sales_replacements or 0) }} ج.م</span>
+              </div>
+              <div class="profit-summary-card is-total">
+                <span class="summary-label">
+                  <span class="summary-icon"><i class="fas fa-chart-line"></i></span>
+                  إجمالي المبيعات
+                </span>
+                <span class="summary-value text-primary">{{ '%.2f'|format(total_sales_value or 0) }} ج.م</span>
+              </div>
+            </div>
+          </div>
+          <div class="profit-summary-group">
+            <div class="profit-group-title"><i class="fas fa-receipt text-danger"></i>المصروفات</div>
+            <div class="profit-summary-grid">
+              <div class="profit-summary-card is-expense">
+                <span class="summary-label">
+                  <span class="summary-icon"><i class="fas fa-industry"></i></span>
+                  تكلفة البضاعة المباعة (COGS)
+                </span>
+                <span class="summary-value text-danger">{{ '%.2f'|format(total_cost_of_goods_sold or 0) }} ج.م</span>
+              </div>
+              <div class="profit-summary-card is-expense">
+                <span class="summary-label">
+                  <span class="summary-icon"><i class="fas fa-building"></i></span>
+                  مصروفات الأصول الثابتة
+                </span>
+                <span class="summary-value">{{ '%.2f'|format(monthly_fixed_assets_expenses or 0) }} ج.م</span>
+              </div>
+              <div class="profit-summary-card is-expense">
+                <span class="summary-label">
+                  <span class="summary-icon"><i class="fas fa-cogs"></i></span>
+                  المصروفات التشغيلية
+                </span>
+                <span class="summary-value">{{ '%.2f'|format(monthly_operational_expenses or 0) }} ج.م</span>
+              </div>
+              <div class="profit-summary-card is-expense">
+                <span class="summary-label">
+                  <span class="summary-icon"><i class="fas fa-users"></i></span>
+                  صافي مرتبات الموظفين
+                </span>
+                <span class="summary-value">{{ '%.2f'|format(monthly_employee_salaries or 0) }} ج.م</span>
+              </div>
+              <div class="profit-summary-card is-expense">
+                <span class="summary-label">
+                  <span class="summary-icon"><i class="fas fa-exclamation-triangle"></i></span>
+                  إجمالي الخسائر (تالف + توصيل)
+                </span>
+                <span class="summary-value text-danger">{{ '%.2f'|format(total_losses or 0) }} ج.م</span>
+              </div>
+            </div>
+          </div>
+          <div class="profit-summary-group">
+            <div class="profit-group-title"><i class="fas fa-scale-balanced text-primary"></i>الخلاصة</div>
+            <div class="profit-summary-grid">
+              <div class="profit-summary-card is-net">
+                <span class="summary-label">
+                  <span class="summary-icon"><i class="fas fa-funnel-dollar"></i></span>
+                  صافي الربح
+                </span>
+                <span class="summary-value {% if net_profit >= 0 %}text-success{% else %}text-danger{% endif %}">
+                  {{ '%.2f'|format(net_profit) }} ج.م
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-12">
+        <strong>الفواتير (مشتريات المخزون):</strong>
+        <div class="modern-table table-responsive mt-2">
+          <table class="table table-striped mb-0 text-center align-middle">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>التاريخ</th>
+                <th>المورّد</th>
+                <th>الإجمالي</th>
+                <th>المدفوع</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for inv in monthly_invoices_list %}
+              <tr>
+                <td>{{ inv.id }}</td>
+                <td>
+                  {{ inv.date.strftime('%Y-%m-%d') if inv.date else '-' }}
+                </td>
+                <td>{{ inv.supplier.name if inv.supplier else '-' }}</td>
+                <td>{{ '%.2f'|format(inv.total_amount or 0) }}</td>
+                <td>{{ '%.2f'|format(inv.paid_amount or 0) }}</td>
+              </tr>
+              {% else %}
+              <tr>
+                <td colspan="5" class="text-muted">
+                  لا توجد فواتير لهذا الشهر.
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="col-12">
+        <strong>مصروفات الأصول الثابتة:</strong>
+        <div class="modern-table table-responsive mt-2">
+          <table class="table table-striped mb-0 text-center align-middle">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>التاريخ</th>
+                <th>الوصف</th>
+                <th>ملاحظات</th>
+                <th>المبلغ</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for e in monthly_fixed_assets_list %}
+              <tr>
+                <td>{{ e.id }}</td>
+                <td>{{ e.date.strftime('%Y-%m-%d') if e.date else '-' }}</td>
+                <td class="text-start" dir="rtl">{{ e.description or '-' }}</td>
+                <td class="text-start" dir="rtl">{{ e.notes or '-' }}</td>
+                <td>{{ '%.2f'|format(e.amount or 0) }}</td>
+              </tr>
+              {% else %}
+              <tr>
+                <td colspan="5" class="text-muted">
+                  لا توجد مصروفات أصول ثابتة.
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="col-12">
+        <strong>مصروفات تشغيلية:</strong>
+        <div class="modern-table table-responsive mt-2">
+          <table class="table table-striped mb-0 text-center align-middle">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>التاريخ</th>
+                <th>الوصف</th>
+                <th>ملاحظات</th>
+                <th>المبلغ</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for e in monthly_operational_expenses_list %}
+              <tr>
+                <td>{{ e.id }}</td>
+                <td>{{ e.date.strftime('%Y-%m-%d') if e.date else '-' }}</td>
+                <td class="text-start" dir="rtl">{{ e.description or '-' }}</td>
+                <td class="text-start" dir="rtl">{{ e.notes or '-' }}</td>
+                <td>{{ '%.2f'|format(e.amount or 0) }}</td>
+              </tr>
+              {% else %}
+              <tr>
+                <td colspan="5" class="text-muted">لا توجد مصروفات تشغيلية.</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <div id="details-losses" style="display: none">
+    <h6 class="mb-3">
+      تفاصيل الخسائر لشهر {{ selected_month }}/{{ selected_year }}
+    </h6>
+
+    <div class="losses-summary">
+      <button
+        type="button"
+        class="losses-summary-btn loss-products"
+        aria-label="إجمالي خسارة المنتجات"
+      >
+        <span class="summary-label"
+          >إجمالي خسارة المنتجات (تالف + استبدال)</span
+        >
+        <span class="summary-value"
+          >{{ '%.2f'|format(damaged_stock_loss) }} ج.م</span
+        >
+      </button>
+      <button
+        type="button"
+        class="losses-summary-btn loss-delivery"
+        aria-label="إجمالي خسارة رسوم التوصيل"
+      >
+        <span class="summary-label">إجمالي خسارة رسوم التوصيل</span>
+        <span class="summary-value"
+          >{{ '%.2f'|format(delivery_fees_loss) }} ج.م</span
+        >
+      </button>
+    </div>
+
+    <div class="mb-3">
+      <strong>المنتجات التالفة:</strong>
+      <div class="modern-table table-responsive mt-2">
+        <table class="table table-striped mb-0 text-center align-middle">
+          <thead>
+            <tr>
+              <th>المنتج</th>
+              <th>الكمية</th>
+              <th>سعر الوحدة</th>
+              <th>الإجمالي</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for l in damaged_logs_list %}
+            <tr>
+              <td class="text-start" dir="rtl">
+                {{ l.product.name if l.product else '-' }}
+              </td>
+              <td>{{ l.quantity }}</td>
+              <td>{{ '%.2f'|format(l.purchase_price_snapshot or 0) }} ج.م</td>
+              <td class="fw-bold text-danger">
+                {{ '%.2f'|format(l.total_loss or 0) }} ج.م
+              </td>
+            </tr>
+            {% else %}
+            <tr>
+              <td colspan="4" class="text-muted">لا توجد منتجات تالفة.</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div>
+      <strong>خسائر في طلبات الاستبدال:</strong>
+      <div class="modern-table table-responsive mt-2">
+        <table class="table table-striped mb-0 text-center align-middle">
+          <thead>
+            <tr>
+              <th>المنتجات التالفة</th>
+              <th>خسائر تالف</th>
+              <th>خسائر توصيل</th>
+              <th>إجراء</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for r in replacement_orders_loss_list %}
+            <tr>
+              <td class="text-start" dir="rtl">
+                {% set ns = namespace(has_damaged=false) %} {% for it in r.items
+                %} {% if it.is_damaged or ((it.state or '')|trim == 'تالف') %}
+                {% set ns.has_damaged = true %}
+                <div class="small mb-1">
+                  {{ (it._product.name if it._product else ('منتج #' ~
+                  (it.product_id or '-'))) }}
+                  <span class="text-muted">x{{ it.quantity or 0 }}</span>
+                </div>
+                {% endif %} {% endfor %} {% if not ns.has_damaged %}
+                <span class="text-muted">لا يوجد</span>
+                {% endif %}
+              </td>
+              <td>{{ '%.2f'|format(r.damaged_products_loss or 0) }} ج.م</td>
+              <td>{{ '%.2f'|format(r.delivery_fees_loss or 0) }} ج.م</td>
+              <td>
+                <a
+                  href="{{ url_for('main.edit_replacement_order', order_id=r.id, next=url_for('main.statistics', month=selected_month, year=selected_year, open_modal='losses')) }}"
+                  class="btn btn-sm btn-outline-primary"
+                  >فتح الطلب</a
+                >
+              </td>
+            </tr>
+            {% else %}
+            <tr>
+              <td colspan="4" class="text-muted">
+                لا توجد خسائر مسجلة في طلبات الاستبدال.
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="mt-4">
+      <strong>مرتجعات العملاء:</strong>
+      <div class="modern-table table-responsive mt-2">
+        <table class="table table-striped mb-0 text-center align-middle">
+          <thead>
+            <tr>
+              <th>عدد طلبات الإرجاع</th>
+              <th>إجمالي المبالغ المستردة</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="fw-bold">{{ return_orders_count }}</td>
+              <td class="fw-bold text-info">{{ '%.2f'|format(return_order_refund_total) }} ج.م</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div id="details-delivery_rate" style="display: none">
+    <h6 class="mb-3">ملخص طلبات الشهر</h6>
+    <div class="row g-3 mb-3">
+      <div class="col-md-6">
+        <div class="card h-100 border-0 shadow-sm" style="background: linear-gradient(180deg, #fff 0%, #fff9e6 100%);">
+          <div class="card-body text-center">
+            <div class="fw-bold mb-3" style="color:#2c3e50; font-size:1.05rem;">
+              الطلبات العادية
+            </div>
+            <div class="row g-2">
+              <div class="col-6">
+                <div class="p-3 rounded" style="background:#e8f5e9; border:1px solid #c8e6c9;">
+                  <div class="small text-muted mb-1">المسجلة</div>
+                  <div class="fs-4 fw-bold text-success">{{ monthly_orders_created_count }}</div>
+                </div>
+              </div>
+              <div class="col-6">
+                <div class="p-3 rounded" style="background:#fff8e1; border:1px solid #ffe082;">
+                  <div class="small text-muted mb-1">جديد</div>
+                  <div class="fs-4 fw-bold text-warning">{{ monthly_orders_new_count }}</div>
+                </div>
+              </div>
+              <div class="col-6">
+                <div class="p-3 rounded" style="background:#e3f2fd; border:1px solid #bbdefb;">
+                  <div class="small text-muted mb-1">خرج للتوصيل</div>
+                  <div class="fs-4 fw-bold text-primary">{{ monthly_orders_delivery_count }}</div>
+                </div>
+              </div>
+              <div class="col-6">
+                <div class="p-3 rounded" style="background:#e8f5e9; border:1px solid #c8e6c9;">
+                  <div class="small text-muted mb-1">وصل</div>
+                  <div class="fs-4 fw-bold text-success">{{ monthly_orders_delivered_count }}</div>
+                </div>
+              </div>
+            </div>
+            <div class="mt-3 p-2 rounded" style="background:#f8f9fa; border:1px solid #e9ecef;">
+              <strong>أخرى:</strong> {{ monthly_orders_other_count }}
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div class="card h-100 border-0 shadow-sm" style="background: linear-gradient(180deg, #fff 0%, #fff9e6 100%);">
+          <div class="card-body text-center">
+            <div class="fw-bold mb-3" style="color:#2c3e50; font-size:1.05rem;">
+              طلبات الاستبدال
+            </div>
+            <div class="row g-2">
+              <div class="col-6">
+                <div class="p-3 rounded" style="background:#f3e5f5; border:1px solid #e1bee7;">
+                  <div class="small text-muted mb-1">المسجلة</div>
+                  <div class="fs-4 fw-bold" style="color:#8b5cf6;">{{ monthly_replacements_created_count }}</div>
+                </div>
+              </div>
+              <div class="col-6">
+                <div class="p-3 rounded" style="background:#fff8e1; border:1px solid #ffe082;">
+                  <div class="small text-muted mb-1">جديد</div>
+                  <div class="fs-4 fw-bold text-warning">{{ monthly_replacements_new_count }}</div>
+                </div>
+              </div>
+              <div class="col-6">
+                <div class="p-3 rounded" style="background:#fff3cd; border:1px solid #ffe08a;">
+                  <div class="small text-muted mb-1">خرج للتوصيل</div>
+                  <div class="fs-4 fw-bold" style="color:#f59e0b;">{{ monthly_replacements_delivery_count }}</div>
+                </div>
+              </div>
+              <div class="col-6">
+                <div class="p-3 rounded" style="background:#e8f5e9; border:1px solid #c8e6c9;">
+                  <div class="small text-muted mb-1">وصل</div>
+                  <div class="fs-4 fw-bold text-success">{{ monthly_replacements_delivered_count }}</div>
+                </div>
+              </div>
+            </div>
+            <div class="mt-3 p-2 rounded" style="background:#f8f9fa; border:1px solid #e9ecef;">
+              <strong>أخرى:</strong> {{ monthly_replacements_other_count }}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="p-3 rounded text-center" style="background:#fff8e1; border:1px solid #D79921;">
+      <strong>النسبة الإجمالية للوصول:</strong> {{ delivered_percentage }}%
+      <span class="mx-2">|</span>
+      <strong>وصل:</strong> {{ delivered_orders_count }}
+      <span class="mx-2">/</span>
+      <strong>إجمالي الطلبات:</strong> {{ total_orders_count }}
+    </div>
+
+    <div class="mt-4 mb-2"><strong>الطلبات ذات الحالة الأخرى:</strong></div>
+    <div class="modern-table table-responsive mb-4">
+      <table class="table table-striped mb-0 text-center align-middle">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>التاريخ</th>
+            <th>العميل</th>
+            <th>الحالة</th>
+            <th>الإجمالي</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for o in monthly_orders_other_list %}
+          <tr>
+            <td>{{ o.id }}</td>
+            <td>{{ o.date.strftime('%Y-%m-%d') if o.date else '-' }}</td>
+            <td>{{ o.customer.name if o.customer else (o.customer_name if o.customer_name else '-') }}</td>
+            <td><span class="badge bg-secondary">{{ o.status or '-' }}</span></td>
+            <td>{{ '%.2f'|format(o.total_amount or 0) }} ج.م</td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="5" class="text-muted">لا توجد طلبات عادية بحالة أخرى هذا الشهر.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="mt-3 mb-2"><strong>طلبات الاستبدال ذات الحالة الأخرى:</strong></div>
+    <div class="modern-table table-responsive">
+      <table class="table table-striped mb-0 text-center align-middle">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>التاريخ</th>
+            <th>العميل</th>
+            <th>الحالة</th>
+            <th>الإجمالي</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for o in monthly_replacements_other_list %}
+          <tr>
+            <td>{{ o.id }}</td>
+            <td>{{ o.date.strftime('%Y-%m-%d') if o.date else '-' }}</td>
+            <td>{{ o.customer_name or '-' }}</td>
+            <td><span class="badge bg-secondary">{{ o.status or '-' }}</span></td>
+            <td>{{ '%.2f'|format(o.total_amount or 0) }} ج.م</td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="5" class="text-muted">لا توجد طلبات استبدال بحالة أخرى هذا الشهر.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div id="details-sales" style="display: none">
+    <h6 class="mb-3">
+      تفاصيل المبيعات لشهر {{ selected_month }}/{{ selected_year }}
+    </h6>
+    <div class="modern-table table-responsive">
+      <table class="table table-striped mb-0 text-center align-middle">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>التاريخ</th>
+            <th>العميل</th>
+            <th>الإجمالي</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for o in delivered_orders_list %}
+          <tr>
+            <td>{{ o.id }}</td>
+            <td>{{ o.date.strftime('%Y-%m-%d') if o.date else '-' }}</td>
+            <td>
+              {{ o.customer.name if o.customer else (o.customer_name if
+              o.customer_name else '-') }}
+            </td>
+            <td>{{ '%.2f'|format(o.total_amount or 0) }}</td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="4" class="text-muted">لا توجد مبيعات.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div id="details-monthly_invoices" style="display: none">
+    <h6 class="mb-3">
+      تفاصيل الفواتير لشهر {{ selected_month }}/{{ selected_year }}
+    </h6>
+    <div class="modern-table table-responsive">
+      <table class="table table-striped mb-0 text-center align-middle">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>التاريخ</th>
+            <th>المورّد</th>
+            <th>الإجمالي</th>
+            <th>المدفوع</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for inv in monthly_invoices_list %}
+          <tr>
+            <td>{{ inv.id }}</td>
+            <td>{{ inv.date.strftime('%Y-%m-%d') if inv.date else '-' }}</td>
+            <td>{{ inv.supplier.name if inv.supplier else '-' }}</td>
+            <td>{{ '%.2f'|format(inv.total_amount or 0) }}</td>
+            <td>{{ '%.2f'|format(inv.paid_amount or 0) }}</td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="5" class="text-muted">لا توجد فواتير لهذا الشهر.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div id="details-monthly_fixed_assets_expenses" style="display: none">
+    <h6 class="mb-3">تفاصيل مصروفات الأصول الثابتة</h6>
+    <div class="modern-table table-responsive">
+      <table class="table table-striped mb-0 text-center align-middle">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>التاريخ</th>
+            <th>العنوان</th>
+            <th>طريقة الدفع</th>
+            <th>المبلغ</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for e in monthly_fixed_assets_list %}
+          <tr>
+            <td>{{ e.id }}</td>
+            <td>{{ e.date.strftime('%Y-%m-%d') if e.date else '-' }}</td>
+            <td class="text-start" dir="rtl">{{ e.title or '-' }}</td>
+            <td>{{ e.payment_method or '-' }}</td>
+            <td>{{ '%.2f'|format(e.amount or 0) }}</td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="5" class="text-muted">لا توجد مصروفات أصول ثابتة.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+        <tfoot>
+          <tr>
+            <td colspan="4" class="text-end fw-bold">الإجمالي:</td>
+            <td>{{ '%.2f'|format(monthly_fixed_assets_expenses or 0) }}</td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  </div>
+
+  <div id="details-monthly_operational_expenses" style="display: none">
+    <h6 class="mb-3">تفاصيل المصروفات التشغيلية</h6>
+    <div class="modern-table table-responsive">
+      <table class="table table-striped mb-0 text-center align-middle">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>التاريخ</th>
+            <th>العنوان</th>
+            <th>طريقة الدفع</th>
+            <th>المبلغ</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for e in monthly_operational_expenses_list %}
+          <tr>
+            <td>{{ e.id }}</td>
+            <td>{{ e.date.strftime('%Y-%m-%d') if e.date else '-' }}</td>
+            <td class="text-start" dir="rtl">{{ e.title or '-' }}</td>
+            <td>{{ e.payment_method or '-' }}</td>
+            <td>{{ '%.2f'|format(e.amount or 0) }}</td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="5" class="text-muted">لا توجد مصروفات تشغيلية.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+        <tfoot>
+          <tr>
+            <td colspan="4" class="text-end fw-bold">الإجمالي:</td>
+            <td>{{ '%.2f'|format(monthly_operational_expenses or 0) }}</td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  </div>
+
+  <div id="details-monthly_employee_salaries" style="display: none">
+    <h6 class="mb-3">
+      تفاصيل مرتبات الموظفين لشهر {{ selected_month }}/{{ selected_year }}
+    </h6>
+    <div class="modern-table table-responsive">
+      <table class="table table-striped mb-0 text-center align-middle">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>الموظف</th>
+            <th>الراتب الأساسي</th>
+            <th>مكافآت</th>
+            <th>خصومات</th>
+            <th>سلف</th>
+            <th>عمولة المبيعات</th>
+            <th>صافي المرتب</th>
+            <th>المستحق حتى اليوم</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for e in employees_salary_details %}
+          <tr>
+            <td>{{ e.id }}</td>
+            <td class="text-start" dir="rtl">{{ e.name }}</td>
+            <td>{{ '%.2f'|format(e.base_salary) }}</td>
+            <td>{{ '%.2f'|format(e.bonuses) }}</td>
+            <td>{{ '%.2f'|format(e.deductions) }}</td>
+            <td>{{ '%.2f'|format(e.advances) }}</td>
+            <td>{{ '%.2f'|format(e.sales_commission or 0) }}</td>
+            <td
+              class="fw-bold {% if e.net_salary >= 0 %}text-success{% else %}text-danger{% endif %}"
+            >
+              {{ '%.2f'|format(e.net_salary) }}
+            </td>
+            <td class="fw-bold text-primary">
+              {{ '%.2f'|format(e.accrued_salary) }}
+            </td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="8" class="text-muted">لا يوجد موظفون نشطون.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div class="mt-3">
+              <strong>إجمالي المستحق حتى اليوم:</strong> {{
+      '%.2f'|format(monthly_employee_salaries or 0) }} ج.م
+    </div>
+  </div>
+
+  <div id="details-employee_debt" style="display: none">
+    <h6 class="mb-3">ديون الموظفين</h6>
+    <div class="modern-table table-responsive">
+      <table class="table table-striped mb-0 text-center align-middle">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>الموظف</th>
+            <th>الرصيد</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for e in employee_debt_list %}
+          <tr>
+            <td>{{ e.id }}</td>
+            <td class="text-start" dir="rtl">{{ e.name }}</td>
+            <td class="fw-bold {{ 'text-danger' if e.balance < 0 else 'text-success' }}">{{ '%.2f'|format(e.balance) }}</td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="3" class="text-muted">لا يوجد موظفون عليهم ديون.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div id="details-amount_paid" style="display: none">
+    <h6 class="mb-3">
+      تفاصيل المبالغ المدفوعة لشهر {{ selected_month }}/{{ selected_year }}
+    </h6>
+    <div class="mb-2"><strong>طلبات عادية:</strong></div>
+    <div class="modern-table table-responsive">
+      <table class="table table-striped mb-0 text-center align-middle">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>التاريخ</th>
+            <th>العميل</th>
+            <th>إجمالي الطلب</th>
+            <th>المبلغ المدفوع</th>
+            <th>الحالة</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for o in orders_with_payments %}
+          <tr>
+            <td>{{ o.id }}</td>
+            <td>{{ o.date.strftime('%Y-%m-%d') if o.date else '-' }}</td>
+            <td>{{ o.customer.name if o.customer else '-' }}</td>
+            <td>{{ '%.2f'|format(o.total_amount or 0) }} ج.م</td>
+            <td class="fw-bold text-success">
+              {{ '%.2f'|format(o.amount_paid or 0) }} ج.م
+            </td>
+            <td>{{ o.status }}</td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="6" class="text-muted">لا توجد مدفوعات لهذا الشهر.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+        <tfoot>
+          <tr>
+            <td colspan="4" class="text-end fw-bold">الإجمالي:</td>
+            <td class="fw-bold text-success">
+              {{ '%.2f'|format(total_amount_paid_orders or 0) }} ج.م
+            </td>
+            <td></td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+    <div class="mt-4 mb-2"><strong>طلبات استبدال:</strong></div>
+    <div class="modern-table table-responsive">
+      <table class="table table-striped mb-0 text-center align-middle">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>التاريخ</th>
+            <th>العميل</th>
+            <th>إجمالي الطلب</th>
+            <th>المبلغ المدفوع</th>
+            <th>الحالة</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for o in replacement_orders_with_payments %}
+          <tr>
+            <td>{{ o.id }}</td>
+            <td>{{ o.date.strftime('%Y-%m-%d') if o.date else '-' }}</td>
+            <td class="text-start" dir="rtl">{{ o.customer_name or '-' }}</td>
+            <td>{{ '%.2f'|format(o.total_amount or 0) }} ج.م</td>
+            <td class="fw-bold text-success">
+              {{ '%.2f'|format(o.amount_paid or 0) }} ج.م
+            </td>
+            <td>{{ o.status }}</td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="6" class="text-muted">لا توجد مدفوعات استبدال لهذا الشهر.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+        <tfoot>
+          <tr>
+            <td colspan="4" class="text-end fw-bold">الإجمالي:</td>
+            <td class="fw-bold text-success">
+              {{ '%.2f'|format(total_amount_paid_replacements or 0) }} ج.م
+            </td>
+            <td></td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+    <div class="mt-3">
+      <strong>إجمالي المبالغ المدفوعة (الكل):</strong>
+      {{ '%.2f'|format(total_amount_paid or 0) }} ج.م
+    </div>
+  </div>
+
+  <div id="details-total_debt" style="display: none">
+    <h6 class="mb-3">تفاصيل إجمالي الدين</h6>
+    <div class="mb-2">
+      <strong>إجمالي الدين:</strong> {{ '%.2f'|format(total_debt) }} ج.م
+    </div>
+
+    {% if all_debts_details %}
+    <div class="modern-table table-responsive">
+      <table class="table table-striped mb-0 text-center align-middle">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>الاسم</th>
+            <th>النوع</th>
+            <th>إجمالي الدين</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for debt in all_debts_details %}
+          <tr>
+            <td>{{ loop.index }}</td>
+            <td class="text-start" dir="rtl">{{ debt.name }}</td>
+            <td>
+              {% if debt.type == 'مورد' %}
+              <span class="badge bg-primary">{{ debt.type }}</span>
+              {% elif debt.type == 'موظف' %}
+              <span class="badge bg-warning text-dark">{{ debt.type }}</span>
+              {% else %}
+              <span class="badge bg-info">{{ debt.type }}</span>
+              {% endif %}
+            </td>
+            <td class="fw-bold text-danger">
+              {{ '%.2f'|format(debt.debt) }} ج.م
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+        <tfoot>
+          <tr>
+            <td colspan="3" class="text-end fw-bold">الإجمالي:</td>
+            <td class="fw-bold text-danger">
+              {{ '%.2f'|format(total_debt) }} ج.م
+            </td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+    {% else %}
+    <p class="text-muted">لا توجد ديون مستحقة.</p>
+    {% endif %}
+  </div>
+
+  <div id="details-monthly_delivered" style="display: none">
+    <h6 class="mb-3">
+      تفاصيل الطلبات العادية التي تم تسليمها خلال {{ months[selected_month] }}
+      {{ selected_year }}
+    </h6>
+
+    {% if longest_status_info %}
+    <div class="alert alert-info mb-4" role="alert">
+      <h6 class="alert-heading">
+        <i class="fas fa-clock"></i> أطول حالة استغرقت وقتاً قبل التسليم:
+      </h6>
+      <hr />
+      <div class="row">
+        <div class="col-md-3">
+          <strong>رقم الطلب:</strong>
+          <a
+            href="{{ url_for('main.edit_order', order_id=longest_status_info.order_id) }}"
+            target="_blank"
+            >#{{ longest_status_info.order_id }}</a
+          >
+        </div>
+        <div class="col-md-3">
+          <strong>الحالة:</strong>
+          <span class="badge bg-warning">{{ longest_status_info.status }}</span>
+        </div>
+        <div class="col-md-3">
+          <strong>المدة:</strong> {{ longest_status_info.duration_hours }} ساعة
+          ({{ longest_status_info.duration_days }} يوم)
+        </div>
+        <div class="col-md-3">
+          <a
+            href="{{ url_for('main.order_status_history', order_id=longest_status_info.order_id) }}"
+            target="_blank"
+            class="btn btn-sm btn-outline-primary"
+          >
+            <i class="fas fa-history"></i> عرض تاريخ الحالات
+          </a>
+        </div>
+      </div>
+    </div>
+    {% else %}
+    <div class="alert alert-secondary mb-4">
+      <i class="fas fa-info-circle"></i> لا توجد بيانات كافية لحساب أطول حالة
+    </div>
+    {% endif %}
+
+    <div class="modern-table table-responsive">
+      <table class="table table-striped mb-0 text-center align-middle">
+        <thead>
+          <tr>
+            <th>رقم الطلب</th>
+            <th>التاريخ</th>
+            <th>العميل</th>
+            <th>الهاتف</th>
+            <th>إجمالي الطلب</th>
+            <th>المدفوع</th>
+            <th>المتبقي</th>
+            <th>تاريخ التسليم</th>
+            <th>إجراءات</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for order in delivered_in_month_orders %}
+          <tr>
+            <td>
+              <a
+                href="{{ url_for('main.edit_order', order_id=order.id) }}"
+                target="_blank"
+                >#{{ order.id }}</a
+              >
+            </td>
+            <td>
+              {{ order.date.strftime('%Y-%m-%d') if order.date else '-' }}
+            </td>
+            <td class="text-start" dir="rtl">
+              {{ order.customer_name or '-' }}
+            </td>
+            <td>{{ order.customer_phone or '-' }}</td>
+            <td>
+              {{ '%.2f'|format(order.total_amount or 0) }} ج.م
+            </td>
+            <td class="text-success">
+              {{ '%.2f'|format(order.amount_paid or 0) }} ج.م
+            </td>
+            <td class="text-danger">
+              {{ '%.2f'|format(order.remaining_amount or 0) }} ج.م
+            </td>
+            <td>
+              {% set delivered_at = delivered_at_map.get(order.id) %}
+              {{ delivered_at.strftime('%Y-%m-%d %H:%M') if delivered_at else '-' }}
+            </td>
+            <td>
+              <a
+                href="{{ url_for('main.order_status_history', order_id=order.id) }}"
+                target="_blank"
+                class="btn btn-sm btn-outline-info"
+                title="عرض تاريخ الحالات"
+              >
+                <i class="fas fa-history"></i>
+              </a>
+            </td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="9" class="text-muted">
+              لا توجد طلبات تم تسليمها في هذا الشهر.
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+        <tfoot>
+          <tr>
+            <td colspan="4" class="text-end fw-bold">الإجمالي:</td>
+            <td class="fw-bold text-primary">
+              {{ '%.2f'|format(monthly_delivered_value) }} ج.م
+            </td>
+            <td colspan="4"></td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  </div>
+
+  <!-- Modal حساب رسوم التوصيل بدقة -->
+  <div id="feesCalcModal" class="stats-modal" aria-hidden="true">
+    <div class="stats-modal-content">
+      <button
+        type="button"
+        class="close-btn"
+        aria-label="إغلاق"
+        onclick="closeFeesCalcModal()"
+      >
+        <i class="fas fa-times"></i>
+      </button>
+      <h5 id="feesCalcModalTitle" class="modal-title">حساب رسوم التوصيل</h5>
+      <div class="modal-body" id="feesCalcModalBody"></div>
+    </div>
+  </div>
+
+  <div id="statsModal" class="stats-modal" aria-hidden="true">
+    <div class="stats-modal-content">
+      <button
+        type="button"
+        class="close-btn"
+        aria-label="إغلاق"
+        data-close="button"
+      >
+        <i class="fas fa-times"></i>
+      </button>
+      <h5 id="statsModalTitle" class="modal-title"></h5>
+      <div id="statsModalBody" class="modal-body"></div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script>
+    (function () {
+      const container = document.querySelector('.container[dir="rtl"]');
+      const monthNumber = Number(container?.dataset?.month || 0);
+      const months = [
+        "",
+        "يناير",
+        "فبراير",
+        "مارس",
+        "أبريل",
+        "مايو",
+        "يونيو",
+        "يوليو",
+        "أغسطس",
+        "سبتمبر",
+        "أكتوبر",
+        "نوفمبر",
+        "ديسمبر",
+      ];
+      const monthName = months[monthNumber] || "";
+      const year = container?.dataset?.year || "";
+
+      const modal = document.getElementById("statsModal");
+      const titleEl = document.getElementById("statsModalTitle");
+      const bodyEl = document.getElementById("statsModalBody");
+
+      let dailyData = null;
+
+      function fetchDailyData(selectedDate, callback) {
+        const loadingIcon = document.getElementById("daily-loading");
+        const totalSpan = document.getElementById("daily-total");
+
+        if (loadingIcon) loadingIcon.style.display = "inline";
+        if (totalSpan) totalSpan.style.display = "none";
+
+        fetch(`/api/daily_statistics?date=${selectedDate}`)
+          .then((response) => {
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            return response.json();
+          })
+          .then((data) => {
+            if (data.success) {
+              dailyData = data;
+
+              if (loadingIcon) loadingIcon.style.display = "none";
+              if (totalSpan) {
+                totalSpan.textContent = data.total.count;
+                totalSpan.style.display = "inline";
+              }
+
+              if (callback) callback();
+            } else {
+              throw new Error(data.error || "فشل في جلب البيانات");
+            }
+          })
+          .catch((error) => {
+            console.error("Error fetching daily statistics:", error);
+            if (loadingIcon) loadingIcon.style.display = "none";
+            if (totalSpan) {
+              totalSpan.textContent = "خطأ";
+              totalSpan.style.display = "inline";
+            }
+            if (callback) callback();
+          });
+      }
+
+      function attachDateFilterListener() {
+        const modalDateInput = document.getElementById("dailyDateFilterModal");
+        const applyBtn = document.getElementById("applyDateBtn");
+
+        if (modalDateInput && applyBtn) {
+          const clonedInput = modalDateInput.cloneNode(true);
+          modalDateInput.parentNode.replaceChild(clonedInput, modalDateInput);
+          const newInput = document.getElementById("dailyDateFilterModal");
+
+          const clonedBtn = applyBtn.cloneNode(true);
+          applyBtn.parentNode.replaceChild(clonedBtn, applyBtn);
+          const newBtn = document.getElementById("applyDateBtn");
+
+          newBtn.addEventListener("click", function () {
+            const selected = newInput.value;
+            if (!selected) {
+              alert("الرجاء اختيار تاريخ");
+              return;
+            }
+
+            const selectedDate = new Date(selected);
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            selectedDate.setHours(0, 0, 0, 0);
+
+            if (selectedDate > today) {
+              alert(
+                "لا يمكن اختيار تاريخ في المستقبل! الرجاء اختيار تاريخ اليوم أو قبله.",
+              );
+              return;
+            }
+
+            newBtn.disabled = true;
+            newBtn.innerHTML =
+              '<i class="fas fa-spinner fa-spin me-2"></i>جاري التحميل...';
+
+            fetchDailyData(selected, function () {
+              if (!dailyData || !dailyData.success) {
+                console.error(
+                  "Failed to fetch daily data or no data available",
+                );
+                newBtn.disabled = false;
+                newBtn.innerHTML = '<i class="fas fa-check me-2"></i>تطبيق';
+                alert("حدث خطأ في جلب البيانات");
+                return;
+              }
+
+              const dateObj = new Date(dailyData.date);
+              const formattedDate = dateObj.toLocaleDateString("ar-EG", {
+                year: "numeric",
+                month: "long",
+                day: "numeric",
+              });
+              titleEl.textContent = `إحصائيات اليومية - ${formattedDate}`;
+
+              updateDailyStats();
+
+              loadAllOrdersTables(function () {
+                newBtn.disabled = false;
+                newBtn.innerHTML = '<i class="fas fa-check me-2"></i>تطبيق';
+              });
+            });
+          });
+
+          newInput.addEventListener("keypress", function (e) {
+            if (e.key === "Enter") {
+              newBtn.click();
+            }
+          });
+        }
+      }
+
+      function updateDailyStats() {
+        if (!dailyData) return;
+
+        const newOrdersTitle = document.getElementById("daily-created-title");
+        if (newOrdersTitle) {
+          newOrdersTitle.innerHTML = `
+          طلبات مسجلة اليوم: ${dailyData.created_orders?.count ?? dailyData.new_orders.count} طلب
+          <span class="badge bg-primary ms-2">${fmt(dailyData.created_orders?.value ?? dailyData.new_orders.value)} ج.م</span>
+          ${(dailyData.created_orders?.fees ?? dailyData.new_orders.fees) > 0 ? `<span class="badge bg-info ms-1">+ ${fmt(dailyData.created_orders?.fees ?? dailyData.new_orders.fees)} ج.م رسوم</span>` : ""}
+        `;
+        }
+
+        const deliveryTitle = document.getElementById("daily-delivery-title");
+        if (deliveryTitle) {
+          deliveryTitle.innerHTML = `
+          خرج للتوصيل: ${dailyData.delivery_orders.count} طلب
+          <span class="badge bg-warning text-dark ms-2">${fmt(dailyData.delivery_orders.value)} ج.م</span>
+          ${dailyData.delivery_orders.fees > 0 ? `<span class="badge bg-info ms-1">+ ${fmt(dailyData.delivery_orders.fees)} ج.م رسوم</span>` : ""}
+        `;
+        }
+
+        const deliveredTitle = document.getElementById("daily-delivered-title");
+        if (deliveredTitle) {
+          deliveredTitle.innerHTML = `
+          وصل: ${dailyData.delivered_orders.count} طلب
+          <span class="badge bg-success ms-2">${fmt(dailyData.delivered_orders.value)} ج.م</span>
+          ${dailyData.delivered_orders.fees > 0 ? `<span class="badge bg-info ms-1">+ ${fmt(dailyData.delivered_orders.fees)} ج.م رسوم</span>` : ""}
+        `;
+        }
+
+        const replacementNewTitle = document.getElementById("daily-replacement-created-title");
+        if (replacementNewTitle) {
+          replacementNewTitle.innerHTML = `
+          طلبات استبدال مسجلة اليوم: ${dailyData.replacement_created_orders?.count ?? dailyData.replacement_new_orders.count} طلب
+          <span class="badge ms-2" style="background: #8b5cf6;">${fmt(dailyData.replacement_created_orders?.value ?? dailyData.replacement_new_orders.value)} ج.م</span>
+          ${(dailyData.replacement_created_orders?.fees_customer ?? dailyData.replacement_new_orders.fees_customer) > 0 ? `<span class="badge bg-success ms-1">${fmt(dailyData.replacement_created_orders?.fees_customer ?? dailyData.replacement_new_orders.fees_customer)} ج.م على العميل</span>` : ""}
+          ${(dailyData.replacement_created_orders?.fees_company ?? dailyData.replacement_new_orders.fees_company) > 0 ? `<span class="badge bg-danger ms-1">${fmt(dailyData.replacement_created_orders?.fees_company ?? dailyData.replacement_new_orders.fees_company)} ج.م على نيباكسس</span>` : ""}
+        `;
+        }
+
+        const replacementDeliveryTitle = document.getElementById("daily-replacement-delivery-title");
+        if (replacementDeliveryTitle) {
+          replacementDeliveryTitle.innerHTML = `
+          استبدال - خرج للتوصيل: ${dailyData.replacement_delivery_orders.count} طلب
+          <span class="badge ms-2" style="background: #f59e0b;">${fmt(dailyData.replacement_delivery_orders.value)} ج.م</span>
+          ${dailyData.replacement_delivery_orders.fees_customer > 0 ? `<span class="badge bg-success ms-1">${fmt(dailyData.replacement_delivery_orders.fees_customer)} ج.م على العميل</span>` : ""}
+          ${dailyData.replacement_delivery_orders.fees_company > 0 ? `<span class="badge bg-danger ms-1">${fmt(dailyData.replacement_delivery_orders.fees_company)} ج.م على نيباكسس</span>` : ""}
+        `;
+        }
+
+        const replacementDeliveredTitle = document.getElementById("daily-replacement-delivered-title");
+        if (replacementDeliveredTitle) {
+          replacementDeliveredTitle.innerHTML = `
+          استبدال - وصل: ${dailyData.replacement_delivered_orders.count} طلب
+          <span class="badge ms-2" style="background: #10b981;">${fmt(dailyData.replacement_delivered_orders.value)} ج.م</span>
+          ${dailyData.replacement_delivered_orders.fees_customer > 0 ? `<span class="badge bg-success ms-1">${fmt(dailyData.replacement_delivered_orders.fees_customer)} ج.م على العميل</span>` : ""}
+          ${dailyData.replacement_delivered_orders.fees_company > 0 ? `<span class="badge bg-danger ms-1">${fmt(dailyData.replacement_delivered_orders.fees_company)} ج.م على نيباكسس</span>` : ""}
+        `;
+        }
+
+        const totals = document.querySelectorAll(".col-md-4 .fs-4");
+        if (totals.length >= 3) {
+          totals[0].textContent = `${dailyData.total.count} طلب`;
+          totals[1].textContent = `${fmt(dailyData.total.value)} ج.م`;
+          totals[2].textContent = `${fmt(dailyData.total.fees || 0)} ج.م`;
+        }
+      }
+
+      const today = new Date();
+      const yyyy = today.getFullYear();
+      const mm = String(today.getMonth() + 1).padStart(2, "0");
+      const dd = String(today.getDate()).padStart(2, "0");
+      const todayStr = `${yyyy}-${mm}-${dd}`;
+      fetchDailyData(todayStr);
+
+      function showModal(title, html) {
+        titleEl.textContent = title || "";
+        bodyEl.innerHTML = html || "";
+        modal.style.display = "flex";
+        modal.setAttribute("aria-hidden", "false");
+        document.body.style.overflow = "hidden";
+      }
+
+      function closeModal() {
+        modal.style.display = "none";
+        modal.setAttribute("aria-hidden", "true");
+        document.body.style.overflow = "";
+      }
+
+      modal.addEventListener("click", (e) => {
+        const isOutside =
+          e.target === modal || e.target.dataset.close === "backdrop";
+        if (isOutside || e.target.dataset.close === "button") {
+          closeModal();
+        }
+      });
+
+      const feesModal = document.getElementById("feesCalcModal");
+      if (feesModal) {
+        feesModal.addEventListener("click", (e) => {
+          if (e.target === feesModal) closeFeesCalcModal();
+        });
+      }
+
+      window.closeFeesCalcModal = function () {
+        if (feesModal) {
+          feesModal.style.display = "none";
+          feesModal.setAttribute("aria-hidden", "true");
+          document.body.style.overflow = "";
+        }
+      };
+
+      window.openFeesCalcModal = function () {
+        if (feesModal) {
+          feesModal.style.display = "flex";
+          feesModal.setAttribute("aria-hidden", "false");
+          document.body.style.overflow = "hidden";
+        }
+      };
+
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape") {
+          closeModal();
+          closeFeesCalcModal();
+        }
+      });
+
+      function fmt(value) {
+        return typeof value === "string"
+          ? value
+          : Number(value || 0).toFixed(0);
+      }
+
+      function buildContent(card) {
+        const type = card.dataset.card;
+        const title =
+          card.dataset.title ||
+          card.querySelector(".stats-label")?.textContent ||
+          "";
+        const mPrefix = monthName && year ? ` (${monthName} ${year})` : "";
+
+        if (type === "daily") {
+          if (!dailyData) {
+            return {
+              title: "إحصائيات اليوم",
+              html: '<div class="text-center py-4"><div class="sk sk-card" style="height:40px; max-width:200px; margin:0 auto;"></div></div>',
+            };
+          }
+
+          const dateObj = new Date(dailyData.date);
+          const formattedDate = dateObj.toLocaleDateString("ar-EG", {
+            year: "numeric",
+            month: "long",
+            day: "numeric",
+          });
+
+          return {
+            title: `إحصائيات اليومية - ${formattedDate}`,
+            html: `
+            
+            <div class="mb-3 p-2 rounded" style="background: #fff3cd; border: 1px solid #D79921;">
+              <div class="d-flex align-items-center gap-2">
+                <div class="flex-grow-1">
+                  <label for="dailyDateFilterModal" class="form-label mb-1 fw-bold text-dark" style="font-size: 0.9rem;">اختر التاريخ:</label>
+                  <div class="d-flex gap-2">
+                    <input type="date" id="dailyDateFilterModal" class="form-control" style="border: 1px solid #ffc107; border-radius: 0.5rem;" value="${dailyData.date}">
+                    <button type="button" id="applyDateBtn" class="btn btn-warning px-3" style="border-radius: 0.5rem; white-space: nowrap;">
+                      <i class="fas fa-check me-1"></i>تطبيق
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="mb-4">
+              <h6 id="daily-created-title" class="fw-bold mb-3 text-primary">
+                طلبات مسجلة اليوم: ${dailyData.created_orders?.count ?? dailyData.new_orders.count} طلب
+                <span class="badge bg-primary ms-2">${fmt(dailyData.created_orders?.value ?? dailyData.new_orders.value)} ج.م</span>
+                ${(dailyData.created_orders?.fees ?? dailyData.new_orders.fees) > 0 ? `<span class="badge bg-info ms-1">+ ${fmt(dailyData.created_orders?.fees ?? dailyData.new_orders.fees)} ج.م رسوم</span>` : ""}
+              </h6>
+              <div class="modern-table table-responsive">
+                <table class="table table-striped mb-0 text-center align-middle">
+                  <thead>
+                    <tr>
+                      <th>العميل</th>
+                      <th>القيمة</th>
+                      <th>رسوم التوصيل</th>
+                      <th>المدفوع</th>
+                      <th>المتبقي</th>
+                    </tr>
+                  </thead>
+                  <tbody id="ordersTableBody_new"><tr><td colspan="5" class="text-center"><div class="sk sk-row" style="height:1.2rem; max-width:300px; margin:0 auto;"></div></td></tr></tbody>
+                </table>
+              </div>
+            </div>
+
+            <div class="mb-4">
+              <h6 id="daily-delivery-title" class="fw-bold mb-3 text-warning">
+                خرج للتوصيل: ${dailyData.delivery_orders.count} طلب
+                <span class="badge bg-warning text-dark ms-2">${fmt(dailyData.delivery_orders.value)} ج.م</span>
+                ${dailyData.delivery_orders.fees > 0 ? `<span class="badge bg-info ms-1">+ ${fmt(dailyData.delivery_orders.fees)} ج.م رسوم</span>` : ""}
+              </h6>
+              <div class="modern-table table-responsive">
+                <table class="table table-striped mb-0 text-center align-middle">
+                  <thead>
+                    <tr>
+                      <th>العميل</th>
+                      <th>القيمة</th>
+                      <th>رسوم التوصيل</th>
+                      <th>المدفوع</th>
+                      <th>المتبقي</th>
+                    </tr>
+                  </thead>
+                  <tbody id="ordersTableBody_delivery"><tr><td colspan="5" class="text-center"><div class="sk sk-row" style="height:1.2rem; max-width:300px; margin:0 auto;"></div></td></tr></tbody>
+                </table>
+              </div>
+            </div>
+
+            <div class="mb-4">
+              <h6 id="daily-delivered-title" class="fw-bold mb-3 text-success">
+                وصل: ${dailyData.delivered_orders.count} طلب
+                <span class="badge bg-success ms-2">${fmt(dailyData.delivered_orders.value)} ج.م</span>
+                ${dailyData.delivered_orders.fees > 0 ? `<span class="badge bg-info ms-1">+ ${fmt(dailyData.delivered_orders.fees)} ج.م رسوم</span>` : ""}
+              </h6>
+              <div class="modern-table table-responsive">
+                <table class="table table-striped mb-0 text-center align-middle">
+                  <thead>
+                    <tr>
+                      <th>العميل</th>
+                      <th>القيمة</th>
+                      <th>رسوم التوصيل</th>
+                      <th>المدفوع</th>
+                      <th>المتبقي</th>
+                    </tr>
+                  </thead>
+                  <tbody id="ordersTableBody_delivered"><tr><td colspan="5" class="text-center"><div class="sk sk-row" style="height:1.2rem; max-width:300px; margin:0 auto;"></div></td></tr></tbody>
+                </table>
+              </div>
+            </div>
+
+            <div class="mb-4">
+              <h6 id="daily-replacement-created-title" class="fw-bold mb-3" style="color: #8b5cf6;">
+                طلبات استبدال مسجلة اليوم: ${dailyData.replacement_created_orders?.count ?? dailyData.replacement_new_orders.count} طلب
+                <span class="badge ms-2" style="background: #8b5cf6;">${fmt(dailyData.replacement_created_orders?.value ?? dailyData.replacement_new_orders.value)} ج.م</span>
+                ${(dailyData.replacement_created_orders?.fees_customer ?? dailyData.replacement_new_orders.fees_customer) > 0 ? `<span class="badge bg-success ms-1">${fmt(dailyData.replacement_created_orders?.fees_customer ?? dailyData.replacement_new_orders.fees_customer)} ج.م على العميل</span>` : ""}
+                ${(dailyData.replacement_created_orders?.fees_company ?? dailyData.replacement_new_orders.fees_company) > 0 ? `<span class="badge bg-danger ms-1">${fmt(dailyData.replacement_created_orders?.fees_company ?? dailyData.replacement_new_orders.fees_company)} ج.م على نيباكسس</span>` : ""}
+              </h6>
+              <div class="modern-table table-responsive">
+                <table class="table table-striped mb-0 text-center align-middle">
+                  <thead>
+                    <tr>
+                      <th>العميل</th>
+                      <th>القيمة</th>
+                      <th>رسوم على العميل</th>
+                      <th>رسوم على نيباكسس</th>
+                      <th>المدفوع</th>
+                      <th>المتبقي</th>
+                    </tr>
+                  </thead>
+                  <tbody id="ordersTableBody_replacement_new"><tr><td colspan="6" class="text-center"><div class="sk sk-row" style="height:1.2rem; max-width:300px; margin:0 auto;"></div></td></tr></tbody>
+                </table>
+              </div>
+            </div>
+
+            <div class="mb-4">
+              <h6 id="daily-replacement-delivery-title" class="fw-bold mb-3" style="color: #f59e0b;">
+                استبدال - خرج للتوصيل: ${dailyData.replacement_delivery_orders.count} طلب
+                <span class="badge ms-2" style="background: #f59e0b;">${fmt(dailyData.replacement_delivery_orders.value)} ج.م</span>
+                ${dailyData.replacement_delivery_orders.fees_customer > 0 ? `<span class="badge bg-success ms-1">${fmt(dailyData.replacement_delivery_orders.fees_customer)} ج.م على العميل</span>` : ""}
+                ${dailyData.replacement_delivery_orders.fees_company > 0 ? `<span class="badge bg-danger ms-1">${fmt(dailyData.replacement_delivery_orders.fees_company)} ج.م على نيباكسس</span>` : ""}
+              </h6>
+              <div class="modern-table table-responsive">
+                <table class="table table-striped mb-0 text-center align-middle">
+                  <thead>
+                    <tr>
+                      <th>العميل</th>
+                      <th>القيمة</th>
+                      <th>رسوم على العميل</th>
+                      <th>رسوم على نيباكسس</th>
+                      <th>المدفوع</th>
+                      <th>المتبقي</th>
+                    </tr>
+                  </thead>
+                  <tbody id="ordersTableBody_replacement_delivery"><tr><td colspan="6" class="text-center"><div class="sk sk-row" style="height:1.2rem; max-width:300px; margin:0 auto;"></div></td></tr></tbody>
+                </table>
+              </div>
+            </div>
+
+            <div class="mb-4">
+              <h6 id="daily-replacement-delivered-title" class="fw-bold mb-3" style="color: #10b981;">
+                استبدال - وصل: ${dailyData.replacement_delivered_orders.count} طلب
+                <span class="badge ms-2" style="background: #10b981;">${fmt(dailyData.replacement_delivered_orders.value)} ج.م</span>
+                ${dailyData.replacement_delivered_orders.fees_customer > 0 ? `<span class="badge bg-success ms-1">${fmt(dailyData.replacement_delivered_orders.fees_customer)} ج.م على العميل</span>` : ""}
+                ${dailyData.replacement_delivered_orders.fees_company > 0 ? `<span class="badge bg-danger ms-1">${fmt(dailyData.replacement_delivered_orders.fees_company)} ج.م على نيباكسس</span>` : ""}
+              </h6>
+              <div class="modern-table table-responsive">
+                <table class="table table-striped mb-0 text-center align-middle">
+                  <thead>
+                    <tr>
+                      <th>العميل</th>
+                      <th>القيمة</th>
+                      <th>رسوم على العميل</th>
+                      <th>رسوم على نيباكسس</th>
+                      <th>المدفوع</th>
+                      <th>المتبقي</th>
+                    </tr>
+                  </thead>
+                  <tbody id="ordersTableBody_replacement_delivered"><tr><td colspan="6" class="text-center"><div class="sk sk-row" style="height:1.2rem; max-width:300px; margin:0 auto;"></div></td></tr></tbody>
+                </table>
+              </div>
+            </div>
+
+            <div class="mb-3 pb-3 border-bottom">
+              <div class="fw-bold mb-2 fs-5 text-center" style="color: #2c3e50;">الإجماليات</div>
+              <div class="row g-2">
+                <div class="col-md-4">
+                  <div class="p-3 rounded" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+                    <div class="text-center">
+                      <div style="font-size: 0.9rem; opacity: 0.9;">إجمالي عدد الطلبات</div>
+                      <div class="fs-4 fw-bold">${dailyData.total.count} طلب</div>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-md-4">
+                  <div class="p-3 rounded" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white;">
+                    <div class="text-center">
+                      <div style="font-size: 0.9rem; opacity: 0.9;">إجمالي قيمة الطلبات</div>
+                      <div class="fs-4 fw-bold">${fmt(dailyData.total.value)} ج.م</div>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-md-4">
+                  <div class="p-3 rounded" id="feesCardWrapper" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); color: white; cursor: pointer;" onclick="toggleFeesBreakdown()">
+                    <div class="text-center">
+                      <div style="font-size: 0.9rem; opacity: 0.9;">رسوم التوصيل <i class="fas fa-chevron-down ms-1" id="feesChevron" style="font-size:0.75rem; transition:transform 0.3s;"></i></div>
+                      <div class="fs-4 fw-bold">${fmt(dailyData.total.fees || 0)} ج.م</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <!-- جدول تفاصيل رسوم التوصيل -->
+              <div id="feesBreakdownArea" style="display:none; margin-top:12px;">
+                <div id="feesBreakdownContent">
+                  <div class="text-center py-3"><div class="sk sk-row" style="height:1.2rem; max-width:200px; margin:0 auto;"></div></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="mb-3 pb-3 border-bottom">
+              <div class="fw-bold mb-2 fs-5 text-center" style="color: #2c3e50;">المبالغ المالية</div>
+              <div class="row g-2">
+                <div class="col-12">
+                  <div class="p-3 rounded" style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); color: white;">
+                    <div class="d-flex justify-content-between align-items-center">
+                      <div>
+                        <div style="font-size: 0.9rem; opacity: 0.9;">إجمالي المدفوع في الطلبات اليوم</div>
+                        <div class="small" style="opacity: 0.8;">المبالغ المدفوعة في جميع الطلبات المسجلة في هذا التاريخ</div>
+                      </div>
+                      <div class="fs-3 fw-bold">${fmt(dailyData.total_paid_today)} ج.م</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <div class="fw-bold mb-2 fs-5 text-center" style="color: #2c3e50;">الديون</div>
+              <div class="row g-2">
+                <div class="col-12">
+                  <div class="p-3 rounded" style="background: linear-gradient(135deg, #fc5c7d 0%, #6a82fb 100%); color: white;">
+                    <div class="d-flex justify-content-between align-items-center">
+                      <div>
+                        <div style="font-size: 0.9rem; opacity: 0.9;">إجمالي الدين للموردين</div>
+                        <div class="small" style="opacity: 0.8;">المتبقي من الفواتير حتى تاريخ اليوم</div>
+                      </div>
+                      <div class="fs-3 fw-bold">${fmt(dailyData.total_supplier_debt)} ج.م</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          `,
+          };
+        }
+
+        const detailsEl = document.getElementById("details-" + type);
+        if (detailsEl) {
+          return { title: title + mPrefix, html: detailsEl.innerHTML };
+        }
+
+        switch (type) {
+          case "stock": {
+            return {
+              title,
+              html: `
+              <ul class="list-unstyled mb-0">
+                <li><strong>القيمة الإجمالية:</strong> ${fmt(card.dataset.totalStockValue)} ج.م</li>
+                <li><strong>عدد المنتجات:</strong> ${card.dataset.totalProducts || 0}</li>
+              </ul>`,
+            };
+          }
+          case "fixed_assets": {
+            return {
+              title,
+              html: `
+              <ul class="list-unstyled mb-0">
+                <li><strong>قيمة الأصول الثابتة:</strong> ${fmt(card.dataset.totalFixedAssetsValue)} ج.م</li>
+              </ul>`,
+            };
+          }
+          case "capital_growth": {
+            try {
+              const data = JSON.parse(card.dataset.capitalGrowth || "{}");
+              const monthNames = [
+                "",
+                "يناير",
+                "فبراير",
+                "مارس",
+                "أبريل",
+                "مايو",
+                "يونيو",
+                "يوليو",
+                "أغسطس",
+                "سبتمبر",
+                "أكتوبر",
+                "نوفمبر",
+                "ديسمبر",
+              ];
+
+              const chartHtml = `
+              <div id="capitalChartWrapper" style="background:linear-gradient(135deg,#fff 0%,#fffbea 100%); border:2px solid #D79921; border-radius:1rem; padding:1.25rem 1.25rem 0.75rem; margin-bottom:1.25rem;">
+                <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+                  <div class="d-flex align-items-center gap-2">
+                    <span style="background:#D79921;border-radius:0.5rem;padding:0.3rem 0.6rem;">
+                      <i class="fas fa-chart-line text-dark"></i>
+                    </span>
+                    <span class="fw-bold" style="color:#2c3e50; font-size:1rem;">تاريخ نسب نمو رأس المال</span>
+                  </div>
+                </div>
+                <div id="capitalChartLoading" class="text-center py-4">
+                  <div class="sk sk-card" style="height:40px; max-width:200px; margin:0 auto;"></div>
+                </div>
+                <div style="position:relative; width:100%; height:270px; display:none;" id="capitalChartCanvasWrapper">
+                  <canvas id="capitalGrowthChart"></canvas>
+                </div>
+                <div id="capitalChartEmpty" class="text-center text-muted small py-3" style="display:none;"></div>
+                <div class="text-center mt-2 mb-1" id="capitalChartLoadMoreBtn" style="display:none;">
+                  <button class="btn btn-primary btn-sm px-4 fw-bold" style="border-radius:2rem;" onclick="loadMoreCapitalHistory()">
+                    <i class="fas fa-plus me-1"></i>عرض المزيد
+                  </button>
+                </div>
+              </div>`;
+
+              const saveButtonHtml = `
+              <hr class="my-3">
+              <div class="p-3 bg-warning bg-opacity-10 rounded border border-warning">
+                <h6 class="fw-bold mb-2 text-warning"><i class="fas fa-camera me-2"></i>تحديث نقطة المقارنة</h6>
+                <button class="btn btn-warning w-100" onclick="saveCurrentAsSnapshot(${data.current_capital})">
+                  <i class="fas fa-save me-2"></i>حفظ القيمة الحالية
+                </button>
+              </div>`;
+
+              if (!data.has_previous_data) {
+                return {
+                  title: "معدل نمو رأس المال",
+                  html: `
+                  ${chartHtml}
+                  <div class="text-center p-3 mb-3 bg-light rounded">
+                    <div class="small text-muted">رأس المال الحالي</div>
+                    <div class="h3 fw-bold text-primary mb-0">${fmt(data.current_capital)} ج.م</div>
+                  </div>
+                  <div class="mb-3 p-3 rounded" style="border:1px solid #e9ecef;">
+                    <h6 class="fw-bold mb-2" style="color:#2c3e50;"><i class="fas fa-layer-group me-2 text-warning"></i>تفاصيل رأس المال الحالي</h6>
+                    <ul class="list-unstyled mb-0 small">
+                      <li class="d-flex justify-content-between mb-1"><span><i class="fas fa-landmark text-info me-2"></i>الأصول الثابتة</span><strong>${fmt(data.current_breakdown?.fixed_assets || 0)} ج.م</strong></li>
+                      <li class="d-flex justify-content-between mb-1"><span><i class="fas fa-warehouse text-success me-2"></i>قيمة المخزون</span><strong>${fmt(data.current_breakdown?.stock || 0)} ج.م</strong></li>
+                      <li class="d-flex justify-content-between mb-1"><span><i class="fas fa-hourglass-half text-warning me-2"></i>الطلبات المعلقة</span><strong>${fmt(data.current_breakdown?.pending_orders || 0)} ج.م</strong></li>
+                      <li class="d-flex justify-content-between mb-1"><span><i class="fas fa-hand-holding-usd text-danger me-2"></i>المديونية</span><strong class="text-danger">${fmt(data.current_breakdown?.total_debt || data.total_debt || 0)} ج.م</strong></li>
+                      <li class="d-flex justify-content-between"><span><i class="fas fa-scale-balanced text-primary me-2"></i>صافي رأس المال بعد خصم المديونية</span><strong class="text-primary">${fmt(data.current_breakdown?.net_after_debt || data.net_capital_after_debt || 0)} ج.م</strong></li>
+                    </ul>
+                  </div>
+                  ${saveButtonHtml}`,
+                };
+              }
+
+              const isPositive = data.growth_rate >= 0;
+              const rateColor = isPositive ? "text-success" : "text-danger";
+              const changeColor = isPositive ? "text-success" : "text-danger";
+              const icon = isPositive ? "fa-arrow-up" : "fa-arrow-down";
+              const bgGradient = isPositive
+                ? "linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%)"
+                : "linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%)";
+
+              return {
+                title: "معدل نمو رأس المال",
+                html: `
+                ${chartHtml}
+
+                <div class="p-3 rounded mb-3 text-center" style="background: ${bgGradient}; border: 2px solid ${isPositive ? "#28a745" : "#dc3545"}; border-radius:1rem;">
+                  <div class="small text-muted mb-1">معدل نمو رأس المال</div>
+                  <div class="display-5 fw-bold ${rateColor}">
+                    <i class="fas ${icon} me-2"></i>${Math.abs(data.growth_rate).toFixed(2)}%
+                  </div>
+                  <div class="h5 fw-bold ${changeColor} mt-2 mb-0">
+                    ${isPositive ? "+" : ""}${fmt(data.capital_change)} ج.م
+                  </div>
+                </div>
+
+                <div class="row g-3 mb-3">
+                  <div class="col-6">
+                    <div class="p-3 rounded" style="border:2px solid #e9ecef; background:#f8f9fa;">
+                      <div class="small text-muted"><i class="fas fa-history me-1"></i>صافي السابق</div>
+                      <div class="h6 fw-bold text-dark mb-0">${fmt(data.last_month_breakdown.net_after_debt || data.last_month_net_capital_after_debt || 0)} ج.م</div>
+                      <div class="small text-muted">${monthNames[data.last_month_date.month]} ${data.last_month_date.year}</div>
+                    </div>
+                  </div>
+                  <div class="col-6">
+                    <div class="p-3 rounded" style="border:2px solid #D79921; background:#fffbea;">
+                      <div class="small text-muted"><i class="fas fa-circle-dot me-1 text-warning"></i>صافي الحالي</div>
+                      <div class="h6 fw-bold mb-0" style="color:#2c3e50;">${fmt(data.current_breakdown.net_after_debt || data.net_capital_after_debt || 0)} ج.م</div>
+                      <div class="small text-muted">الآن</div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="mb-3 p-3 rounded" style="border:1px solid #e9ecef;">
+                  <h6 class="fw-bold mb-2" style="color:#2c3e50;"><i class="fas fa-layer-group me-2 text-warning"></i>تفاصيل رأس المال الحالي</h6>
+                  <ul class="list-unstyled mb-0 small">
+                    <li class="d-flex justify-content-between mb-1"><span><i class="fas fa-landmark text-info me-2"></i>الأصول الثابتة</span><strong>${fmt(data.current_breakdown.fixed_assets)} ج.م</strong></li>
+                    <li class="d-flex justify-content-between mb-1"><span><i class="fas fa-warehouse text-success me-2"></i>قيمة المخزون</span><strong>${fmt(data.current_breakdown.stock)} ج.م</strong></li>
+                    <li class="d-flex justify-content-between mb-1"><span><i class="fas fa-hourglass-half text-warning me-2"></i>الطلبات المعلقة</span><strong>${fmt(data.current_breakdown.pending_orders)} ج.م</strong></li>
+                    <li class="d-flex justify-content-between mb-1"><span><i class="fas fa-hand-holding-usd text-danger me-2"></i>المديونية</span><strong class="text-danger">${fmt(data.current_breakdown.total_debt || data.total_debt || 0)} ج.م</strong></li>
+                    <li class="d-flex justify-content-between"><span><i class="fas fa-scale-balanced text-primary me-2"></i>صافي رأس المال بعد خصم المديونية</span><strong class="text-primary">${fmt(data.current_breakdown.net_after_debt || data.net_capital_after_debt || 0)} ج.م</strong></li>
+                  </ul>
+                </div>
+
+                <div class="mb-3 p-3 rounded" style="border:1px solid #e9ecef;">
+                  <h6 class="fw-bold mb-2" style="color:#2c3e50;"><i class="fas fa-layer-group me-2 text-secondary"></i>تفاصيل رأس المال السابق</h6>
+                  <ul class="list-unstyled mb-0 small">
+                    <li class="d-flex justify-content-between mb-1"><span><i class="fas fa-landmark text-info me-2"></i>الأصول الثابتة</span><strong>${fmt(data.last_month_breakdown.fixed_assets)} ج.م</strong></li>
+                    <li class="d-flex justify-content-between mb-1"><span><i class="fas fa-warehouse text-success me-2"></i>قيمة المخزون</span><strong>${fmt(data.last_month_breakdown.stock)} ج.م</strong></li>
+                    <li class="d-flex justify-content-between mb-1"><span><i class="fas fa-hourglass-half text-warning me-2"></i>الطلبات المعلقة</span><strong>${fmt(data.last_month_breakdown.pending_orders)} ج.م</strong></li>
+                    <li class="d-flex justify-content-between mb-1"><span><i class="fas fa-hand-holding-usd text-danger me-2"></i>المديونية</span><strong class="text-danger">${fmt(data.last_month_breakdown.total_debt || 0)} ج.م</strong></li>
+                    <li class="d-flex justify-content-between"><span><i class="fas fa-scale-balanced text-primary me-2"></i>صافي رأس المال بعد خصم المديونية</span><strong class="text-primary">${fmt(data.last_month_breakdown.net_after_debt || 0)} ج.م</strong></li>
+                  </ul>
+                </div>
+
+                ${saveButtonHtml}`,
+              };
+            } catch (error) {
+              console.error("Error in capital_growth buildContent:", error);
+              return {
+                title: "معدل نمو رأس المال",
+                html: '<div class="alert alert-danger">خطأ في عرض البيانات</div>',
+              };
+            }
+          }
+          case "pending_orders": {
+            return {
+              title: title + mPrefix,
+              html: `
+              <ul class="list-unstyled mb-0">
+                <li><strong>الإجمالي المعلّق:</strong> ${fmt(card.dataset.totalPending)} ج.م</li>
+                <li><strong>قيمة طلبات خرج للتوصيل:</strong> ${fmt(card.dataset.deliveryPending)} ج.م</li>
+                <li><strong>قيمة طلبات استبدال خرجت للتوصيل:</strong> ${fmt(card.dataset.replacementDeliveryPending)} ج.م</li>
+              </ul>`,
+            };
+          }
+          case "net_profit": {
+            const cogs   = fmt(card.dataset.monthlyCogs);
+            const fix    = fmt(card.dataset.monthlyFixedAssetsExpenses);
+            const opx    = fmt(card.dataset.monthlyOperationalExpenses);
+            const sal    = fmt(card.dataset.monthlyEmployeeSalaries);
+            const losses = fmt(card.dataset.totalLosses);
+            const sales  = fmt(card.dataset.totalSales);
+            const net    = fmt(card.dataset.netProfit);
+            return {
+              title: title + mPrefix,
+              html: `
+              <div class="mb-2"><strong>صافي الربح:</strong> <span class="${Number(net) >= 0 ? "text-success" : "text-danger"}">${net} ج.م</span></div>
+              <hr class="my-2">
+              <div class="fw-bold mb-1">المعادلة: صافي الربح = إجمالي المبيعات − (COGS + أصول ثابتة + تشغيلي + مرتبات + خسائر)</div>
+              <ul class="list-unstyled mb-0">
+                <li class="text-success"><strong>➕ إجمالي المبيعات (وصل):</strong> ${sales} ج.م</li>
+                <li class="text-danger"><strong>➖ تكلفة البضاعة المباعة (COGS):</strong> ${cogs} ج.م</li>
+                <li class="text-danger"><strong>➖ أصول ثابتة:</strong> ${fix} ج.م</li>
+                <li class="text-danger"><strong>➖ مصروفات تشغيلية:</strong> ${opx} ج.م</li>
+                <li class="text-danger"><strong>➖ مرتبات الموظفين:</strong> ${sal} ج.م</li>
+                <li class="text-danger"><strong>➖ خسائر (تالف + توصيل):</strong> ${losses} ج.م</li>
+              </ul>`,
+            };
+          }
+          case "losses": {
+            return {
+              title: title + mPrefix,
+              html: `
+              <ul class="list-unstyled mb-0">
+                <li><strong>إجمالي الخسائر:</strong> ${fmt(card.dataset.totalLosses)} ج.م</li>
+                <li><strong>خسائر المخزون التالف:</strong> ${fmt(card.dataset.damagedStockLoss)} ج.م</li>
+                <li><strong>خسائر رسوم التوصيل:</strong> ${fmt(card.dataset.deliveryFeesLoss)} ج.م</li>
+              </ul>`,
+            };
+          }
+          case "delivery_rate": {
+                const ordersCreated = fmt(card.dataset.monthlyOrdersCreatedCount);
+                const ordersNew = fmt(card.dataset.monthlyOrdersNewCount);
+                const ordersDelivery = fmt(card.dataset.monthlyOrdersDeliveryCount);
+                const ordersDelivered = fmt(card.dataset.monthlyOrdersDeliveredCount);
+                const ordersOther = fmt(card.dataset.monthlyOrdersOtherCount);
+                const replacementsCreated = fmt(card.dataset.monthlyReplacementsCreatedCount);
+                const replacementsNew = fmt(card.dataset.monthlyReplacementsNewCount);
+                const replacementsDelivery = fmt(card.dataset.monthlyReplacementsDeliveryCount);
+                const replacementsDelivered = fmt(card.dataset.monthlyReplacementsDeliveredCount);
+                const replacementsOther = fmt(card.dataset.monthlyReplacementsOtherCount);
+            return {
+              title: title + mPrefix,
+              html: `
+                  <div class="row g-3">
+                    <div class="col-md-6">
+                      <div class="card h-100 border-0 shadow-sm">
+                        <div class="card-body text-center">
+                          <div class="fw-bold mb-2">الطلبات العادية</div>
+                          <div class="mb-1"><strong>المسجلة:</strong> ${ordersCreated}</div>
+                          <div class="mb-1"><strong>جديد:</strong> ${ordersNew}</div>
+                          <div class="mb-1"><strong>خرج للتوصيل:</strong> ${ordersDelivery}</div>
+                          <div class="mb-1"><strong>وصل:</strong> ${ordersDelivered}</div>
+                          <div><strong>أخرى:</strong> ${ordersOther}</div>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="col-md-6">
+                      <div class="card h-100 border-0 shadow-sm">
+                        <div class="card-body text-center">
+                          <div class="fw-bold mb-2">طلبات الاستبدال</div>
+                          <div class="mb-1"><strong>المسجلة:</strong> ${replacementsCreated}</div>
+                          <div class="mb-1"><strong>جديد:</strong> ${replacementsNew}</div>
+                          <div class="mb-1"><strong>خرج للتوصيل:</strong> ${replacementsDelivery}</div>
+                          <div class="mb-1"><strong>وصل:</strong> ${replacementsDelivered}</div>
+                          <div><strong>أخرى:</strong> ${replacementsOther}</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>`,
+            };
+          }
+          case "sales": {
+            return {
+              title: title + mPrefix,
+              html: `
+              <ul class="list-unstyled mb-0">
+                <li><strong>إجمالي المبيعات:</strong> ${fmt(card.dataset.totalSales)} ج.م</li>
+              </ul>`,
+            };
+          }
+          case "monthly_invoices": {
+            return {
+              title: title + mPrefix,
+              html: `
+              <ul class="list-unstyled mb-0">
+                <li><strong>قيمة الفواتير:</strong> ${fmt(card.dataset.monthlyInventoryPurchases)} ج.م</li>
+              </ul>`,
+            };
+          }
+          case "monthly_fixed_assets_expenses": {
+            return {
+              title: title + mPrefix,
+              html: `
+              <ul class="list-unstyled mb-0">
+                <li><strong>مصروفات الأصول الثابتة:</strong> ${fmt(card.dataset.monthlyFixedAssetsExpenses)} ج.م</li>
+              </ul>`,
+            };
+          }
+          case "monthly_employee_salaries": {
+            return {
+              title: title + mPrefix,
+              html: `
+              <ul class="list-unstyled mb-0">
+                <li><strong>مرتبات الموظفين:</strong> ${fmt(card.dataset.monthlyEmployeeSalaries)} ج.م</li>
+              </ul>`,
+            };
+          }
+          case "monthly_operational_expenses": {
+            return {
+              title: title + mPrefix,
+              html: `
+              <ul class="list-unstyled mb-0">
+                <li><strong>المصروفات التشغيلية:</strong> ${fmt(card.dataset.monthlyOperationalExpenses)} ج.م</li>
+              </ul>`,
+            };
+          }
+          case "monthly_total_expenses": {
+            const inv = fmt(card.dataset.monthlyInventoryPurchases);
+            const fix = fmt(card.dataset.monthlyFixedAssetsExpenses);
+            const opx = fmt(card.dataset.monthlyOperationalExpenses);
+            const sal = fmt(card.dataset.monthlyEmployeeSalaries);
+            const total = fmt(card.dataset.monthlyTotalExpenses);
+            return {
+              title: title + mPrefix,
+              html: `
+              <div class="mb-2"><strong>الإجمالي:</strong> <span class="text-danger">${total} ج.م</span></div>
+              <div class="fw-bold">تفصيل المصروفات:</div>
+              <ul class="list-unstyled mb-0">
+                <li><strong>فواتير المخزون:</strong> ${inv} ج.م</li>
+                <li><strong>أصول ثابتة:</strong> ${fix} ج.م</li>
+                <li><strong>تشغيلية:</strong> ${opx} ج.م</li>
+                <li><strong>مرتبات:</strong> ${sal} ج.م</li>
+              </ul>`,
+            };
+          }
+          case "amount_paid": {
+            return {
+              title: title + mPrefix,
+              html: `
+              <ul class="list-unstyled mb-0">
+                <li><strong>إجمالي المبالغ المدفوعة لطلبات الشهر:</strong> ${fmt(card.dataset.totalAmountPaid)} ج.م</li>
+              </ul>`,
+            };
+          }
+          case "returns":
+            return {
+              title: `مرتجعات العملاء${mPrefix}`,
+              html: `
+                <div id="returnsStatsSummary" class="d-flex gap-3 mb-3 flex-wrap"></div>
+                <div class="modern-table table-responsive">
+                  <table class="table table-striped mb-0 text-center align-middle">
+                    <thead>
+                      <tr>
+                        <th>#</th>
+                        <th>التاريخ</th>
+                        <th>العميل</th>
+                        <th>المنتج</th>
+                        <th>الكمية</th>
+                        <th>الحالة</th>
+                        <th>السبب</th>
+                        <th>المبلغ</th>
+                      </tr>
+                    </thead>
+                    <tbody id="returnsStatsBody">
+                      <tr><td colspan="8" class="text-center"><div class="sk sk-row" style="height:1.2rem; max-width:200px; margin:0 auto;"></div></td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              `,
+            };
+          default:
+            return {
+              title,
+              html: '<div class="text-muted">لا توجد تفاصيل إضافية.</div>',
+            };
+        }
+      }
+
+      document.querySelectorAll(".stats-card").forEach((card) => {
+        card.addEventListener("click", () => {
+          const { title, html } = buildContent(card);
+          showModal(title, html);
+          if (card.dataset.card === "daily") {
+            setTimeout(() => {
+              attachDateFilterListener();
+              loadAllOrdersTables();
+            }, 100);
+          }
+          if (card.dataset.card === "capital_growth") {
+            setTimeout(() => {
+              initCapitalGrowthChart();
+            }, 150);
+          }
+          if (card.dataset.card === "returns") {
+            setTimeout(loadReturnsStats, 100);
+          }
+        });
+        card.addEventListener("keydown", (e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            const { title, html } = buildContent(card);
+            showModal(title, html);
+            if (card.dataset.card === "daily") {
+              setTimeout(() => {
+                attachDateFilterListener();
+                loadAllOrdersTables();
+              }, 100);
+            }
+            if (card.dataset.card === "capital_growth") {
+              setTimeout(() => {
+                initCapitalGrowthChart();
+              }, 150);
+            }
+            if (card.dataset.card === "returns") {
+              setTimeout(loadReturnsStats, 100);
+            }
+          }
+        });
+      });
+
+      const openModalType = new URLSearchParams(window.location.search).get(
+        "open_modal",
+      );
+      if (openModalType) {
+        const targetCard = document.querySelector(
+          `.stats-card[data-card="${openModalType}"]`,
+        );
+        if (targetCard) {
+          const { title, html } = buildContent(targetCard);
+          showModal(title, html);
+          if (openModalType === "daily") {
+            setTimeout(() => {
+              attachDateFilterListener();
+              loadAllOrdersTables();
+            }, 100);
+          }
+          if (openModalType === "capital_growth") {
+            setTimeout(() => {
+              initCapitalGrowthChart();
+            }, 150);
+          }
+
+          const updatedUrl = new URL(window.location.href);
+          updatedUrl.searchParams.delete("open_modal");
+          const newQuery = updatedUrl.searchParams.toString();
+          window.history.replaceState(
+            {},
+            "",
+            `${updatedUrl.pathname}${newQuery ? "?" + newQuery : ""}`,
+          );
+        }
+      }
+
+      function loadReturnsStats() {
+        const tbody = document.getElementById('returnsStatsBody');
+        const summary = document.getElementById('returnsStatsSummary');
+        if (!tbody) return;
+        fetch('{{ url_for("main.returns_popup_data") }}', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({month: {{ datetime.now().month }}, year: {{ datetime.now().year }}})
+        }).then(r => r.json()).then(d => {
+          tbody.innerHTML = '';
+          if (d.success) {
+            summary.innerHTML = `
+              <div class="stats-card p-3 text-center flex-fill" style="min-width:140px;">
+                <div class="stats-number text-info" style="font-size:1.3rem;">${d.count}</div>
+                <div class="stats-label" style="font-size:0.85rem;">إجمالي طلبات الإرجاع</div>
+              </div>
+              <div class="stats-card p-3 text-center flex-fill" style="min-width:140px;">
+                <div class="stats-number text-warning" style="font-size:1.3rem;">${d.total_items_count}</div>
+                <div class="stats-label" style="font-size:0.85rem;">إجمالي المنتجات المرتجعة</div>
+              </div>
+              <div class="stats-card p-3 text-center flex-fill" style="min-width:140px;">
+                <div class="stats-number text-success" style="font-size:1.3rem;">${Number(d.total_amount).toFixed(2)} ج.م</div>
+                <div class="stats-label" style="font-size:0.85rem;">إجمالي المبلغ المسترد</div>
+              </div>
+            `;
+            if (d.all_items && d.all_items.length > 0) {
+              d.all_items.forEach((item, i) => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                  <td>${i + 1}</td>
+                  <td>${item.created_at}</td>
+                  <td>${item.customer_name}</td>
+                  <td class="text-start">${item.product_name}</td>
+                  <td>${item.quantity}</td>
+                  <td><span class="badge ${item.condition === 'سليم' ? 'bg-success' : 'bg-danger'}">${item.condition}</span></td>
+                  <td>${item.reason}</td>
+                  <td>${item.refund.toFixed(2)} ج.م</td>
+                `;
+                tbody.appendChild(tr);
+              });
+            } else {
+              tbody.innerHTML = '<tr><td colspan="8" class="text-muted">لا توجد مرتجعات في هذا الشهر</td></tr>';
+            }
+          } else {
+            tbody.innerHTML = '<tr><td colspan="8" class="text-danger">حدث خطأ</td></tr>';
+          }
+        }).catch(() => {
+          tbody.innerHTML = '<tr><td colspan="8" class="text-danger">خطأ في التحميل</td></tr>';
+        });
+      }
+
+      function loadAllOrdersTables(callback) {
+        const dateInput = document.getElementById("dailyDateFilterModal");
+        let selectedDate =
+          dateInput && dateInput.value
+            ? dateInput.value
+            : dailyData && dailyData.date
+              ? dailyData.date
+              : new Date().toISOString().split("T")[0];
+
+        const types = [
+          "new",
+          "delivery",
+          "delivered",
+          "replacement_new",
+          "replacement_delivery",
+          "replacement_delivered",
+        ];
+        let completedCount = 0;
+
+        const hasAnyTable = types.some((type) =>
+          document.getElementById(`ordersTableBody_${type}`),
+        );
+        if (!hasAnyTable) {
+          console.warn("No order tables found in DOM");
+          if (callback) callback();
+          return;
+        }
+
+        types.forEach((type) => {
+          const tableBody = document.getElementById(`ordersTableBody_${type}`);
+          const isReplacement = type.startsWith("replacement");
+          const colCount = isReplacement ? 6 : 5;
+          if (!tableBody) {
+            completedCount++;
+            if (completedCount === types.length && callback) callback();
+            return;
+          }
+
+          tableBody.innerHTML = `<tr><td colspan="${colCount}" class="text-center"><div class="sk sk-row" style="height:1.2rem; max-width:300px; margin:0 auto;"></div></td></tr>`;
+
+          fetch(
+            `/api/daily_statistics_details?date=${selectedDate}&type=${type}`,
+          )
+            .then((response) => {
+              if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+              }
+              return response.json();
+            })
+            .then((data) => {
+              console.log(
+                `Received ${type} orders:`,
+                data.orders?.length || 0,
+                "orders",
+              );
+              if (
+                data.success &&
+                Array.isArray(data.orders) &&
+                data.orders.length > 0
+              ) {
+                const isReplacement = type.startsWith("replacement");
+
+                tableBody.innerHTML = data.orders
+                  .map(
+                    (order) => `
+                <tr>
+                  <td class="text-start" dir="rtl">${order.customer_name || "غير معروف"}</td>
+                  <td class="fw-bold">${fmt(order.total_amount)}</td>
+                  ${
+                    isReplacement
+                      ? `
+                    <td class="text-success">${fmt(order.delivery_fees)}</td>
+                    <td class="text-danger">${fmt(order.delivery_fees_company || 0)}</td>
+                  `
+                      : `
+                    <td>${fmt(order.delivery_fees)}</td>
+                  `
+                  }
+                  <td class="text-success">${fmt(order.amount_paid)}</td>
+                  <td class="${Number(order.remaining) > 0 ? "text-danger" : "text-muted"}">${fmt(order.remaining)}</td>
+                </tr>
+              `,
+                  )
+                  .join("");
+              } else {
+                tableBody.innerHTML = `<tr><td colspan="${colCount}" class="text-center text-muted">لا توجد طلبات في هذا التاريخ</td></tr>`;
+              }
+            })
+            .catch((error) => {
+              console.error(`Error fetching ${type} orders details:`, error);
+              tableBody.innerHTML = `<tr><td colspan="${colCount}" class="text-center text-danger">حدث خطأ في تحميل البيانات: ${error.message}</td></tr>`;
+            })
+            .finally(() => {
+              completedCount++;
+
+              if (completedCount === types.length && callback) {
+                callback();
+              }
+            });
+        });
+      }
+
+      // ─── تفاصيل رسوم التوصيل ───────────────────────────────────────────────
+      let feesBreakdownLoaded = false;
+      let feesBreakdownOpen = false;
+
+      window.toggleFeesBreakdown = function () {
+        const area = document.getElementById("feesBreakdownArea");
+        const chevron = document.getElementById("feesChevron");
+        if (!area) return;
+
+        feesBreakdownOpen = !feesBreakdownOpen;
+        area.style.display = feesBreakdownOpen ? "block" : "none";
+        if (chevron)
+          chevron.style.transform = feesBreakdownOpen
+            ? "rotate(180deg)"
+            : "rotate(0deg)";
+
+        if (feesBreakdownOpen && !feesBreakdownLoaded) {
+          loadFeesBreakdown();
+        }
+      };
+
+      function loadFeesBreakdown() {
+        const dateInput = document.getElementById("dailyDateFilterModal");
+        const selectedDate =
+          dateInput && dateInput.value
+            ? dateInput.value
+            : dailyData && dailyData.date
+              ? dailyData.date
+              : new Date().toISOString().split("T")[0];
+        const contentEl = document.getElementById("feesBreakdownContent");
+
+        fetch(`/api/daily_fees_breakdown?date=${selectedDate}`)
+          .then((r) => r.json())
+          .then((data) => {
+            if (!data.success) throw new Error(data.error || "خطأ");
+            feesBreakdownLoaded = true;
+            contentEl.innerHTML = renderFeesBreakdownHTML(data);
+          })
+          .catch((err) => {
+            contentEl.innerHTML = `<div class="text-center text-danger py-2"><i class="fas fa-exclamation-circle me-1"></i> حدث خطأ: ${err.message}</div>`;
+          });
+      }
+
+      function renderFeesBreakdownHTML(data) {
+        const fmtNum = (v) => Number(v || 0).toFixed(0);
+
+        // جدول الطلبات العادية
+        let ordersRows = "";
+        if (!data.orders_breakdown || data.orders_breakdown.length === 0) {
+          ordersRows =
+            '<tr><td colspan="3" class="text-center text-muted">لا توجد طلبات خرجت للتوصيل</td></tr>';
+        } else {
+          for (const row of data.orders_breakdown) {
+            const govsText = Array.isArray(row.governorates)
+              ? row.governorates.join(" – ")
+              : row.governorate || "";
+            ordersRows += `<tr>
+            <td style="text-align:right; padding-right:8px;">${govsText}</td>
+            <td>${row.count}</td>
+            <td>${fmtNum(row.fees)} ج.م</td>
+          </tr>`;
+          }
+        }
+
+        // جدول طلبات الاستبدال
+        let repRows = "";
+        if (
+          !data.replacements_breakdown ||
+          data.replacements_breakdown.length === 0
+        ) {
+          repRows =
+            '<tr><td colspan="4" class="text-center text-muted">لا توجد طلبات استبدال خرجت للتوصيل</td></tr>';
+        } else {
+          for (const row of data.replacements_breakdown) {
+            repRows += `<tr>
+            <td>#${row.id}</td>
+            <td>${row.governorate}</td>
+            <td><span class="badge bg-danger">${fmtNum(row.fees_company)} ج.م</span></td>
+            <td><span class="badge bg-success">${fmtNum(row.fees_customer)} ج.م</span></td>
+          </tr>`;
+          }
+        }
+
+        return `
+        <div class="fees-breakdown-wrapper">
+          <div class="d-flex align-items-center justify-content-between mb-1">
+            <div class="fees-section-title mb-0">طلبات خرجت للتوصيل</div>
+            <button type="button" class="btn btn-primary btn-sm fw-bold" style="border-radius:0.6rem; font-size:0.82rem; padding:4px 12px;" onclick="openFeesCalcModal()">
+              <i class="fas fa-calculator me-1"></i> حساب رسوم التوصيل
+            </button>
+          </div>
+          <div class="fees-table-responsive">
+            <table class="table fees-modern-table table-hover text-center align-middle mb-0" style="table-layout:fixed; width:100%;">
+              <colgroup>
+                <col style="width:62%;">
+                <col style="width:16%;">
+                <col style="width:22%;">
+              </colgroup>
+              <thead>
+                <tr>
+                  <th style="text-align:right; padding-right:8px;">المحافظة</th>
+                  <th>العدد</th>
+                  <th>رسوم التوصيل</th>
+                </tr>
+              </thead>
+              <tbody>${ordersRows}</tbody>
+            </table>
+          </div>
+
+          <div class="fees-section-title mt-3 mb-1">طلبات استبدال خرجت للتوصيل</div>
+          <div class="fees-table-responsive">
+            <table class="table fees-modern-table table-hover text-center align-middle mb-0">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>المحافظة</th>
+                  <th>علي نيباكسس</th>
+                  <th>علي العميل</th>
+                </tr>
+              </thead>
+              <tbody>${repRows}</tbody>
+            </table>
+          </div>
+        </div>`;
+      }
+
+      // ─── Modal حساب رسوم التوصيل بدقة ────────────────────────────────────
+      window.openFeesCalcModal = function () {
+        const modal = document.getElementById("feesCalcModal");
+        const body = document.getElementById("feesCalcModalBody");
+        if (!modal || !body) return;
+
+        // إغلاق البوب اب اليومية أولاً
+        const statsModal = document.getElementById("statsModal");
+        if (statsModal) {
+          statsModal.classList.remove("show");
+          statsModal.setAttribute("aria-hidden", "true");
+        }
+
+        // نأخذ بيانات الطلبات العادية من آخر تحميل
+        const rawBreakdown =
+          (window._feesBreakdownData &&
+            window._feesBreakdownData.orders_breakdown) ||
+          [];
+        const repsBreakdown =
+          (window._feesBreakdownData &&
+            window._feesBreakdownData.replacements_breakdown) ||
+          [];
+
+        // دمج طلبات الاستبدال مع الطلبات العادية بناءً على المحافظة
+        function mergeRepsIntoBreakdown(
+          ordersBreakdown,
+          replacementsBreakdown,
+        ) {
+          const repByGov = {};
+          (replacementsBreakdown || []).forEach((rep) => {
+            const gov = rep.governorate || "غير محدد";
+            repByGov[gov] = (repByGov[gov] || 0) + 1;
+          });
+          const result = ordersBreakdown.map((row) => ({
+            governorates: row.governorates,
+            count: row.count,
+            fees: row.fees,
+            repCount: 0,
+          }));
+          Object.entries(repByGov).forEach(([gov, repCount]) => {
+            const rowIdx = result.findIndex((row) =>
+              Array.isArray(row.governorates)
+                ? row.governorates.includes(gov)
+                : row.governorate === gov,
+            );
+            if (rowIdx >= 0) {
+              result[rowIdx].count += repCount;
+              result[rowIdx].repCount =
+                (result[rowIdx].repCount || 0) + repCount;
+            } else {
+              result.push({
+                governorates: [gov],
+                count: repCount,
+                fees: 0,
+                repCount,
+              });
+            }
+          });
+          return result;
+        }
+
+        const breakdown = mergeRepsIntoBreakdown(rawBreakdown, repsBreakdown);
+
+        if (!breakdown.length) {
+          body.innerHTML =
+            '<div class="text-center text-muted py-3">لا توجد بيانات</div>';
+          modal.classList.add("show");
+          modal.setAttribute("aria-hidden", "false");
+          document.body.style.overflow = "hidden";
+          return;
+        }
+
+        let rows = "";
+        breakdown.forEach((row, i) => {
+          const govsText = Array.isArray(row.governorates)
+            ? row.governorates.join(" – ")
+            : row.governorate || "";
+          const repBadge =
+            row.repCount > 0
+              ? ` <span class="badge bg-warning text-dark" title="منهم ${row.repCount} استبدال" style="font-size:0.75rem;">${row.repCount} استبدال</span>`
+              : "";
+          rows += `
+          <tr>
+            <td style="text-align:right; padding-right:8px; word-break:break-word;">${govsText}</td>
+            <td style="white-space:nowrap;">${row.count}${repBadge}</td>
+            <td>
+              <input type="number" min="0" step="0.01" class="fees-calc-input form-control form-control-sm text-center"
+                data-count="${row.count}" data-idx="${i}"
+                placeholder="0.00" style="min-width:80px; border:1px solid #000; border-radius:0.4rem;">
+            </td>
+            <td class="fees-calc-subtotal fw-bold" data-idx="${i}">–</td>
+          </tr>`;
+        });
+
+        body.innerHTML = `
+        <div class="fees-table-responsive">
+          <table class="table fees-modern-table table-hover align-middle mb-0" style="table-layout:fixed; width:100%;">
+            <colgroup>
+              <col style="width:48%;">
+              <col style="width:12%;">
+              <col style="width:20%;">
+              <col style="width:20%;">
+            </colgroup>
+            <thead>
+              <tr>
+                <th style="text-align:right; padding-right:8px;">المحافظة</th>
+                <th>العدد</th>
+                <th>رسوم التوصيل</th>
+                <th>الإجمالي الفرعي</th>
+              </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>
+        <div class="mt-3 p-3 rounded d-flex justify-content-between align-items-center fw-bold fs-5"
+             style="background:linear-gradient(135deg,#4facfe 0%,#00f2fe 100%); color:#fff; border:1px solid #000; border-radius:0.85rem !important;">
+          <span>إجمالي رسوم التوصيل</span>
+          <span id="feesCalcTotal">0.00 ج.م</span>
+        </div>`;
+
+        // ربط الـ inputs
+        body.querySelectorAll(".fees-calc-input").forEach((input) => {
+          input.addEventListener("input", recalcFeesTotals);
+        });
+
+        modal.classList.add("show");
+        modal.setAttribute("aria-hidden", "false");
+        document.body.style.overflow = "hidden";
+      };
+
+      function recalcFeesTotals() {
+        const body = document.getElementById("feesCalcModalBody");
+        if (!body) return;
+        let grand = 0;
+        body.querySelectorAll(".fees-calc-input").forEach((input) => {
+          const count = parseInt(input.dataset.count) || 0;
+          const feeVal = parseFloat(input.value) || 0;
+          const subtotal = count * feeVal;
+          grand += subtotal;
+          const idx = input.dataset.idx;
+          const subtotalEl = body.querySelector(
+            `.fees-calc-subtotal[data-idx="${idx}"]`,
+          );
+          if (subtotalEl)
+            subtotalEl.textContent =
+              subtotal > 0 ? subtotal.toFixed(0) + " ج.م" : "–";
+        });
+        const totalEl = document.getElementById("feesCalcTotal");
+        if (totalEl) totalEl.textContent = grand.toFixed(0) + " ج.م";
+      }
+
+      window.closeFeesCalcModal = function () {
+        const modal = document.getElementById("feesCalcModal");
+        if (modal) {
+          modal.classList.remove("show");
+          modal.setAttribute("aria-hidden", "true");
+          document.body.style.overflow = "";
+        }
+      };
+
+      // ─── حفظ آخر بيانات breakdown ────────────────────────────────────────────
+      const _origLoadFeesBreakdown = loadFeesBreakdown;
+      loadFeesBreakdown = function () {
+        const dateInput = document.getElementById("dailyDateFilterModal");
+        const selectedDate =
+          dateInput && dateInput.value
+            ? dateInput.value
+            : dailyData && dailyData.date
+              ? dailyData.date
+              : new Date().toISOString().split("T")[0];
+        const contentEl = document.getElementById("feesBreakdownContent");
+
+        fetch(`/api/daily_fees_breakdown?date=${selectedDate}`)
+          .then((r) => r.json())
+          .then((data) => {
+            if (!data.success) throw new Error(data.error || "خطأ");
+            feesBreakdownLoaded = true;
+            window._feesBreakdownData = data;
+            contentEl.innerHTML = renderFeesBreakdownHTML(data);
+          })
+          .catch((err) => {
+            contentEl.innerHTML = `<div class="text-center text-danger py-2"><i class="fas fa-exclamation-circle me-1"></i> حدث خطأ: ${err.message}</div>`;
+          });
+      };
+      // إغلاق بـ Escape
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape") closeFeesCalcModal();
+      });
+
+      // إعادة تحميل التفاصيل عند تغيير التاريخ
+      const origUpdateDailyStats = window._origUpdateDailyStats;
+      const _origUpdateDailyStats2 = updateDailyStats;
+      updateDailyStats = function () {
+        _origUpdateDailyStats2();
+        feesBreakdownLoaded = false;
+        if (feesBreakdownOpen) loadFeesBreakdown();
+      };
+    })();
+
+    function fmt(value) {
+      return typeof value === "string" ? value : Number(value || 0).toFixed(0);
+    }
+
+    (function loadCapitalGrowth() {
+      fetch("/api/capital_growth_rate")
+        .then((response) => response.json())
+        .then((data) => {
+          console.log("Capital Growth Data:", data);
+          const contentDiv = document.getElementById("capital-growth-content");
+          const card = document.getElementById("capital-growth-card");
+
+          if (data.success) {
+            if (data.has_previous_data) {
+              const isPositive = data.growth_rate >= 0;
+              const rateColor = isPositive ? "text-success" : "text-danger";
+              const icon = isPositive ? "fa-arrow-up" : "fa-arrow-down";
+
+              contentDiv.innerHTML = `
+              <div class="stats-icon ${rateColor}">
+                <i class="fas ${icon}"></i>
+              </div>
+              <div class="stats-number ${rateColor}">
+                ${Math.abs(data.growth_rate).toFixed(2)}%
+              </div>
+              <div class="stats-label">معدل نمو رأس المال</div>
+            `;
+
+              card.dataset.capitalGrowth = JSON.stringify(data);
+            } else {
+              contentDiv.innerHTML = `
+              <div class="stats-icon text-muted">
+                <i class="fas fa-chart-line"></i>
+              </div>
+              <div class="stats-number text-muted">-</div>
+              <div class="stats-label">معدل نمو رأس المال</div>
+            `;
+              card.dataset.capitalGrowth = JSON.stringify(data);
+            }
+          } else {
+            contentDiv.innerHTML = `
+            <div class="stats-number text-muted">-</div>
+          `;
+          }
+        })
+        .catch((error) => {
+          console.error("Error loading capital growth:", error);
+          const contentDiv = document.getElementById("capital-growth-content");
+          contentDiv.innerHTML = `
+          <div class="stats-number text-danger"><i class="fas fa-exclamation-triangle"></i></div>
+        `;
+        });
+    })();
+
+    // ═══════════════════════════════════════════════════════════
+    // Capital Growth History Chart
+    // ═══════════════════════════════════════════════════════════
+    let _capitalChartInstance = null;
+    let _capitalChartState = {
+      hasMore: false,
+      allItems: [],
+      historyByPeriod: {},
+      newestPeriod: null,
+      earliestPeriod: null,
+      oldestShownPeriod: null,
+    };
+
+    function _toPeriod(year, month) {
+      return `${year}-${String(month).padStart(2, "0")}`;
+    }
+
+    function _prevPeriod(period) {
+      const [yRaw, mRaw] = (period || "").split("-");
+      let year = parseInt(yRaw, 10);
+      let month = parseInt(mRaw, 10);
+      if (!year || !month) return null;
+      month -= 1;
+      if (month === 0) {
+        month = 12;
+        year -= 1;
+      }
+      return _toPeriod(year, month);
+    }
+
+    function _defaultAnchorPeriod() {
+      const now = new Date();
+      let year = now.getFullYear();
+      let month = now.getMonth() + 1;
+      month -= 1;
+      if (month === 0) {
+        month = 12;
+        year -= 1;
+      }
+      return _toPeriod(year, month);
+    }
+
+    function _generatePeriods(startPeriod, count) {
+      const periods = [];
+      let cursor = startPeriod;
+      for (let i = 0; i < count && cursor; i++) {
+        periods.push(cursor);
+        cursor = _prevPeriod(cursor);
+      }
+      return periods;
+    }
+
+    function _buildMonthPoint(period) {
+      const row = _capitalChartState.historyByPeriod[period];
+      if (!row) {
+        return {
+          period,
+          growth_rate: 0,
+          fixed_assets_value: 0,
+          stock_value: 0,
+          pending_orders_value: 0,
+          total_debt: 0,
+          net_capital_after_debt: 0,
+          _has_real_data: false,
+        };
+      }
+
+      const debt = Number(row.total_debt || 0);
+      const totalCapital = Number(row.total_capital || 0);
+      const netAfterDebt =
+        row.net_capital_after_debt !== null &&
+        row.net_capital_after_debt !== undefined
+          ? Number(row.net_capital_after_debt)
+          : totalCapital - debt;
+
+      return {
+        ...row,
+        period,
+        growth_rate:
+          row.growth_rate !== null && row.growth_rate !== undefined
+            ? Number(row.growth_rate)
+            : 0,
+        fixed_assets_value: Number(row.fixed_assets_value || 0),
+        stock_value: Number(row.stock_value || 0),
+        pending_orders_value: Number(row.pending_orders_value || 0),
+        total_debt: debt,
+        net_capital_after_debt: netAfterDebt,
+        _has_real_data: true,
+      };
+    }
+
+    function initCapitalGrowthChart() {
+      _capitalChartState = {
+        hasMore: false,
+        allItems: [],
+        historyByPeriod: {},
+        newestPeriod: null,
+        earliestPeriod: null,
+        oldestShownPeriod: null,
+      };
+      if (_capitalChartInstance) {
+        _capitalChartInstance.destroy();
+        _capitalChartInstance = null;
+      }
+      _loadCapitalChartData(false, true);
+    }
+
+    function _loadCapitalChartData(append, fetchHistory = false) {
+      const loadingEl = document.getElementById("capitalChartLoading");
+      const loadMoreBtn = document.getElementById("capitalChartLoadMoreBtn");
+      const canvasWrap = document.getElementById("capitalChartCanvasWrapper");
+      const emptyEl = document.getElementById("capitalChartEmpty");
+
+      if (loadingEl) loadingEl.style.display = fetchHistory ? "block" : "none";
+      if (loadMoreBtn) loadMoreBtn.style.display = "none";
+
+      if (!fetchHistory) {
+        if (!_capitalChartState.oldestShownPeriod) {
+          if (loadingEl) loadingEl.style.display = "none";
+          return;
+        }
+
+        const nextStartPeriod = _prevPeriod(
+          _capitalChartState.oldestShownPeriod,
+        );
+        const nextPeriods = _generatePeriods(nextStartPeriod, 6);
+        const nextItems = nextPeriods.map(_buildMonthPoint);
+
+        _capitalChartState.allItems = [
+          ..._capitalChartState.allItems,
+          ...nextItems,
+        ];
+        _capitalChartState.oldestShownPeriod =
+          nextPeriods[nextPeriods.length - 1] ||
+          _capitalChartState.oldestShownPeriod;
+        _capitalChartState.hasMore = !!(
+          _capitalChartState.earliestPeriod &&
+          _capitalChartState.oldestShownPeriod &&
+          _capitalChartState.oldestShownPeriod >
+            _capitalChartState.earliestPeriod
+        );
+
+        if (emptyEl) emptyEl.style.display = "none";
+        if (canvasWrap) canvasWrap.style.display = "block";
+        if (loadMoreBtn)
+          loadMoreBtn.style.display = _capitalChartState.hasMore
+            ? "block"
+            : "none";
+
+        _renderCapitalChart();
+        return;
+      }
+
+      fetch("/api/capital_growth_history?offset=0&limit=100")
+        .then((r) => r.json())
+        .then((data) => {
+          if (loadingEl) loadingEl.style.display = "none";
+          if (!data.success) return;
+
+          const historyByPeriod = {};
+          for (const item of data.items || []) {
+            if (!item.period) continue;
+            if (!historyByPeriod[item.period]) {
+              // API returns newest-first; first item per period is the latest snapshot for that month.
+              historyByPeriod[item.period] = item;
+            }
+          }
+
+          _capitalChartState.historyByPeriod = historyByPeriod;
+
+          const allPeriodsAsc = Object.keys(historyByPeriod).sort();
+          _capitalChartState.newestPeriod = allPeriodsAsc.length
+            ? allPeriodsAsc[allPeriodsAsc.length - 1]
+            : _defaultAnchorPeriod();
+          _capitalChartState.earliestPeriod = allPeriodsAsc.length
+            ? allPeriodsAsc[0]
+            : _capitalChartState.newestPeriod;
+
+          const initialPeriods = _generatePeriods(
+            _capitalChartState.newestPeriod,
+            6,
+          );
+          _capitalChartState.allItems = initialPeriods.map(_buildMonthPoint);
+          _capitalChartState.oldestShownPeriod =
+            initialPeriods[initialPeriods.length - 1] ||
+            _capitalChartState.newestPeriod;
+          _capitalChartState.hasMore = !!(
+            _capitalChartState.earliestPeriod &&
+            _capitalChartState.oldestShownPeriod &&
+            _capitalChartState.oldestShownPeriod >
+              _capitalChartState.earliestPeriod
+          );
+
+          if (emptyEl) emptyEl.style.display = "none";
+          if (canvasWrap) canvasWrap.style.display = "block";
+          if (loadMoreBtn)
+            loadMoreBtn.style.display = _capitalChartState.hasMore
+              ? "block"
+              : "none";
+
+          _renderCapitalChart();
+        })
+        .catch((e) => {
+          console.error("Error loading capital history:", e);
+          if (loadingEl) loadingEl.style.display = "none";
+        });
+    }
+
+    window.loadMoreCapitalHistory = function () {
+      _loadCapitalChartData(true, false);
+    };
+
+    function _renderCapitalChart() {
+      const canvas = document.getElementById("capitalGrowthChart");
+      if (!canvas) return;
+      const enInt = (value) =>
+        new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(
+          Number(value || 0),
+        );
+
+      const items = _capitalChartState.allItems;
+      const monthNames = [
+        "يناير",
+        "فبراير",
+        "مارس",
+        "أبريل",
+        "مايو",
+        "يونيو",
+        "يوليو",
+        "أغسطس",
+        "سبتمبر",
+        "أكتوبر",
+        "نوفمبر",
+        "ديسمبر",
+      ];
+      const labels = items.map((i) => {
+        if (!i.period || !/^\d{4}-\d{2}$/.test(i.period)) return "";
+        const [year, month] = i.period.split("-");
+        const monthIndex = Math.max(1, Math.min(12, parseInt(month, 10))) - 1;
+        return `${monthNames[monthIndex]} ${year}`;
+      });
+      const rates = items.map((i) =>
+        i.growth_rate !== null ? parseFloat(i.growth_rate) : null,
+      );
+
+      if (_capitalChartInstance) _capitalChartInstance.destroy();
+
+      _capitalChartInstance = new Chart(canvas, {
+        type: "line",
+        data: {
+          labels,
+          datasets: [
+            {
+              label: "نسبة النمو %",
+              data: rates,
+              borderColor: "#f0c400",
+              borderWidth: 2.5,
+              backgroundColor: "rgba(215, 153, 33, 0.15)",
+              tension: 0.4,
+              pointRadius: 7,
+              pointHoverRadius: 9,
+              pointBorderWidth: 2,
+              pointBorderColor: "#fff",
+              pointBackgroundColor: items.map((item, idx) => {
+                const r = rates[idx];
+                if (!item._has_real_data) return "#6c757d";
+                return r >= 0 ? "#28a745" : "#dc3545";
+              }),
+              fill: false,
+              spanGaps: true,
+              yAxisID: "yRate",
+            },
+          ],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: { mode: "index", intersect: false },
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              rtl: true,
+              textDirection: "rtl",
+              backgroundColor: "#2c3e50",
+              titleColor: "#D79921",
+              bodyColor: "#fff",
+              borderColor: "#D79921",
+              borderWidth: 1,
+              padding: 12,
+              titleFont: {
+                family: "Cairo, sans-serif",
+                size: 13,
+                weight: "700",
+              },
+              bodyFont: {
+                family: "Cairo, sans-serif",
+                size: 12,
+                weight: "600",
+              },
+              callbacks: {
+                title: (tooltipItems) => {
+                  const idx = tooltipItems?.[0]?.dataIndex;
+                  return idx !== undefined ? labels[idx] : "";
+                },
+                label: (ctx) => {
+                  const v = ctx.parsed.y;
+                  return v === null
+                    ? "نسبة النمو: -"
+                    : `نسبة النمو: ${v >= 0 ? "+" : ""}${enInt(v)}%`;
+                },
+                afterBody: (tooltipItems) => {
+                  const idx = tooltipItems?.[0]?.dataIndex;
+                  if (idx === undefined) return [];
+
+                  const item = items[idx] || {};
+                  const debt = Number(item.total_debt || 0);
+                  const netAfterDebt =
+                    item.net_capital_after_debt !== null &&
+                    item.net_capital_after_debt !== undefined
+                      ? Number(item.net_capital_after_debt)
+                      : Number(item.total_capital || 0) - debt;
+
+                  return [
+                    `الأصول الثابتة: ${enInt(item.fixed_assets_value)} ج.م`,
+                    `قيمة المخزون: ${enInt(item.stock_value)} ج.م`,
+                    `الطلبات المعلقة: ${enInt(item.pending_orders_value)} ج.م`,
+                    `المديونية: ${enInt(debt)} ج.م`,
+                    `صافي رأس المال بعد خصم المديونية: ${enInt(netAfterDebt)} ج.م`,
+                  ];
+                },
+              },
+            },
+          },
+          scales: {
+            x: {
+              reverse: false,
+              title: {
+                display: true,
+                text: "الشهور",
+                color: "#f0c400",
+                font: { size: 13, family: "Cairo, sans-serif", weight: "700" },
+              },
+              ticks: {
+                maxRotation: 25,
+                minRotation: 0,
+                autoSkip: true,
+                maxTicksLimit: 12,
+                font: { size: 12, family: "Cairo, sans-serif", weight: "700" },
+                color: "#b28a00",
+              },
+              grid: { color: "rgba(215,153,33,0.14)" },
+              border: { color: "#D79921", dash: [4, 4] },
+            },
+            yRate: {
+              type: "linear",
+              position: "right",
+              title: {
+                display: true,
+                text: "نسبة النمو %",
+                color: "#f0c400",
+                font: { size: 13, family: "Cairo, sans-serif", weight: "700" },
+              },
+              grid: { color: "rgba(215,153,33,0.18)" },
+              ticks: {
+                callback: (v) => v + "%",
+                color: "#888",
+                font: { size: 12, family: "Cairo, sans-serif", weight: "700" },
+              },
+              border: { color: "#D79921", dash: [4, 4] },
+            },
+          },
+        },
+      });
+    }
+
+    window.saveCurrentAsSnapshot = function (currentCapital) {
+      console.log("🚀 saveCurrentAsSnapshot called with:", currentCapital);
+
+      if (!currentCapital || currentCapital <= 0) {
+        console.error("❌ Invalid current capital value:", currentCapital);
+        Swal.fire({
+          icon: "error",
+          title: "خطأ",
+          text: "قيمة رأس المال الحالي غير صحيحة",
+          confirmButtonText: "حسناً",
+        });
+        return;
+      }
+
+      Swal.fire({
+        title: "تحديث نقطة المقارنة",
+        html: `هل تريد حفظ القيمة الحالية (<strong>${fmt(currentCapital)} ج.م</strong>)؟`,
+        icon: "question",
+        showCancelButton: true,
+        confirmButtonText: "نعم، احفظ",
+        cancelButtonText: "إلغاء",
+        confirmButtonColor: "#ffc107",
+      }).then((result) => {
+        if (result.isConfirmed) {
+          const modal = document.querySelector(".stats-modal.show");
+          if (modal) modal.classList.remove("show");
+
+          Swal.fire({
+            title: "جاري الحفظ...",
+            allowOutsideClick: false,
+            didOpen: () => Swal.showLoading(),
+          });
+
+          console.log("📤 Sending POST request with capital:", currentCapital);
+
+          fetch("/api/save_custom_capital_snapshot", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ total_capital: currentCapital }),
+          })
+            .then((response) => {
+              console.log("📥 Response received:", response.status);
+              return response.json();
+            })
+            .then((data) => {
+              console.log("📊 Response data:", data);
+
+              if (data.success) {
+                console.log("✅ Save successful!");
+                Swal.fire({
+                  icon: "success",
+                  title: "تم الحفظ بنجاح",
+                  text: data.message,
+                  confirmButtonText: "حسناً",
+                }).then(() => {
+                  console.log("🔄 Reloading page...");
+                  location.reload();
+                });
+              } else {
+                console.error("❌ Save failed:", data.message);
+                Swal.fire({
+                  icon: "error",
+                  title: "خطأ",
+                  text: data.message || "حدث خطأ أثناء الحفظ",
+                  confirmButtonText: "حسناً",
+                });
+              }
+            })
+            .catch((error) => {
+              console.error("❌❌ Fetch error:", error);
+              Swal.fire({
+                icon: "error",
+                title: "خطأ في الاتصال",
+                text: "تعذر الاتصال بالخادم",
+                confirmButtonText: "حسناً",
+              });
+            });
+        }
+      });
+    };
+  </script>
+
+  {% endblock %}
+</div>

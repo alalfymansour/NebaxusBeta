@@ -1,0 +1,1289 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<style>
+  /* إزالة جميع المسافات الجانبية */
+  .container-fluid {
+    max-width: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+  
+  .row, .col-12 {
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+  
+  /* الجدول يأخذ العرض الكامل */
+  .table-responsive {
+    width: 98vw !important;
+    margin-left: calc(-49vw + 50%) !important;
+    margin-right: calc(-49vw + 50%) !important;
+    overflow-x: auto;
+  }
+  
+  .modern-table {
+    width: 100% !important;
+    border-radius: 1rem;
+    overflow: hidden;
+    background: #fff;
+    border: 1px solid #000;
+  }
+  .modern-table th {
+    background: #D79921 !important;
+    font-size: 1.1rem;
+    letter-spacing: 0.5px;
+    color: #333;
+    vertical-align: middle;
+    border-bottom: 1px solid #000 !important;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    padding: 0.5rem 0.5rem;
+  }
+  .modern-table td {
+    vertical-align: middle;
+    font-size: 1rem;
+    background: #fff;
+    border-bottom: 1px solid #000;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    padding: 0.4rem 0.5rem;
+  }
+  /* عمود الترقيم */
+  .idx-cell { color: #6c757d; font-size: 0.9rem; width: 4%; }
+  /* تقليل المسافة حول الفواصل داخل الخلايا */
+  .modern-table td hr { margin: 0.15rem 0; }
+  .modern-table tbody tr:hover td {
+    background: #fff3cd !important;
+    transition: background 0.2s;
+  }
+  /* تلوين الصف المختار بنقرة واحدة بنفس لون hover */
+  .modern-table tbody tr.row-selected td {
+    background: #fff3cd !important;
+  }
+  
+  /* توحيد radius الحواف للحقول */
+  .status-select, .tracking-input {
+    border-radius: 0.5rem !important;
+    border: 1px solid #ced4da;
+  }
+  .status-select:focus, .tracking-input:focus {
+    border-color: #86b7fe;
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+  }
+  /* خلايا قابلة للطي */
+  .cell-collapsible {
+    position: relative;
+    max-height: 56px;
+    overflow: hidden;
+  }
+  .cell-collapsible.cell-one-line { max-height: 1.6em; }
+  .cell-collapsible.is-overflowing:not(.expanded)::after {
+    content: '';
+    position: absolute;
+    right: 0; left: 0; bottom: 0;
+    height: 32px;
+    background: linear-gradient(to top, #fff, rgba(255,255,255,0.7) 60%, rgba(255,255,255,0));
+    pointer-events: none;
+  }
+  .cell-collapsible.cell-one-line.is-overflowing:not(.expanded)::after { height: 18px; }
+  .cell-collapsible.expanded { max-height: none; }
+
+  /* موبايل فقط: تكبير عرض الأعمدة + الأزرار أيقونة فقط */
+  @media (max-width: 576px) {
+    .modern-table { table-layout: auto !important; }
+    .modern-table th, .modern-table td { white-space: nowrap !important; }
+    .modern-table thead th:nth-child(1), .modern-table tbody td:nth-child(1) { min-width: 56px; }
+    .modern-table thead th:nth-child(2), .modern-table tbody td:nth-child(2) { min-width: 160px; }
+    .modern-table thead th:nth-child(3), .modern-table tbody td:nth-child(3) { min-width: 150px; }
+    .modern-table thead th:nth-child(4), .modern-table tbody td:nth-child(4) { min-width: 140px; }
+    .modern-table thead th:nth-child(5), .modern-table tbody td:nth-child(5) { min-width: 220px; }
+    .modern-table thead th:nth-child(6), .modern-table tbody td:nth-child(6) { min-width: 260px; }
+    .modern-table thead th:nth-child(7), .modern-table tbody td:nth-child(7) { min-width: 130px; }
+    .modern-table thead th:nth-child(8), .modern-table tbody td:nth-child(8) { min-width: 160px; }
+    /* تحويل أزرار الصف العلوي لأيقونة فقط */
+    .row.mb-4 .d-flex .btn span { display: none !important; }
+    .row.mb-4 .d-flex .btn i { margin: 0 !important; }
+    .row.mb-4 .d-flex .btn { padding-left: 0.6rem; padding-right: 0.6rem; }
+  }
+  /* أزرار النسخ أصغر قليلاً */
+  .copy-cell-btn { padding: 0.15rem 0.35rem !important; font-size: 0.75rem !important; line-height: 1 !important; border-radius: 0.35rem !important; }
+  .copy-cell-btn i { font-size: 0.85rem !important; line-height: 1 !important; }
+  
+  /* Dark mode support for tables */
+
+  .delivery-call-btn {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    border: 1px solid #ced4da;
+    background: #fff;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  .delivery-call-btn i { font-size: 1rem; }
+  .delivery-call-btn.state-contacted {
+    background: #198754;
+    border-color: #198754;
+  }
+  .delivery-call-btn.state-contacted i { color: #fff; }
+  .delivery-call-btn.state-informed {
+    background: #ffc107;
+    border-color: #ffc107;
+  }
+  .delivery-call-btn.state-informed i { color: #212529; }
+  .delivery-call-btn.state-not-contacted {
+    background: #dc3545;
+    border-color: #dc3545;
+  }
+  .delivery-call-btn.state-not-contacted i { color: #fff; }
+  .delivery-call-btn.state-none {
+    background: #f8f9fa;
+    border-color: #ced4da;
+  }
+  .delivery-call-btn.state-none i { color: #6c757d; }
+
+  .delivery-call-popover {
+    position: absolute;
+    z-index: 2000;
+    min-width: 300px;
+    max-width: 360px;
+    background: #fff;
+    border: 1px solid #dee2e6;
+    border-radius: 0.75rem;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18);
+    padding: 0.75rem;
+    display: none;
+  }
+  .delivery-call-popover-title {
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+    color: #212529;
+  }
+  .delivery-call-action {
+    width: 100%;
+    margin-bottom: 0.4rem;
+    text-align: right;
+    border-radius: 0.5rem;
+  }
+  .delivery-call-action:last-child { margin-bottom: 0; }
+
+  #replacement-orders-loader { padding: 0.5rem 0; }
+</style>
+<style>
+.filter-form .form-control,
+.filter-form .form-select,
+.filter-form .btn { height: 46px !important; }
+</style>
+
+<div class="container-fluid py-4" dir="rtl">
+  <div class="text-center mb-4">
+    <h2 class="fw-bold">طلبات استبدال حالة <span class="text-warning">{{ selected_status }}</span></h2>
+    <p class="text-muted">
+      {% if selected_status == 'جديد' %}
+        كل طلبات الاستبدال الجديدة
+      {% elif selected_status == 'خرج للتوصيل' %}
+        كل طلبات الاستبدال التي خرجت للتوصيل
+      {% elif selected_status == 'وصل' %}
+        كل طلبات الاستبدال التي وصلت للعميل
+      {% else %}
+        كل طلبات الاستبدال بهذه الحالة
+      {% endif %}
+    </p>
+  </div>
+
+  <div class="row mb-4 align-items-end">
+    <div class="col-12">
+      <div class="d-flex justify-content-between align-items-end">
+        <form method="get" action="" class="d-flex gap-2 align-items-end filter-form" style="overflow-x: auto;">
+          <select name="year" class="form-select" style="width: 130px; flex-shrink: 0;" onchange="this.form.submit()">
+            <option value="">كل السنوات</option>
+            {% for y in range(2025, current_year + 1) %}
+              <option value="{{ y }}" {% if selected_year == y %}selected{% endif %}>{{ y }}</option>
+            {% endfor %}
+          </select>
+          <select name="month" class="form-select" style="width: 120px; flex-shrink: 0;" onchange="this.form.submit()">
+            <option value="">كل الشهور</option>
+            {% for m in range(1, 13) %}
+              <option value="{{ m }}" {% if selected_month == m %}selected{% endif %}>شهر {{ m }}</option>
+            {% endfor %}
+          </select>
+          {% if selected_month %}
+          <select name="day" class="form-select" style="width: 110px; flex-shrink: 0;" onchange="this.form.submit()">
+            <option value="">كل الأيام</option>
+            {% for d in range(1, 32) %}
+              <option value="{{ d }}" {% if selected_day == d %}selected{% endif %}>يوم {{ d }}</option>
+            {% endfor %}
+          </select>
+          {% endif %}
+          {% if selected_status == 'جديد' %}
+          <select id="registration-filter" class="form-select" style="width: 140px; flex-shrink: 0;">
+            <option value="all">كل الطلبات</option>
+            <option value="registered">تم التسجيل</option>
+            <option value="not-registered">لم يتم التسجيل</option>
+          </select>
+          {% endif %}
+          {% if selected_status == 'وصل' %}
+          <select id="called-filter" class="form-select" style="width: 140px; flex-shrink: 0;">
+            <option value="all">كل الطلبات</option>
+            <option value="called">تم الاتصال</option>
+            <option value="not-called">لم يتم الاتصال</option>
+          </select>
+          <select id="verified-filter" class="form-select" style="width: 140px; flex-shrink: 0;">
+            <option value="all">كل الطلبات</option>
+            <option value="verified">تم التحقق</option>
+            <option value="not-verified">لم يتم التحقق</option>
+          </select>
+          {% endif %}
+          {% if selected_status == 'خرج للتوصيل' %}
+          <select id="delivery-call-filter" class="form-select" style="width: 190px; flex-shrink: 0;">
+            <option value="all">كل الطلبات</option>
+            <option value="contacted">تم التواصل</option>
+            <option value="not-contacted">لم يتم التواصل</option>
+          </select>
+          {% endif %}
+          <input type="text" name="phone" class="form-control" id="instant-search-replacements" placeholder="بحث برقم الهاتف" value="{{ request.args.get('phone', '') }}" style="width: 150px; flex-shrink: 0;" oninput="debounceSearch(this)">
+          <button type="button" class="btn btn-secondary" style="flex-shrink: 0; cursor: default; font-size: 1rem; font-weight: bold; padding: 0.375rem 0.75rem;" disabled>
+            {{ total_matching_orders }}
+          </button>
+          {% if selected_status == 'خرج للتوصيل' and selected_day %}
+          <button type="button" id="copy-all-tracking" class="btn btn-info" style="flex-shrink: 0;" title="نسخ كل الأرقام التتبعية">
+            <i class="fas fa-copy"></i> نسخ الأرقام
+          </button>
+          {% endif %}
+        </form>
+        <div class="d-flex gap-2" style="flex-shrink: 0;">
+          {% if selected_status == 'جديد' %}
+            <a href="{{ url_for('main.add_replacement_order') }}" class="btn btn-success d-inline-flex align-items-center gap-2">
+              <i class="fas fa-plus"></i> <span>إضافة طلب استبدال</span>
+            </a>
+            <button type="button"
+                    class="btn btn-success d-inline-flex align-items-center gap-2"
+                    onclick="openWassalhaModal('replacement-orders')">
+                <i class="fas fa-file-excel"></i> <span>تصدير وصلها</span>
+            </button>
+          {% endif %}
+          <a href="{{ url_for('main.replacement_orders') }}" class="btn btn-secondary d-inline-flex align-items-center">
+            <i class="fas fa-arrow-left"></i> <span>رجوع</span>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {% if orders %}
+  <div class="table-responsive" style="width: 100%; margin-top: 20px;">
+    <table class="table modern-table table-hover text-center align-middle" style="width: 100%;">
+      <thead>
+    <tr>
+      <th style="width: 4%;">#</th>
+      <th style="width: 12%;">الاسم</th>
+            <th style="width: 10%;">رقم الهاتف</th>
+            <th style="width: 10%;">المحافظة</th>
+            <th style="width: 20%;">باقي العنوان</th>
+            <th style="width: 20%;">المنتجات</th>
+            <th style="width: 8%;">المتبقي</th>
+            <th style="width: 8%;">الحالة</th>
+            <th style="width: 7%;">الرقم التتبعي</th>
+            {% if selected_status == 'خرج للتوصيل' %}
+            <th style="width: 4%;">التحقق من التسليم</th>
+            {% endif %}
+            {% if selected_status == 'جديد' %}
+            <th style="width: 3%">تم التسجيل</th>
+            {% endif %}
+            {% if selected_status == 'وصل' %}
+            <th style="width: 3%">تم الاتصال</th>
+            <th style="width: 3%">تم التحقق</th>
+            {% endif %}
+        </tr>
+      </thead>
+      <tbody id="replacement-orders-table-body" data-next-page="{{ (page + 1) if has_next_page else '' }}" data-per-page="{{ per_page }}">
+          {% for order in orders %}
+        <tr class="order-row" style="cursor: pointer;" data-edit-url="{{ url_for('main.edit_replacement_order', order_id=order.id, next=request.full_path) }}" {% if selected_status == 'خرج للتوصيل' %}data-delivery-call-state="{{ delivery_call_state_map.get(order.id, 'none') }}"{% endif %}>
+            <td class="idx-cell text-center">
+              {% if selected_status == 'جديد' and order.is_overdue_yellow %}
+                {% if order.is_overdue_red %}
+                  <span class="badge bg-danger text-white me-1" title="متأخر منذ {{ order.status_age_days }} يوم (أكثر من 10 أيام في حالة جديد)">
+                    <i class="fas fa-exclamation-triangle"></i>
+                  </span>
+                {% else %}
+                  <span class="badge bg-warning text-dark me-1" title="متأخر منذ {{ order.status_age_days }} يوم (أكثر من 5 أيام في حالة جديد)">
+                    <i class="fas fa-exclamation-triangle"></i>
+                  </span>
+                {% endif %}
+              {% endif %}
+              {{ ((page - 1) * per_page) + loop.index }}
+              {% if order.is_urgent %}
+                <div class="mt-1" title="طلب مستعجل"><i class="fas fa-bolt text-danger" aria-hidden="true"></i></div>
+              {% endif %}
+              {% if order.notes %}
+                <div class="mt-1" title="يوجد ملاحظة">
+                  <i class="fas fa-comment-dots text-warning"></i>
+                </div>
+              {% endif %}
+              {% if order.is_nearest_post_branch or (order.customer.governorate and ('فرع بريد' in order.customer.governorate)) or (order.delivery_fees or 0) == 40 %}
+                <div class="mt-1" title="التسليم لأقرب فرع بريد">
+                  <i class="fas fa-map-marker-alt text-primary"></i>
+                </div>
+              {% endif %}
+            </td>
+            <td style="word-wrap: break-word; max-width: 0;">
+              <div class="d-flex align-items-center justify-content-center gap-2">
+                <span id="copy-r-name-{{ order.id }}">{{ order.alternative_name if order.alternative_name else order.customer.name }}</span>
+                <button type="button" class="btn btn-outline-secondary btn-sm copy-cell-btn" data-target="#copy-r-name-{{ order.id }}" title="نسخ"><i class="fas fa-copy"></i></button>
+              </div>
+            </td>
+            <td style="word-wrap: break-word; max-width: 0;">
+              <div class="d-flex align-items-center justify-content-center gap-2">
+                <span id="copy-r-phone-{{ order.id }}">{{ order.alternative_phone if order.alternative_phone else order.customer.phone }}</span>
+                <button type="button" class="btn btn-outline-secondary btn-sm copy-cell-btn" data-target="#copy-r-phone-{{ order.id }}" title="نسخ"><i class="fas fa-copy"></i></button>
+              </div>
+            </td>
+            <td style="word-wrap: break-word; max-width: 0;">
+              <div class="d-flex align-items-center justify-content-center gap-2">
+                <span id="copy-r-gov-{{ order.id }}">{{ order.alternative_governorate if order.alternative_governorate else order.customer.governorate }}</span>
+                <button type="button" class="btn btn-outline-secondary btn-sm copy-cell-btn" data-target="#copy-r-gov-{{ order.id }}" title="نسخ"><i class="fas fa-copy"></i></button>
+              </div>
+            </td>
+            <td style="word-wrap: break-word; max-width: 0;">
+              <div class="d-flex align-items-start justify-content-between gap-2 w-100">
+                <div id="copy-r-addr-{{ order.id }}" class="cell-collapsible cell-one-line flex-grow-1" data-collapsible>{{ order.alternative_address_details if order.alternative_address_details else order.customer.address_details }}</div>
+                <button type="button" class="btn btn-outline-secondary btn-sm copy-cell-btn" data-target="#copy-r-addr-{{ order.id }}" title="نسخ"><i class="fas fa-copy"></i></button>
+              </div>
+            </td>
+            <td style="word-wrap: break-word; max-width: 0;">
+              <div class="d-flex align-items-start justify-content-between gap-2 w-100">
+                <div class="cell-collapsible flex-grow-1" data-collapsible>
+                {% for item in order.items %}
+                  
+                  {% if item.state in ['سليم', 'منتج جديد', 'جديد'] %}
+                    {% if item.product %}
+                      <div class="mb-1">
+                        <strong>{{ item.product.name }}</strong>
+                        {% if item.product.is_deleted %}
+                          <span class="badge bg-danger ms-1" style="font-size: 0.7rem;">محذوف</span>
+                        {% endif %}
+                        {% if item.product.is_bundle %}
+                          <span class="badge bg-primary ms-1" style="font-size: 0.7rem;">Bundle</span>
+                        {% endif %}
+                        <span class="badge bg-secondary me-1">× {{ item.quantity }}</span>
+                        {% if item.product.is_bundle and item.product.bundle_items %}
+                          {% set bundle_vars = item.bundle_variants_map %}
+                          <div class="ms-3 mt-1 text-muted small">
+                            {% for bundle_item in item.product.bundle_items %}
+                              <div>├ {{ bundle_item.product.name if bundle_item.product else 'منتج محذوف' }}
+                                {% if loop.index0 in bundle_vars %}
+                                  {% for label, variant in bundle_vars[loop.index0].variants.items() %}
+                                    <span class="badge bg-info me-1" style="font-size: 0.7rem;">{{ label }}: {{ variant.variant_name }}</span>
+                                  {% endfor %}
+                                {% endif %}
+                              </div>
+                            {% endfor %}
+                          </div>
+                        {% else %}
+                          {% for label, variant in item.selected_variants.items() %}
+                            <span class="badge bg-primary me-1">{{ label }}: {{ variant.variant_name }}</span>
+                          {% endfor %}
+                        {% endif %}
+                        
+                      </div>
+                    {% else %}
+                      <div class="mb-1">
+                        <span class="text-danger">منتج مفقود</span>
+                        <span class="badge bg-secondary me-1">× {{ item.quantity }}</span>
+                      </div>
+                    {% endif %}
+                    {% if not loop.last %}<hr class="my-1">{% endif %}
+                  {% endif %}
+                {% endfor %}
+                </div>
+                
+                <span id="copy-r-products-{{ order.id }}" style="display: none;">
+                  {%- for item in order.items -%}
+                    {%- if item.state in ['سليم', 'منتج جديد', 'جديد'] -%}
+                      {%- if item.product -%}
+                        ({{ item.product.name }}{% if item.product.is_deleted %} [محذوف]{% endif %}{% if item.product.is_bundle %} [Bundle]{% endif %} × {{ item.quantity }}
+                        {%- if item.product.is_bundle and item.product.bundle_items %}
+                          {%- set bundle_vars = item.bundle_variants_map %}
+                          {%- for bundle_item in item.product.bundle_items %} - {{ bundle_item.product.name if bundle_item.product else 'منتج محذوف' }}
+                            {%- if loop.index0 in bundle_vars %} ({% for label, variant in bundle_vars[loop.index0].variants.items() %}{{ label }}: {{ variant.variant_name }}{% if not loop.last %}, {% endif %}{% endfor %}){% endif -%}
+                          {%- endfor -%}
+                        {%- else %}
+                          {%- for label, variant in item.selected_variants.items() %} - {{ label }}: {{ variant.variant_name }}{% endfor -%}
+                        {%- endif -%}
+                        )
+                      {%- else -%}
+                        (منتج مفقود × {{ item.quantity }})
+                      {%- endif -%}
+                      {%- if not loop.last %}
+{% endif -%}
+                    {%- endif -%}
+                  {%- endfor -%}
+                </span>
+                <button type="button" class="btn btn-outline-secondary btn-sm copy-cell-btn" data-target="#copy-r-products-{{ order.id }}" title="نسخ"><i class="fas fa-copy"></i></button>
+              </div>
+            </td>
+            {% set remaining_calc = (order.total_amount or 0) - (order.amount_paid or 0) - (order.customer_refund_amount or 0) %}
+            <td style="word-wrap: break-word; max-width: 0;">
+              <div class="d-flex align-items-center justify-content-center gap-2">
+                <span id="copy-r-remaining-{{ order.id }}">{{ (remaining_calc or 0)|int }}</span> ج.م
+                <button type="button" class="btn btn-outline-secondary btn-sm copy-cell-btn" data-target="#copy-r-remaining-{{ order.id }}" title="نسخ"><i class="fas fa-copy"></i></button>
+              </div>
+            </td>
+            <td class="status-cell" style="word-wrap: break-word; max-width: 0;">
+                
+                {% set has_oos = False %}
+                {% if selected_status == 'جديد' %}
+                  {% for item in order.items %}
+                    {% if item.product and not item.product.is_deleted and (item.state in ['منتج جديد','جديد']) and not item.product.is_bundle and (item.product.stock or 0) < (item.quantity or 1) %}
+                      {% set has_oos = True %}
+                    {% endif %}
+                  {% endfor %}
+                {% endif %}
+                <select class="form-select form-select-sm status-select" data-order-id="{{ order.id }}" {% if selected_status == 'جديد' and has_oos %}disabled data-bs-toggle="tooltip" title="لا يمكن التحويل إلى خرج للتوصيل لوجود منتجات جديدة غير متوفرة"{% endif %}>
+                    {% for s in all_statuses %}
+                        {% if s in order.valid_next_statuses %}
+                        <option value="{{ s }}" {% if order.status == s %}selected{% endif %}>{{ s }}</option>
+                        {% endif %}
+                    {% endfor %}
+                </select>
+            </td>
+      <td style="word-wrap: break-word; max-width: 0;">
+        <div class="d-flex align-items-center justify-content-center gap-2">
+          <input type="text" 
+                 id="copy-r-tracking-{{ order.id }}"
+                 class="form-control form-control-sm text-center tracking-input" 
+                 value="{{ order.tracking_number|default('', true) }}" 
+                 data-order-id="{{ order.id }}"
+                 placeholder="أدخل الرقم..."
+                 {% if selected_status == 'جديد' and has_oos %}disabled data-bs-toggle="tooltip" title="لا يمكن إدخال رقم تتبعي بسبب نقص المخزون في منتجات جديدة"{% endif %}>
+          <button type="button" class="btn btn-outline-secondary btn-sm copy-cell-btn" data-target="#copy-r-tracking-{{ order.id }}" title="نسخ"><i class="fas fa-copy"></i></button>
+        </div>
+      </td>
+      {% if selected_status == 'خرج للتوصيل' %}
+      {% set delivery_call_state = delivery_call_state_map.get(order.id, 'none') %}
+      <td style="word-wrap: break-word; max-width: 0;" onclick="event.stopPropagation();">
+        <button
+          type="button"
+          class="delivery-call-btn {% if delivery_call_state == 'informed' %}state-informed{% elif delivery_call_state == 'contacted' %}state-contacted{% elif delivery_call_state == 'not_contacted' %}state-not-contacted{% else %}state-none{% endif %}"
+          data-order-id="{{ order.id }}"
+          data-order-type="replacement"
+          data-state="{{ delivery_call_state }}"
+          title="التحقق من التسليم">
+          <i class="fas fa-phone-alt"></i>
+        </button>
+      </td>
+      {% endif %}
+      {% if selected_status == 'جديد' %}
+      <td style="word-wrap: break-word; max-width: 0;" onclick="event.stopPropagation();">
+        <input type="checkbox" class="form-check-input customer-registered-checkbox" 
+               data-order-id="{{ order.id }}" 
+               {% if order.registered %}checked{% endif %}
+               style="width: 20px; height: 20px; cursor: pointer;">
+      </td>
+      {% endif %}
+            {% if selected_status == 'وصل' %}
+            <td style="word-wrap: break-word; max-width: 0;" onclick="event.stopPropagation();">
+              <input type="checkbox" class="form-check-input customer-called-checkbox" 
+                     data-order-id="{{ order.id }}" 
+                     {% if order.customer_called %}checked{% endif %}
+                     style="width: 20px; height: 20px; cursor: pointer;">
+            </td>
+            <td style="word-wrap: break-word; max-width: 0;" onclick="event.stopPropagation();">
+              <input type="checkbox" class="form-check-input customer-verified-checkbox" 
+                     data-order-id="{{ order.id }}" 
+                     {% if order.customer_verified %}checked{% endif %}
+                     style="width: 20px; height: 20px; cursor: pointer;">
+            </td>
+            {% endif %}
+
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% if has_next_page %}<div id="replacement-orders-loader" class="sk-loader"><div class="sk sk-card"></div></div>{% endif %}
+  {% else %}
+  <div class="alert alert-light border text-center text-muted mt-4">
+    لا توجد طلبات استبدال بهذه الحالة.
+  </div>
+  {% endif %}
+
+</div>
+
+<script>
+
+document.addEventListener("DOMContentLoaded", () => {
+  document.addEventListener('click', (e) => {
+    const row = e.target.closest('tbody tr.order-row');
+    if (!row) return;
+    if (["SELECT", "INPUT", "BUTTON", "A"].includes(e.target.tagName)) {
+      e.stopPropagation();
+      return;
+    }
+    document.querySelectorAll('tbody tr.row-selected').forEach(r => r.classList.remove('row-selected'));
+    row.classList.add('row-selected');
+  });
+
+  function markOverflowing() {
+    document.querySelectorAll('[data-collapsible]').forEach((box) => {
+      box.classList.remove('is-overflowing');
+      const wasExpanded = box.classList.contains('expanded');
+      if (wasExpanded) box.classList.remove('expanded');
+      if (box.scrollHeight > box.clientHeight + 2) {
+        box.classList.add('is-overflowing');
+      }
+      if (wasExpanded) box.classList.add('expanded');
+    });
+  }
+  markOverflowing();
+  window.addEventListener('resize', () => {
+    clearTimeout(window.__overflowTimer);
+    window.__overflowTimer = setTimeout(markOverflowing, 100);
+  });
+
+  document.addEventListener('click', function(e) {
+    const box = e.target.closest('[data-collapsible]');
+    if (!box || !box.classList.contains('is-overflowing')) return;
+    box.classList.toggle('expanded');
+  });
+
+  document.addEventListener('dblclick', function(e) {
+    const row = e.target.closest('tr.order-row');
+    if (!row) return;
+    if (["SELECT", "INPUT", "TEXTAREA", "BUTTON", "A"].includes(e.target.tagName)) return;
+    const url = row.getAttribute('data-edit-url');
+    if (url) window.location.href = url;
+  });
+
+  try { var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]')); tooltipTriggerList.forEach(function (tooltipTriggerEl) { new bootstrap.Tooltip(tooltipTriggerEl); }); } catch(_) {}
+
+  function bindStatusSelect(select) {
+    if (!select || select.dataset.statusBound === '1') return;
+    select.dataset.statusBound = '1';
+
+    select.addEventListener('focus', function() {
+      const currentStatus = this.value;
+      const rejectOption = this.querySelector('option[value="رفض الاستلام"]');
+      
+      if (currentStatus === 'خرج للتوصيل' || currentStatus === 'رفض الاستلام') {
+        if (!rejectOption) {
+          const afterDelivery = this.querySelector('option[value="وصل"]');
+          if (afterDelivery) {
+            const newOption = document.createElement('option');
+            newOption.value = 'رفض الاستلام';
+            newOption.textContent = 'رفض الاستلام';
+            afterDelivery.insertAdjacentElement('afterend', newOption);
+          }
+        }
+      } else {
+        if (rejectOption) rejectOption.remove();
+      }
+    });
+
+    select.addEventListener('change', function() {
+      const orderId = this.dataset.orderId;
+      const newStatus = this.value;
+      const prev = this.dataset.originalValue || this.value;
+      fetch(`/replacement-orders/${orderId}/update-status`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus })
+      })
+      .then(r => r.json())
+      .then(data => {
+        if (!data.success) {
+          alert(data.message || 'فشل في تحديث الحالة');
+          this.value = prev;
+        }
+      })
+      .catch(() => {
+        alert('حدث خطأ أثناء تحديث الحالة');
+        this.value = prev;
+      });
+    });
+
+    select.dataset.originalValue = select.value;
+  }
+
+  function bindTrackingInput(inp) {
+    if (!inp || inp.dataset.trackingBound === '1') return;
+    inp.dataset.trackingBound = '1';
+
+    const orderId = inp.dataset.orderId;
+    const statusSelect = inp.closest('tr')?.querySelector('.status-select');
+    let lastValue = inp.value;
+    function pushUpdate(value) {
+      fetch(`/replacement-orders/${orderId}/update-tracking`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tracking_number: value })
+      })
+      .then(r => r.json())
+      .then(data => {
+        if (data.success) {
+          if (data.new_status && statusSelect) statusSelect.value = data.new_status;
+          lastValue = value;
+        } else {
+          alert(data.message || 'فشل في تحديث الرقم التتبعي');
+          inp.value = lastValue;
+        }
+      })
+      .catch(() => {
+        alert('حدث خطأ أثناء تحديث الرقم التتبعي');
+        inp.value = lastValue;
+      });
+    }
+    
+    inp.addEventListener('blur', () => pushUpdate(inp.value.trim()));
+    inp.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        inp.blur();
+      }
+    });
+  }
+
+  function bindInteractiveRows(scope) {
+    scope.querySelectorAll('.status-select').forEach(bindStatusSelect);
+    scope.querySelectorAll('.tracking-input').forEach(bindTrackingInput);
+    scope.querySelectorAll('.delivery-call-btn').forEach(bindDeliveryCallButton);
+    scope.querySelectorAll('.customer-called-checkbox').forEach(bindCalledCheckbox);
+    scope.querySelectorAll('.customer-verified-checkbox').forEach(bindVerifiedCheckbox);
+    scope.querySelectorAll('.customer-registered-checkbox').forEach(bindRegisteredCheckbox);
+  }
+
+  function getElementText(el) {
+    if (!el) return '';
+    if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') return el.value || '';
+    return (el.innerText || el.textContent || '').trim();
+  }
+  async function copyText(text) {
+    try {
+      await navigator.clipboard.writeText(text);
+      return true;
+    } catch (_) {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      document.body.appendChild(ta);
+      ta.select();
+      try { document.execCommand('copy'); } catch(_) {}
+      document.body.removeChild(ta);
+      return true;
+    }
+  }
+  document.addEventListener('click', async function(e){
+    const btn = e.target.closest('.copy-cell-btn');
+    if (!btn) return;
+    e.stopPropagation();
+    const sel = btn.getAttribute('data-target');
+    if (!sel) return;
+    const target = document.querySelector(sel);
+    const txt = getElementText(target);
+    if (!txt) return;
+    const ok = await copyText(txt);
+    if (ok) {
+      btn.classList.add('btn-success');
+      btn.classList.remove('btn-outline-secondary');
+      setTimeout(() => {
+        btn.classList.remove('btn-success');
+        btn.classList.add('btn-outline-secondary');
+      }, 600);
+    }
+  });
+
+  function setDeliveryCallButtonState(button, state) {
+    if (!button) return;
+    button.dataset.state = state;
+    button.classList.remove('state-informed', 'state-contacted', 'state-not-contacted', 'state-none');
+    if (state === 'informed') {
+      button.classList.add('state-informed');
+      button.title = 'آخر إجراء: تم ابلاغ العميل بخروج الطلب للتوصيل';
+      return;
+    }
+    if (state === 'contacted') {
+      button.classList.add('state-contacted');
+      button.title = 'آخر رد: تم التواصل مع العميل من جانب المندوب';
+      return;
+    }
+    if (state === 'not_contacted') {
+      button.classList.add('state-not-contacted');
+      button.title = 'آخر رد: لم يتم التواصل مع العميل من جانب المندوب';
+      return;
+    }
+    button.classList.add('state-none');
+    button.title = 'لم تُنفذ عملية التحقق من التسليم بعد';
+  }
+
+  function applyDeliveryCallFilter() {
+    const filterEl = document.getElementById('delivery-call-filter');
+    if (!filterEl) return;
+    const value = filterEl.value;
+    document.querySelectorAll('tbody tr.order-row').forEach((row) => {
+      const state = row.dataset.deliveryCallState || 'none';
+      if (value === 'all') {
+        row.style.display = '';
+      } else if (value === 'contacted') {
+        row.style.display = state === 'contacted' ? '' : 'none';
+      } else if (value === 'not-contacted') {
+        row.style.display = state === 'not_contacted' ? '' : 'none';
+      }
+    });
+  }
+
+  function bindDeliveryCallButton(btn) {
+    if (!btn || btn.dataset.deliveryCallBound === '1') return;
+    btn.dataset.deliveryCallBound = '1';
+    setDeliveryCallButtonState(btn, btn.dataset.state || 'none');
+    btn.addEventListener('click', function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      if (activeDeliveryCallBtn === this && deliveryCallPopover && deliveryCallPopover.style.display === 'block') {
+        closeDeliveryCallPopover();
+        return;
+      }
+      openDeliveryCallPopover(this);
+    });
+  }
+
+  function bindCalledCheckbox(checkbox) {
+    if (!checkbox || checkbox.dataset.calledBound === '1') return;
+    checkbox.dataset.calledBound = '1';
+    checkbox.addEventListener('change', function() {
+      const orderId = this.dataset.orderId;
+      const called = this.checked;
+      fetch(`/replacement-orders/${orderId}/toggle-called`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ called: called })
+      })
+      .then(r => r.json())
+      .then(data => {
+        if (!data.success) {
+          alert('فشل في تحديث حالة الاتصال');
+          this.checked = !called;
+        }
+      })
+      .catch(() => {
+        alert('حدث خطأ أثناء تحديث حالة الاتصال');
+        this.checked = !called;
+      });
+    });
+  }
+
+  function bindVerifiedCheckbox(checkbox) {
+    if (!checkbox || checkbox.dataset.verifiedBound === '1') return;
+    checkbox.dataset.verifiedBound = '1';
+    checkbox.addEventListener('change', function() {
+      const orderId = this.dataset.orderId;
+      const verified = this.checked;
+      fetch(`/replacement-orders/${orderId}/toggle-verified`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ verified: verified })
+      })
+      .then(r => r.json())
+      .then(data => {
+        if (!data.success) {
+          alert('فشل في تحديث حالة التحقق');
+          this.checked = !verified;
+        }
+      })
+      .catch(() => {
+        alert('حدث خطأ أثناء تحديث حالة التحقق');
+        this.checked = !verified;
+      });
+    });
+  }
+
+  function bindRegisteredCheckbox(checkbox) {
+    if (!checkbox || checkbox.dataset.registeredBound === '1') return;
+    checkbox.dataset.registeredBound = '1';
+    checkbox.addEventListener('change', function() {
+      const orderId = this.dataset.orderId;
+      const registered = this.checked;
+      fetch(`/replacement-orders/${orderId}/toggle-registered`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ registered: registered })
+      })
+      .then(r => r.json())
+      .then(data => {
+        if (!data.success) {
+          alert('فشل في تحديث حالة التسجيل');
+          this.checked = !registered;
+        }
+      })
+      .catch(() => {
+        alert('حدث خطأ أثناء تحديث حالة التسجيل');
+        this.checked = !registered;
+      });
+    });
+  }
+
+  const deliveryCallFilter = document.getElementById('delivery-call-filter');
+  let deliveryCallPopover = null;
+  let activeDeliveryCallBtn = null;
+
+  function closeDeliveryCallPopover() {
+    if (deliveryCallPopover) {
+      deliveryCallPopover.style.display = 'none';
+    }
+    activeDeliveryCallBtn = null;
+  }
+
+  function ensureDeliveryCallPopover() {
+    if (deliveryCallPopover) return;
+    deliveryCallPopover = document.createElement('div');
+    deliveryCallPopover.className = 'delivery-call-popover';
+    deliveryCallPopover.innerHTML = `
+      <button type="button" class="btn btn-warning delivery-call-action" data-outcome="informed">تم ابلاغ العميل بخروج الطلب للتوصيل</button>
+      <div class="delivery-call-popover-title">رد العميل:</div>
+      <button type="button" class="btn btn-success delivery-call-action" data-outcome="contacted">تم التواصل من جانب المندوب</button>
+      <button type="button" class="btn btn-danger delivery-call-action" data-outcome="not_contacted">لم يتم التواصل من جانب المندوب</button>
+    `;
+    document.body.appendChild(deliveryCallPopover);
+
+    deliveryCallPopover.addEventListener('click', function(e) {
+      e.stopPropagation();
+      const actionBtn = e.target.closest('.delivery-call-action');
+      if (!actionBtn || !activeDeliveryCallBtn) return;
+
+      const outcome = actionBtn.dataset.outcome;
+      const orderId = activeDeliveryCallBtn.dataset.orderId;
+      actionBtn.disabled = true;
+
+      fetch(`/replacement-orders/${orderId}/delivery-call-verification`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ outcome })
+      })
+      .then(r => r.json())
+      .then(data => {
+        if (!data.success) {
+          alert(data.message || 'فشل في حفظ نتيجة المكالمة');
+          return;
+        }
+        setDeliveryCallButtonState(activeDeliveryCallBtn, data.state || outcome);
+        const row = activeDeliveryCallBtn.closest('tr.order-row');
+        if (row) {
+          row.dataset.deliveryCallState = data.state || outcome;
+        }
+        applyDeliveryCallFilter();
+        closeDeliveryCallPopover();
+      })
+      .catch(() => {
+        alert('حدث خطأ أثناء حفظ نتيجة التحقق من التسليم');
+      })
+      .finally(() => {
+        actionBtn.disabled = false;
+      });
+    });
+  }
+
+  function openDeliveryCallPopover(button) {
+    ensureDeliveryCallPopover();
+    activeDeliveryCallBtn = button;
+    deliveryCallPopover.style.display = 'block';
+
+    const btnRect = button.getBoundingClientRect();
+    const popRect = deliveryCallPopover.getBoundingClientRect();
+    let top = window.scrollY + btnRect.top - ((popRect.height - btnRect.height) / 2);
+    let left = window.scrollX + btnRect.left - popRect.width - 8;
+
+    if (left < window.scrollX + 8) {
+      left = window.scrollX + btnRect.right + 8;
+    }
+    if (top < window.scrollY + 8) {
+      top = window.scrollY + 8;
+    }
+
+    deliveryCallPopover.style.top = `${top}px`;
+    deliveryCallPopover.style.left = `${left}px`;
+  }
+
+  bindInteractiveRows(document);
+
+  if (deliveryCallFilter) {
+    deliveryCallFilter.addEventListener('change', applyDeliveryCallFilter);
+    applyDeliveryCallFilter();
+  }
+
+  document.addEventListener('click', function(e) {
+    if (!deliveryCallPopover || deliveryCallPopover.style.display !== 'block') return;
+    if (e.target.closest('.delivery-call-popover')) return;
+    if (e.target.closest('.delivery-call-btn')) return;
+    closeDeliveryCallPopover();
+  });
+
+  window.addEventListener('scroll', closeDeliveryCallPopover, true);
+
+  const registrationFilter = document.getElementById('registration-filter');
+  if (registrationFilter) {
+    registrationFilter.addEventListener('change', function() {
+      const filterValue = this.value;
+      const rows = document.querySelectorAll('tbody tr.order-row');
+      
+      rows.forEach(row => {
+        const checkbox = row.querySelector('.customer-registered-checkbox');
+        if (!checkbox) return;
+        
+        const isRegistered = checkbox.checked;
+        
+        if (filterValue === 'all') {
+          row.style.display = '';
+        } else if (filterValue === 'registered') {
+          row.style.display = isRegistered ? '' : 'none';
+        } else if (filterValue === 'not-registered') {
+          row.style.display = !isRegistered ? '' : 'none';
+        }
+      });
+    });
+  }
+
+  const calledFilter = document.getElementById('called-filter');
+  if (calledFilter) {
+    calledFilter.addEventListener('change', function() {
+      const filterValue = this.value;
+      const rows = document.querySelectorAll('tbody tr.order-row');
+      
+      rows.forEach(row => {
+        const checkbox = row.querySelector('.customer-called-checkbox');
+        if (!checkbox) return;
+        
+        const isCalled = checkbox.checked;
+        
+        if (filterValue === 'all') {
+          row.style.display = '';
+        } else if (filterValue === 'called') {
+          row.style.display = isCalled ? '' : 'none';
+        } else if (filterValue === 'not-called') {
+          row.style.display = !isCalled ? '' : 'none';
+        }
+      });
+    });
+  }
+
+  const verifiedFilter = document.getElementById('verified-filter');
+  if (verifiedFilter) {
+    verifiedFilter.addEventListener('change', function() {
+      const filterValue = this.value;
+      const rows = document.querySelectorAll('tbody tr.order-row');
+      
+      rows.forEach(row => {
+        const checkbox = row.querySelector('.customer-verified-checkbox');
+        if (!checkbox) return;
+        
+        const isVerified = checkbox.checked;
+        
+        if (filterValue === 'all') {
+          row.style.display = '';
+        } else if (filterValue === 'verified') {
+          row.style.display = isVerified ? '' : 'none';
+        } else if (filterValue === 'not-verified') {
+          row.style.display = !isVerified ? '' : 'none';
+        }
+      });
+    });
+  }
+
+  const copyAllBtn = document.getElementById('copy-all-tracking');
+  if (copyAllBtn) {
+    copyAllBtn.addEventListener('click', async function() {
+      const trackingNumbers = [];
+      document.querySelectorAll('.tracking-input').forEach(input => {
+        const value = input.value.trim();
+        if (value) {
+          trackingNumbers.push(value);
+        }
+      });
+      
+      if (trackingNumbers.length === 0) {
+        alert('لا توجد أرقام تتبعية لنسخها');
+        return;
+      }
+      
+      const text = trackingNumbers.join('\n');
+      const ok = await copyText(text);
+      if (ok) {
+        this.classList.add('btn-success');
+        this.classList.remove('btn-info');
+        this.innerHTML = `<i class="fas fa-check"></i> تم النسخ (${trackingNumbers.length})`;
+        setTimeout(() => {
+          this.classList.remove('btn-success');
+          this.classList.add('btn-info');
+          this.innerHTML = '<i class="fas fa-copy"></i> نسخ الأرقام';
+        }, 1500);
+      }
+    });
+  }
+
+  const replacementOrdersTableBody = document.getElementById('replacement-orders-table-body');
+  const replacementOrdersLoader = document.getElementById('replacement-orders-loader');
+  let loadingMoreReplacementOrders = false;
+  let replacementOrdersObserver = null;
+
+  function getNextReplacementPageNumber() {
+    if (!replacementOrdersTableBody) return null;
+    const raw = replacementOrdersTableBody.getAttribute('data-next-page');
+    if (!raw) return null;
+    const parsed = Number(raw);
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+  }
+
+  function setNextReplacementPageNumber(pageNumber) {
+    if (!replacementOrdersTableBody) return;
+    if (pageNumber && Number(pageNumber) > 0) {
+      replacementOrdersTableBody.setAttribute('data-next-page', String(pageNumber));
+    } else {
+      replacementOrdersTableBody.removeAttribute('data-next-page');
+    }
+  }
+
+  function reapplyReplacementFiltersAfterAppend() {
+    if (deliveryCallFilter) applyDeliveryCallFilter();
+    if (registrationFilter) registrationFilter.dispatchEvent(new Event('change'));
+    if (calledFilter) calledFilter.dispatchEvent(new Event('change'));
+    if (verifiedFilter) verifiedFilter.dispatchEvent(new Event('change'));
+  }
+
+  function buildReplacementNextPageUrl(pageNumber) {
+    const url = new URL(window.location.href);
+    url.searchParams.set('page', String(pageNumber));
+    return `${url.pathname}${url.search}`;
+  }
+
+  function loadMoreReplacementRows() {
+    if (!replacementOrdersTableBody || loadingMoreReplacementOrders) return;
+
+    const nextPage = getNextReplacementPageNumber();
+    if (!nextPage) {
+      if (replacementOrdersObserver) replacementOrdersObserver.disconnect();
+      return;
+    }
+
+    loadingMoreReplacementOrders = true;
+
+    fetch(buildReplacementNextPageUrl(nextPage))
+      .then((response) => response.text())
+      .then((html) => {
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(html, 'text/html');
+        const remoteBody = doc.getElementById('replacement-orders-table-body');
+
+        if (!remoteBody) {
+          setNextReplacementPageNumber(null);
+          if (replacementOrdersObserver) replacementOrdersObserver.disconnect();
+          return;
+        }
+
+        const newRows = Array.from(remoteBody.querySelectorAll('tr.order-row'));
+        if (!newRows.length) {
+          setNextReplacementPageNumber(null);
+          if (replacementOrdersObserver) replacementOrdersObserver.disconnect();
+          return;
+        }
+
+        const fragment = document.createDocumentFragment();
+        newRows.forEach((row) => fragment.appendChild(row));
+        replacementOrdersTableBody.appendChild(fragment);
+
+        bindInteractiveRows(replacementOrdersTableBody);
+        markOverflowing();
+        reapplyReplacementFiltersAfterAppend();
+
+        const remoteNextPage = remoteBody.getAttribute('data-next-page');
+        const parsedNext = remoteNextPage ? Number(remoteNextPage) : null;
+        if (parsedNext && Number.isFinite(parsedNext) && parsedNext > 0) {
+          setNextReplacementPageNumber(parsedNext);
+        } else {
+          setNextReplacementPageNumber(null);
+          if (replacementOrdersObserver) replacementOrdersObserver.disconnect();
+        }
+      })
+      .catch(() => {})
+      .finally(() => {
+        loadingMoreReplacementOrders = false;
+      });
+  }
+
+  if (replacementOrdersLoader && replacementOrdersTableBody) {
+    replacementOrdersObserver = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) loadMoreReplacementRows();
+      });
+    }, { root: null, rootMargin: '150px', threshold: 0 });
+
+    replacementOrdersObserver.observe(replacementOrdersLoader);
+
+    if (!getNextReplacementPageNumber()) {
+      replacementOrdersObserver.disconnect();
+    }
+  }
+});
+
+</script>
+
+<!-- Wassalha Export Modal -->
+<div class="stats-modal" id="wassalhaModal" style="display:none;">
+    <div class="stats-modal-content" style="width:min(90vw, 1100px); max-width:none !important; padding:2rem;">
+        <button type="button" class="close-btn" onclick="closeWassalhaModal()">
+            <i class="fas fa-times"></i>
+        </button>
+        <h4 class="modal-title mb-4">تصدير وصلها</h4>
+        <div id="wassalhaModalBody">
+            <div class="text-center py-4"><i class="fas fa-spinner fa-spin fa-2x"></i></div>
+        </div>
+    </div>
+</div>
+
+<script>
+let _wassalhaExportType = 'orders';
+let _wassalhaOrdersData = [];
+
+function openWassalhaModal(type) {
+    _wassalhaExportType = type;
+    document.getElementById('wassalhaModal').style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+    document.getElementById('wassalhaModalBody').innerHTML =
+        '<div class="text-center py-4"><i class="fas fa-spinner fa-spin fa-2x"></i></div>';
+
+    fetch(`/api/${type}/eligible_wassalha`)
+        .then(r => r.json())
+        .then(orders => renderWassalhaTable(orders))
+        .catch(() => {
+            document.getElementById('wassalhaModalBody').innerHTML =
+                '<div class="alert alert-danger">حدث خطأ أثناء تحميل البيانات</div>';
+        });
+}
+
+function closeWassalhaModal() {
+    document.getElementById('wassalhaModal').style.display = 'none';
+    document.body.style.overflow = '';
+}
+
+function renderWassalhaTable(orders) {
+    _wassalhaOrdersData = orders;
+    const body = document.getElementById('wassalhaModalBody');
+    if (!orders.length) {
+        body.innerHTML = '<div class="alert alert-warning text-center">لا يوجد طلبات جديدة غير مسجلة</div>';
+        return;
+    }
+
+    const rows = orders.map(o => {
+        const hasOOS = (o.items || []).some(i => i.is_out_of_stock);
+        return `
+        <tr style="cursor:${hasOOS ? 'not-allowed' : 'pointer'};" ${hasOOS ? 'data-oos="true"' : ''} onclick="${hasOOS ? '' : 'toggleWassalhaRow(this)'}" onmouseenter="this.style.background='#fff3cd'" onmouseleave="this.style.background=''">
+            <td class="text-center" style="width:40px; padding:6px 4px; border-bottom:1px solid #000;">
+                ${hasOOS ? '<i class="fas fa-exclamation-circle text-danger" title="يوجد منتج غير متوفر في المخزون"></i>' : '<input type="checkbox" class="form-check-input wassalha-cb" value="' + o.id + '" style="width:18px;height:18px;pointer-events:none;">'}
+            </td>
+            <td style="padding:6px 4px; border-bottom:1px solid #000; overflow-wrap:break-word; word-break:break-word; white-space:normal;">${o.customer_name || ''}${hasOOS ? ' <i class="fas fa-exclamation-circle text-danger" title="يوجد منتج غير متوفر في المخزون"></i>' : ''}</td>
+            <td style="padding:6px 4px; border-bottom:1px solid #000; text-align:right; overflow-wrap:break-word; word-break:break-word; white-space:normal;">
+                <div style="max-height:none; overflow:visible;">${(o.items || []).map(i => {
+                    let html = '<div class="mb-1">';
+                    if (i.has_product) {
+                        html += '<strong>' + (i.product_name || '') + '</strong>';
+                        if (i.is_deleted) html += ' <span class="badge bg-danger ms-1" style="font-size:0.7rem;">محذوف</span>';
+                        if (i.is_bundle) html += ' <span class="badge bg-primary ms-1" style="font-size:0.7rem;">Bundle</span>';
+                        html += ' <span class="badge bg-secondary me-1">× ' + (i.quantity || 1) + '</span>';
+                        if (i.is_bundle && i.bundle_items) {
+                            html += '<div class="ms-3 mt-1 text-muted small">';
+                            i.bundle_items.forEach(bi => { html += '<div>├ ' + (bi.product_name || '') + ((bi.variants || []).map(v => ' <span class="badge bg-info me-1" style="font-size:0.7rem;">' + v.label + ': ' + v.name + '</span>').join('')) + '</div>'; });
+                            html += '</div>';
+                        } else {
+                            (i.variants || []).forEach(v => { html += ' <span class="badge bg-primary me-1">' + v.label + ': ' + v.name + '</span>'; });
+                        }
+                    } else {
+                        html += '<span class="text-danger">منتج مفقود</span> <span class="badge bg-secondary me-1">× ' + (i.quantity || 1) + '</span>';
+                    }
+                    return html + '</div>';
+                }).join('')}</div>
+            </td>
+            <td style="width:95px; padding:6px 4px; border-bottom:1px solid #000; text-align:center; vertical-align:middle; white-space:nowrap; font-size:0.9rem; color:#666;">${o.date || ''}</td>
+        </tr>
+    `}).join('');
+
+    body.innerHTML = `
+        <div style="max-height:65vh; overflow-y:auto;">
+            <table style="width:100%; table-layout:fixed; border-collapse:collapse; border:1px solid #000; border-radius:1rem; overflow:hidden; background:#fff;">
+                <thead>
+                    <tr>
+                        <th style="width:40px; background:#D79921; color:#333; vertical-align:middle; border-bottom:1px solid #000; padding:8px 4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+                            <input type="checkbox" class="form-check-input" id="wassalhaSelectAll"
+                                   style="width:18px;height:18px;" onchange="toggleAllWassalha(this)">
+                        </th>
+                        <th style="background:#D79921; color:#333; vertical-align:middle; border-bottom:1px solid #000; padding:8px 4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">الاسم</th>
+                        <th style="background:#D79921; color:#333; vertical-align:middle; border-bottom:1px solid #000; padding:8px 4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">المنتجات</th>
+                        <th style="width:95px; background:#D79921; color:#333; vertical-align:middle; border-bottom:1px solid #000; padding:8px 4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">التاريخ</th>
+                    </tr>
+                </thead>
+                <tbody>${rows}</tbody>
+            </table>
+        </div>
+        <div class="d-flex justify-content-between align-items-center">
+            <span id="wassalhaSelectedCount" class="text-muted">0 طلب محدد</span>
+            <button class="btn btn-success d-inline-flex align-items-center gap-2"
+                    onclick="submitWassalhaExport()">
+                <i class="fas fa-file-excel"></i> تصدير
+            </button>
+        </div>
+    `;
+
+    document.querySelectorAll('.wassalha-cb').forEach(cb => {
+        cb.addEventListener('change', updateWassalhaCount);
+    });
+}
+
+function toggleWassalhaRow(tr) {
+    const cb = tr.querySelector('.wassalha-cb');
+    if (cb) { cb.checked = !cb.checked; updateWassalhaCount(); }
+}
+
+function toggleAllWassalha(master) {
+    document.querySelectorAll('.wassalha-cb').forEach(cb => cb.checked = master.checked);
+    document.querySelectorAll('tr[data-oos]').forEach(tr => { const cb = tr.querySelector('.wassalha-cb'); if (cb) cb.checked = false; });
+    updateWassalhaCount();
+}
+
+function updateWassalhaCount() {
+    const count = document.querySelectorAll('.wassalha-cb:checked').length;
+    document.getElementById('wassalhaSelectedCount').textContent = count + ' طلب محدد';
+}
+
+function submitWassalhaExport() {
+    const ids = [...document.querySelectorAll('.wassalha-cb:checked')].map(cb => cb.value);
+    if (!ids.length) {
+        alert('اختر طلب واحد على الأقل');
+        return;
+    }
+    const bad = _wassalhaOrdersData.filter(o => ids.includes(String(o.id)) && o.items.some(i => i.is_out_of_stock));
+    if (bad.length) {
+        alert('لا يمكن تصدير طلبات الاستبدال التالية لوجود منتج غير متوفر في المخزون:\n' + bad.map(o => '#' + o.id + ' - ' + o.customer_name).join('\n'));
+        return;
+    }
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = `/${_wassalhaExportType}/export_wassalha`;
+    ids.forEach(id => {
+        const input = document.createElement('input');
+        input.type  = 'hidden';
+        input.name  = 'order_ids';
+        input.value = id;
+        form.appendChild(input);
+    });
+    document.body.appendChild(form);
+    form.submit();
+    closeWassalhaModal();
+}
+
+document.getElementById('wassalhaModal').addEventListener('click', function(e) {
+    if (e.target === this) closeWassalhaModal();
+});
+</script>
+
+{% endblock %} 

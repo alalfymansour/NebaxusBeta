@@ -1,0 +1,115 @@
+{% extends 'base.html' %}
+
+{% block title %}بروفايل {{ employee.name }}{% endblock %}
+
+{% block content %}
+<div class="container py-5" dir="rtl">
+  
+  <div class="row justify-content-center mb-4 employee-header-row">
+    <div class="col-12">
+      <div class="card card-box px-4 py-3 bg-white w-100 d-flex flex-column align-items-center justify-content-center employee-header-card">
+        <div class="mb-2">
+          <div class="rounded-circle mx-auto employee-avatar-circle" style="width: 90px; height: 90px; font-size: 36px; font-weight: bold; background-color: rgba(215, 153, 33, 0.25); color: #D79921; display: flex; align-items: center; justify-content: center;">
+            {{ employee.name[0] }}
+          </div>
+        </div>
+        <h3 class="fw-bold mb-2" style="font-size: 1.6rem;">{{ employee.name }}</h3>
+        <p class="text-muted mb-1"><i class="fas fa-user-tie me-2"></i>{{ employee.position }}</p>
+        <p class="text-muted mb-1"><i class="fas fa-phone-alt me-2"></i>{{ employee.phone }}</p>
+        <p class="text-muted mb-1"><i class="fas fa-calendar-alt me-2"></i>تاريخ التعيين: {{ employee.hire_date.strftime('%Y-%m-%d') }}</p>
+        <p class="text-muted"><i class="fas fa-money-bill-wave me-2"></i>المرتب الأساسي: {{ employee.salary|round(2) }} ج.م</p>
+        {% if employee.is_active %}
+          <span class="badge bg-success mt-2">نشط</span>
+        {% else %}
+          <span class="badge bg-danger mt-2">غير نشط</span>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-4 justify-content-center mb-5 employee-actions-row">
+    <div class="col-12 col-md-3 d-flex align-items-stretch">
+      <a href="{{ url_for('main.edit_employee', employee_id=employee.id) }}" class="text-decoration-none w-100">
+        <div class="card card-box p-4 bg-white h-100 d-flex flex-column align-items-center justify-content-center">
+          <i class="fas fa-user-edit fa-2x mb-2 text-primary"></i>
+          <h6 class="fw-bold text-dark">تعديل بيانات الموظف</h6>
+        </div>
+      </a>
+    </div>
+    <div class="col-12 col-md-3 d-flex align-items-stretch">
+      <a href="{{ url_for('main.employee_salary', employee_id=employee.id) }}" class="text-decoration-none w-100">
+        <div class="card card-box p-4 bg-white h-100 d-flex flex-column align-items-center justify-content-center">
+          <i class="fas fa-money-bill-wave fa-2x mb-2 text-warning"></i>
+          <h6 class="fw-bold text-dark">إدارة المرتب</h6>
+        </div>
+      </a>
+    </div>
+    <div class="col-12 col-md-3 d-flex align-items-stretch">
+      <a href="{{ url_for('main.employee_permissions', employee_id=employee.id) }}" class="text-decoration-none w-100">
+        <div class="card card-box p-4 bg-white h-100 d-flex flex-column align-items-center justify-content-center">
+          <i class="fas fa-shield-alt fa-2x mb-2 text-danger"></i>
+          <h6 class="fw-bold text-dark">إدارة الصلاحيات</h6>
+        </div>
+      </a>
+    </div>
+    <div class="col-12 col-md-3 d-flex align-items-stretch">
+      <a href="{{ url_for('main.employee_activity_log', employee_id=employee.id) }}" class="text-decoration-none w-100">
+        <div class="card card-box p-4 bg-white h-100 d-flex flex-column align-items-center justify-content-center">
+          <i class="fas fa-history fa-2x mb-2 text-info"></i>
+          <h6 class="fw-bold text-dark">سجل النشاط</h6>
+        </div>
+      </a>
+    </div>
+  </div>
+
+  <div class="d-flex w-100 justify-content-end gap-2 align-items-center employee-bottom-actions">
+    <form id="delete-employee-form" method="POST" action="{{ url_for('main.delete_employee', employee_id=employee.id) }}" style="display:inline;">
+      <button type="submit" class="btn btn-danger d-flex align-items-center gap-1 delete-btn" data-confirm="هل أنت متأكد أنك تريد حذف هذا الموظف؟">
+        <i class="fas fa-trash me-1"></i> حذف الموظف
+      </button>
+    </form>
+    <a href="{{ url_for('main.employees') }}" class="btn btn-secondary d-inline-flex align-items-center gap-1 px-4">
+      <i class="fas fa-arrow-left"></i> <span>رجوع</span>
+    </a>
+  </div>
+</div>
+
+<style>
+  .card-box {
+    border-radius: 1rem !important;
+    box-shadow: 0 0 15px rgba(0,0,0,0.08);
+    transition: all 0.3s ease;
+  }
+  .card-box:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 0 20px rgba(0,0,0,0.12);
+  }
+</style>
+
+<style>
+  /* Mobile-only tweaks for employee profile */
+  @media (max-width: 576px) {
+    /* Match spacing between header card and action cards */
+    .employee-header-row { margin-bottom: 0.5rem !important; }
+
+    /* Action cards: icons-only, 4 in a row, centered */
+    .employee-actions-row { --bs-gutter-x: 0.5rem; --bs-gutter-y: 0.5rem; }
+    .employee-actions-row > [class*="col-"] { flex: 0 0 25% !important; max-width: 25% !important; }
+    .employee-actions-row .card { display: flex !important; align-items: center !important; justify-content: center !important; padding: 0.9rem !important; }
+    .employee-actions-row .card h6 { display: none !important; }
+    .employee-actions-row .card i { margin-bottom: 0 !important; font-size: 1.25rem !important; }
+
+    /* Bottom buttons: icons-only and opposite ends */
+    .employee-bottom-actions { justify-content: space-between !important; }
+    .employee-bottom-actions .btn { font-size: 0 !important; padding: 0.5rem 1.1rem !important; min-width: 56px !important; }
+    .employee-bottom-actions .btn i { font-size: 1.1rem !important; margin: 0 !important; }
+    .employee-bottom-actions .btn span { display: none !important; }
+
+    /* Header card: reduce height and avatar size */
+    .employee-header-card { padding: 0.6rem 0.9rem !important; }
+    .employee-header-card .mb-2 { margin-bottom: 0.35rem !important; }
+    .employee-header-card .employee-avatar-circle { width: 72px !important; height: 72px !important; font-size: 28px !important; }
+    .employee-header-card p { margin-bottom: 0.3rem !important; }
+  }
+</style>
+{% endblock %} 

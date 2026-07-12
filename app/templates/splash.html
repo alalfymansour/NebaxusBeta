@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>NebaxusBeta</title>
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      body {
+        background-color: #1d2021;
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        display: flex; justify-content: center; align-items: center;
+        min-height: 100vh; overflow: hidden;
+      }
+      .splash-container {
+        text-align: center;
+        animation: fadeIn 1s ease-in-out;
+      }
+      .logo {
+        width: 180px; height: 180px;
+        margin: 0 auto 2rem;
+        display: flex; align-items: center; justify-content: center;
+        animation: pulse 2s infinite;
+      }
+      .logo img { width: 100%; height: 100%; object-fit: contain; }
+      .title {
+        font-size: 2.5rem; font-weight: bold;
+        color: #D79921;
+        text-shadow: 0 0 20px rgba(215, 153, 33, 0.5);
+        margin-bottom: 0.5rem;
+      }
+      .loading {
+        font-size: 1rem; color: #928374;
+        animation: blink 1.5s ease-in-out infinite;
+      }
+      @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(30px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+      @keyframes pulse {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.05); }
+        100% { transform: scale(1); }
+      }
+      @keyframes blink {
+        0%, 100% { opacity: 0.4; }
+        50% { opacity: 1; }
+      }
+      @media (max-width: 768px) {
+        .logo { width: 140px; height: 140px; }
+        .title { font-size: 2rem; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="splash-container">
+      <div class="logo">
+        <img src="/static/img/logo.svg" alt="NebaxusBeta" />
+      </div>
+      <h1 class="title">NebaxusBeta</h1>
+      <p class="loading">جاري التحميل...</p>
+    </div>
+    <script>
+      setTimeout(function() {
+        window.location.replace('/auto-login');
+      }, 1000);
+    </script>
+  </body>
+</html>

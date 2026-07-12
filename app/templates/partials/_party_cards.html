@@ -1,0 +1,28 @@
+{% for party in parties %}
+<div class="col-12 col-md-6 col-lg-3 party-card-wrapper">
+  <a href="{{ url_for('main.party_profile', party_id=party.id) }}" class="card card-box text-decoration-none p-4 d-block bg-white h-100 d-flex flex-column justify-content-center align-items-center party-card">
+    <div class="mb-3 avatar">
+      <div class="rounded-circle mx-auto" style="width: 80px; height: 80px; font-size: 32px; font-weight: bold; background-color: rgba(215, 153, 33, 0.25); color: #D79921; display: flex; align-items: center; justify-content: center;">
+        {{ party.name[0] }}
+      </div>
+    </div>
+    <div class="party-info">
+      <h5 class="fw-bold text-dark">{{ party.name }}</h5>
+      {% if party.phone %}
+      <p class="text-muted"><i class="fas fa-phone-alt me-2"></i>{{ party.phone }}</p>
+      {% endif %}
+      {% if party.balance != 0 %}
+      <p class="mb-0 {% if party.balance > 0 %}balance-positive{% elif party.balance < 0 %}balance-negative{% else %}balance-zero{% endif %}">
+        {% if party.balance > 0 %}
+          <i class="fas fa-arrow-up me-1"></i>متبقي لنا عنده: {{ "%.2f"|format(party.balance) }} ج
+        {% elif party.balance < 0 %}
+          <i class="fas fa-arrow-down me-1"></i>متبقي علينا له: {{ "%.2f"|format(party.balance|abs) }} ج
+        {% endif %}
+      </p>
+      {% else %}
+      <p class="text-muted balance-zero"><i class="fas fa-balance-scale me-2"></i>الحساب متوازن</p>
+      {% endif %}
+    </div>
+  </a>
+</div>
+{% endfor %}

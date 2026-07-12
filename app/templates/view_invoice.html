@@ -1,0 +1,375 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<style>
+  .modern-table {
+    border-radius: 1rem;
+    overflow: hidden;
+    background: #fff;
+    border: 1px solid #000;
+  }
+  .modern-table th {
+    background: #D79921 !important;
+    font-size: 1.1rem;
+    letter-spacing: 0.5px;
+    color: #333;
+    vertical-align: middle;
+    border-bottom: 1px solid #000 !important;
+  }
+  .modern-table td {
+    vertical-align: middle;
+    font-size: 1rem;
+    background: #fff;
+    border-bottom: 1px solid #000;
+  }
+  .modern-table tbody tr:hover td {
+    background: #fff3cd !important;
+    transition: background 0.2s;
+  }
+  .custom-yellow {
+    color: #D79921 !important;
+  }
+  .custom-yellow-bg {
+    background-color: #D79921 !important;
+  }
+  .card-box {
+    border-radius: 1rem;
+    box-shadow: 0 0 15px rgba(0,0,0,0.08);
+    transition: all 0.3s ease;
+  }
+  .card-box:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 0 20px rgba(0,0,0,0.12);
+  }
+  
+  /* Dark mode support for invoice view */
+</style>
+
+<div class="container py-4" dir="rtl">
+  
+  <div class="text-center mb-4">
+    <h2 class="fw-bold">🧾 <span class="text-warning">فاتورة رقم {{ invoice.invoice_number }}</span></h2>
+    <p class="text-muted">تفاصيل فاتورة المشتريات</p>
+  </div>
+
+  <div class="row mb-4">
+    <div class="col-md-6 col-sm-12 mb-2">
+      <a href="{{ url_for('main.edit_invoice', invoice_id=invoice.id) }}" class="btn btn-warning d-inline-flex align-items-center me-2">
+        <i class="fas fa-edit me-1"></i> <span>تعديل الفاتورة</span>
+      </a>
+      <button type="button" class="btn btn-danger d-inline-flex align-items-center delete-btn me-2" data-form-id="delete-form" data-confirm="هل أنت متأكد من حذف الفاتورة رقم {{ invoice.invoice_number }}؟ لا يمكن التراجع عن هذا الإجراء.">
+        <i class="fas fa-trash me-1"></i> <span>حذف الفاتورة</span>
+      </button>
+      <button type="button" class="btn btn-info d-inline-flex align-items-center" onclick="openReturnModal()">
+        <i class="fas fa-undo me-1"></i> <span>إضافة مرتجع</span>
+      </button>
+    </div>
+    <div class="col-md-6 col-sm-12 text-md-end text-center">
+      <a href="{{ url_for('main.invoices') }}" class="btn btn-secondary d-inline-flex align-items-center">
+        <i class="fas fa-arrow-left me-1"></i> <span>رجوع</span>
+      </a>
+    </div>
+  </div>
+
+  <div class="row mb-3">
+    <div class="col-12">
+      <div class="card border-0 shadow-sm card-box">
+        <div class="card-body">
+          <div class="row">
+            
+            <div class="col-md-6">
+              <h6 class="fw-bold mb-3">
+                <i class="fas fa-handshake me-1 text-success"></i>
+                بيانات المورد
+              </h6>
+              <div class="row">
+                <div class="col-6">
+                  <p class="mb-1"><strong>اسم المورد:</strong></p>
+                  <p class="text-muted">{{ invoice.supplier.name }}</p>
+                </div>
+                <div class="col-6">
+                  <p class="mb-1"><strong>رقم التليفون:</strong></p>
+                  <p class="text-muted">{{ invoice.supplier.phone }}</p>
+                </div>
+              </div>
+              <div class="mt-2">
+                <p class="mb-1"><strong>العنوان:</strong></p>
+                <p class="text-muted">{{ invoice.supplier.address }}</p>
+              </div>
+            </div>
+            
+            <div class="col-md-6">
+              <h6 class="fw-bold mb-3">
+                <i class="fas fa-info-circle me-1 text-primary"></i>
+                بيانات الفاتورة
+              </h6>
+              <div class="row">
+                <div class="col-6">
+                  <p class="mb-1"><strong>رقم الفاتورة:</strong></p>
+                  <p class="text-muted">{{ invoice.invoice_number }}</p>
+                </div>
+                <div class="col-6">
+                  <p class="mb-1"><strong>التاريخ:</strong></p>
+                  <p class="text-muted">{{ invoice.date.strftime('%Y-%m-%d') }}</p>
+                </div>
+              </div>
+              {% if invoice.notes %}
+              <div class="mt-3">
+                <p class="mb-1"><strong>الملاحظات:</strong></p>
+                <p class="text-muted">{{ invoice.notes }}</p>
+              </div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row mb-3">
+    <div class="col-12">
+      <div class="card border-0 shadow-sm card-box">
+        <div class="card-body">
+          <h6 class="fw-bold mb-3">
+            <i class="fas fa-calculator me-1 text-warning"></i>
+            ملخص الفاتورة
+          </h6>
+          <div class="row">
+            <div class="col-md-6">
+              <div class="d-flex justify-content-between mb-2">
+                <span>قيمة الفاتورة:</span>
+                <span class="fw-bold text-primary">{{ "%.2f"|format(invoice.total_amount) }} ج.م</span>
+              </div>
+              <div class="d-flex justify-content-between mb-2">
+                <span>المدفوع للمورد:</span>
+                <span class="fw-bold text-success">{{ "%.2f"|format(invoice.paid_amount) }} ج.م</span>
+              </div>
+              <div class="d-flex justify-content-between mb-2">
+                <span>المتبقي على المورد:</span>
+                <span class="fw-bold text-danger">{{ "%.2f"|format(invoice.total_amount - invoice.paid_amount) }} ج.م</span>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="d-flex justify-content-between mb-2">
+                <span>عدد المنتجات:</span>
+                <span class="fw-bold">{{ invoice.items|length }}</span>
+              </div>
+              <div class="d-flex justify-content-between mb-2">
+                <span>إجمالي الكمية:</span>
+                <span class="fw-bold">{{ invoice.items|sum(attribute='quantity') }}</span>
+              </div>
+              <div class="d-flex justify-content-between mb-2">
+                <span>حالة الدفع:</span>
+                {% set remaining = invoice.total_amount - invoice.paid_amount %}
+                {% if remaining == 0 %}
+                  <span class="fw-bold text-success">
+                    <i class="fas fa-check-circle me-1"></i>مدفوع بالكامل
+                  </span>
+                {% elif invoice.paid_amount > 0 %}
+                  <span class="fw-bold text-warning">
+                    <i class="fas fa-clock me-1"></i>مدفوع جزئياً
+                  </span>
+                {% else %}
+                  <span class="fw-bold text-danger">
+                    <i class="fas fa-times-circle me-1"></i>غير مدفوع
+                  </span>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card border-0 shadow-sm mb-3" style="border-radius: 1rem; box-shadow: 0 0 15px rgba(0,0,0,0.08);">
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover mb-0 modern-table">
+          <thead>
+            <tr>
+              <th class="text-start" style="width: 15%;">المنتج</th>
+              <th class="text-center" style="width: 15%;">الكمية</th>
+              <th class="text-center" style="width: 20%;">سعر الشراء</th>
+              <th class="text-center" style="width: 20%;">سعر البيع</th>
+              <th class="text-center" style="width: 20%;">إجمالي السطر</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in invoice.items %}
+            <tr>
+              <td class="align-middle text-start" style="padding-left: 40px;">
+                <div>
+                  <h6 class="mb-0">{{ item.product.name }}</h6>
+                  <small class="text-muted">المخزون: {{ item.product.stock }}</small>
+                </div>
+              </td>
+              <td class="align-middle text-center">
+                <span class="badge bg-info fs-6">{{ item.quantity }}</span>
+              </td>
+              <td class="align-middle text-center">
+                <span class="fw-bold text-primary">{{ "%.2f"|format(item.purchase_price) }} ج.م</span>
+              </td>
+              <td class="align-middle text-center">
+                <span class="fw-bold text-success">{{ "%.2f"|format(item.selling_price) }} ج.م</span>
+              </td>
+              <td class="align-middle text-center">
+                <span class="fw-bold text-dark">{{ "%.2f"|format(item.purchase_price * item.quantity) }} ج.م</span>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<form id="delete-form" method="POST" action="{{ url_for('main.delete_invoice', invoice_id=invoice.id) }}" style="display: none;"></form>
+
+<div class="stats-modal" id="returnModal" tabindex="-1">
+  <div class="stats-modal-content" style="max-width: 1000px;">
+    <button type="button" class="close-btn" onclick="closeReturnModal()"><i class="fas fa-times"></i></button>
+    <h4 class="modal-title fw-bold">
+      <i class="fas fa-undo me-2"></i>إضافة مرتجع لفاتورة رقم {{ invoice.invoice_number }}
+    </h4>
+    <form method="POST" action="{{ url_for('main.create_supplier_return', invoice_id=invoice.id) }}" id="returnForm">
+      <div class="modal-body">
+        <div class="alert alert-info mb-4">
+          <i class="fas fa-info-circle me-2"></i>
+          قم بتحديد كمية المرتجع لكل منتج. سيتم خصم المبلغ من مديونية المورد وطرح الكمية من المخزون.
+        </div>
+
+        <div class="table-responsive">
+          <table class="table table-hover align-middle">
+            <thead class="table-light">
+              <tr>
+                <th style="width: 30%;">المنتج</th>
+                <th class="text-center" style="width: 15%;">الكمية الأصلية</th>
+                <th class="text-center" style="width: 15%;">كمية المرتجع</th>
+                <th class="text-center" style="width: 15%;">السعر</th>
+                <th class="text-center" style="width: 20%;">إجمالي المرتجع</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for item in invoice.items %}
+              <tr>
+                <td>
+                  <div>
+                    <strong>{{ item.product.name }}</strong>
+                    <br>
+                    <small class="text-muted">المخزون الحالي: {{ item.product.stock }}</small>
+                  </div>
+                </td>
+                <td class="text-center">
+                  <span class="badge bg-secondary fs-6">{{ item.quantity }}</span>
+                </td>
+                <td class="text-center">
+                  <input type="number" 
+                         name="quantity_{{ item.id }}" 
+                         class="form-control form-control-sm return-quantity text-center" 
+                         data-price="{{ item.purchase_price }}"
+                         data-item-id="{{ item.id }}"
+                         min="0" 
+                         max="{{ item.quantity }}" 
+                         value="0" 
+                         style="width: 100px; margin: 0 auto;">
+                </td>
+                <td class="text-center">
+                  <strong>{{ "%.2f"|format(item.purchase_price) }}</strong> ج.م
+                </td>
+                <td class="text-center fw-bold text-danger return-total" data-item-id="{{ item.id }}">
+                  0.00 ج.م
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+            <tfoot class="table-light">
+              <tr>
+                <td colspan="4" class="text-end fw-bold fs-5">إجمالي المرتجع:</td>
+                <td class="text-center fw-bold text-danger fs-5" id="grandTotal">0.00 جنيه</td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+
+        <div class="mb-3 mt-4">
+          <label for="notes" class="form-label fw-semibold">
+            <i class="fas fa-sticky-note me-1"></i>سبب المرتجع / ملاحظات
+          </label>
+          <textarea id="notes" name="notes" class="form-control" rows="3" placeholder="مثال: منتجات تالفة، خطأ في الطلبية..."></textarea>
+        </div>
+      </div>
+      <div class="d-flex justify-content-end gap-2 mt-4">
+        <button type="button" class="btn btn-secondary px-4" onclick="closeReturnModal()">
+          <i class="fas fa-times me-1"></i>إلغاء
+        </button>
+        <button type="submit" class="btn btn-danger px-4" id="submitReturnBtn" disabled>
+          <i class="fas fa-check me-1"></i>تأكيد المرتجع
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+
+console.log('JavaScript loaded successfully');
+console.log('Delete form ready for modal confirmation');
+
+document.addEventListener('DOMContentLoaded', function() {
+  const returnQuantityInputs = document.querySelectorAll('.return-quantity');
+  const grandTotalElement = document.getElementById('grandTotal');
+  const submitBtn = document.getElementById('submitReturnBtn');
+
+  function updateTotals() {
+    let grandTotal = 0;
+    let hasAnyQuantity = false;
+
+    returnQuantityInputs.forEach(input => {
+      const price = parseFloat(input.dataset.price);
+      const quantity = parseFloat(input.value) || 0;
+      const itemId = input.dataset.itemId;
+      const total = price * quantity;
+      
+      const totalCell = document.querySelector(`.return-total[data-item-id="${itemId}"]`);
+      if (totalCell) {
+        totalCell.textContent = total.toFixed(0) + ' ج.م';
+      }
+      
+      grandTotal += total;
+      
+      if (quantity > 0) {
+        hasAnyQuantity = true;
+      }
+    });
+
+    grandTotalElement.textContent = grandTotal.toFixed(0) + ' جنيه';
+    
+    submitBtn.disabled = !hasAnyQuantity;
+  }
+
+  returnQuantityInputs.forEach(input => {
+    input.addEventListener('input', updateTotals);
+  });
+
+  window.openReturnModal = function() {
+    const modal = document.getElementById('returnModal');
+    modal.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+  };
+
+  window.closeReturnModal = function() {
+    const modal = document.getElementById('returnModal');
+    modal.style.display = 'none';
+    document.body.style.overflow = '';
+  };
+
+  document.getElementById('returnModal').addEventListener('click', function(e) {
+    if (e.target === this) closeReturnModal();
+  });
+
+  updateTotals();
+});
+</script>
+{% endblock %} 

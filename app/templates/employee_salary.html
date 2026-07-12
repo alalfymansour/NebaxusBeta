@@ -1,0 +1,778 @@
+{% extends "base.html" %}
+
+{% block title %}إدارة مرتب {{ employee.name }}{% endblock %}
+
+{% block content %}
+<style>
+  .page-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+  }
+
+  .salary-summary {
+    background: white;
+    border-radius: 15px;
+    padding: 25px;
+    margin-bottom: 30px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    border: 2px solid #D79921;
+  }
+  .summary-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+    margin-top: 20px;
+  }
+  .summary-item {
+    text-align: center;
+    padding: 20px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border: 2px solid #dee2e6;
+    transition: all 0.3s ease;
+  }
+  .summary-item:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+  }
+  .summary-item.net-salary {
+    background: linear-gradient(135deg, #D79921 0%, #b8860b 100%);
+    border: 2px solid #D79921;
+  }
+  .summary-label {
+    font-size: 14px;
+    color: #6c757d;
+    margin-bottom: 8px;
+    font-weight: 500;
+  }
+  .summary-value {
+    font-size: 20px;
+    font-weight: bold;
+    color: #212529;
+  }
+  .summary-item.net-salary .summary-label,
+  .summary-item.net-salary .summary-value {
+    color: #000;
+  }
+  .form-section {
+    background: white;
+    border-radius: 15px;
+    padding: 25px;
+    margin-bottom: 30px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    border: 2px solid #D79921;
+  }
+  .form-title {
+    font-size: 20px;
+    font-weight: bold;
+    margin-bottom: 25px;
+    color: #000;
+    border-bottom: 3px solid #D79921;
+    padding-bottom: 10px;
+  }
+  .form-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+    margin-bottom: 20px;
+  }
+  .form-group {
+    display: flex;
+    flex-direction: column;
+  }
+  .form-label {
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: #495057;
+  }
+  .form-control {
+    padding: 12px 15px;
+    border: 2px solid #e9ecef;
+    border-radius: 10px;
+    font-size: 14px;
+    transition: all 0.3s ease;
+  }
+  .form-control:focus {
+    outline: none;
+    border-color: #D79921;
+    box-shadow: 0 0 0 0.2rem rgba(215, 153, 33, 0.25);
+  }
+  .btn-primary {
+    background: linear-gradient(135deg, #D79921 0%, #b8860b 100%);
+    border: none;
+    color: #000;
+    padding: 12px 25px;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(215, 153, 33, 0.3);
+  }
+  .btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(215, 153, 33, 0.4);
+    color: #000;
+    text-decoration: none;
+  }
+  .transactions-section {
+    background: white;
+    border-radius: 15px;
+    padding: 25px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    border: 2px solid #D79921;
+  }
+  .transactions-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    margin-top: 20px;
+    border-radius: 1rem;
+    overflow: hidden;
+    background: #fff;
+    border: 1px solid #000;
+  }
+  .transactions-table th {
+    background: #D79921 !important;
+    font-size: 1rem;
+    font-weight: bold;
+    color: #333;
+    vertical-align: middle;
+    border-bottom: 1px solid #000 !important;
+    padding: 0.75rem 1rem;
+    text-align: center;
+  }
+  .transactions-table td {
+    vertical-align: middle;
+    font-size: 0.95rem;
+    background: #fff;
+    border-bottom: 1px solid #dee2e6;
+    padding: 0.75rem 1rem;
+    text-align: center;
+  }
+  .transactions-table tbody tr:hover td {
+    background: #fff3cd !important;
+    transition: background 0.3s ease;
+  }
+  .form-row.d-flex { gap: 15px; align-items: center; }
+  .form-row.d-flex .form-group { flex: 1; min-width: 140px; }
+  .form-row.d-flex .form-group:last-child { flex: 0 0 auto; min-width: 0; }
+  .form-row.d-flex .form-control,
+  .form-row.d-flex .btn-primary { height: 38px; padding: 6px 12px; display: flex; align-items: center; }
+  @media print {
+    body { background: white; direction: rtl; }
+    .bottom-nav, .no-print, .form-section, .btn, .transactions-section .btn-danger,
+    .transactions-section thead, .page-container a[href]:not(.visible-print), .clickable { display: none !important; }
+    .page-container { max-width: 100%; padding: 0; margin: 0; }
+    .salary-summary { break-inside: avoid; box-shadow: none; border: 1px solid #ddd; }
+    .summary-grid { gap: 10px; }
+    .summary-item { padding: 10px; }
+    .clickable.summary-item { display: block !important; }
+    .row.mb-4 { display: flex !important; flex-wrap: wrap; }
+    .row.mb-4 > [class*="col-"] { flex: 0 0 50%; max-width: 50%; padding: 5px; }
+    .row.mb-4 .summary-item { display: block !important; }
+    .attendance-grid { break-inside: avoid; }
+    .transactions-section { break-inside: avoid; }
+    .transactions-section table { width: 100%; border-collapse: collapse; }
+    .transactions-section table th,
+    .transactions-section table td { border: 1px solid #000; padding: 6px 8px; font-size: 12px; }
+    .transactions-section table tbody tr { display: table-row; }
+    .transactions-section table tbody tr td:last-child { display: none; }
+    .col-md-6.col-sm-12.text-md-end.text-center { display: none !important; }
+    h2, h3 { break-after: avoid; }
+  }
+  .modern-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    margin-top: 20px;
+    border-radius: 1rem;
+    overflow: hidden;
+    background: #fff;
+    border: 1px solid #000;
+  }
+  .modern-table th {
+    background: #D79921 !important;
+    font-size: 1rem;
+    font-weight: bold;
+    color: #333;
+    vertical-align: middle;
+    border-bottom: 1px solid #000 !important;
+    padding: 0.75rem;
+    text-align: right;
+  }
+  .modern-table td {
+    vertical-align: middle;
+    font-size: 0.95rem;
+    background: #fff;
+    border-bottom: 1px solid #dee2e6;
+    padding: 0.75rem;
+  }
+  .modern-table tbody tr:hover td {
+    background: #fff3cd !important;
+    transition: background 0.3s ease;
+  }
+  
+  /* Modal Styles */
+  .stats-modal {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.6); z-index: 9999; display: none;
+    align-items: center; justify-content: center; backdrop-filter: blur(5px);
+  }
+  .stats-modal-content {
+    background: #fff; width: 95%; max-width: 1100px; padding: 2rem;
+    border-radius: 1.5rem; position: relative; box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    border-top: 5px solid #D79921; max-height: 90vh; display: flex; flex-direction: column;
+  }
+  .stats-modal .close-btn {
+    position: absolute; left: 1rem; top: 1rem; border: none;
+    background: #fff3cd; font-size: 1.5rem; color: #333;
+    width: 40px; height: 40px; border-radius: 50%; display: flex;
+    align-items: center; justify-content: center; cursor: pointer; transition: all 0.3s ease;
+  }
+  .stats-modal .close-btn:hover { background: #D79921; }
+  .stats-modal .modal-title { font-weight: 700; font-size: 1.5rem; color: #2c3e50; margin-bottom: 1rem; padding-bottom: 0.75rem; border-bottom: 3px solid #D79921; }
+  .stats-modal .modal-body { overflow-y: auto; padding-right: 0.5rem; overscroll-behavior: contain; }
+  
+  .summary-item.clickable:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+  }
+  .badge {
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: bold;
+  }
+  .badge-success {
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    color: white;
+  }
+  .badge-danger {
+    background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+    color: white;
+  }
+  .badge-warning {
+    background: linear-gradient(135deg, #ffc107 0%, #e0a800 100%);
+    color: #000;
+  }
+  .btn-danger {
+    background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+    border: none;
+    color: white;
+    padding: 8px 15px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+  .btn-danger:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 15px rgba(220, 53, 69, 0.4);
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 50px;
+    color: #6c757d;
+  }
+  .empty-state i {
+    font-size: 60px;
+    margin-bottom: 20px;
+    opacity: 0.5;
+    color: #D79921;
+  }
+  .empty-state h5 {
+    font-size: 18px;
+    margin-bottom: 10px;
+    color: #495057;
+  }
+  .empty-state p {
+    color: #6c757d;
+    font-size: 14px;
+  }
+  .attendance-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin-top: 15px; }
+  .attendance-grid .day-cell { padding: 8px; text-align: center; border-radius: 8px; font-size: 0.85rem; }
+  .day-cell.present { background: #d4edda; color: #155724; }
+  .day-cell.half_day { background: #fff3cd; color: #856404; }
+  .day-cell.absent { background: #f8d7da; color: #721c24; }
+  .day-cell.today { outline: 2px solid #007bff; outline-offset: -2px; }
+  .day-cell.empty { background: transparent; }
+  .day-cell .day-num { font-weight: bold; font-size: 1rem; }
+  .day-cell .day-label { font-size: 0.7rem; opacity: 0.8; }
+</style>
+
+<div class="page-container" dir="rtl">
+
+    <div class="text-center mb-4">
+        <h2 class="fw-bold">إدارة مرتب <span class="text-warning">{{ employee.name }}</span></h2>
+        <p class="text-muted">الشهر: {{ current_month }}/{{ current_year }}</p>
+    </div>
+
+
+    <div class="row mb-4">
+        <div class="col-md-6 col-sm-12 mb-2">
+            <form method="GET" class="d-flex align-items-center gap-2">
+                <select id="month" name="month" class="form-control" style="width: 120px; height: 38px; padding: 6px 12px; text-align: center;" onchange="this.form.submit()">
+                    <option value="1" {% if current_month == 1 %}selected{% endif %}>يناير</option>
+                    <option value="2" {% if current_month == 2 %}selected{% endif %}>فبراير</option>
+                    <option value="3" {% if current_month == 3 %}selected{% endif %}>مارس</option>
+                    <option value="4" {% if current_month == 4 %}selected{% endif %}>أبريل</option>
+                    <option value="5" {% if current_month == 5 %}selected{% endif %}>مايو</option>
+                    <option value="6" {% if current_month == 6 %}selected{% endif %}>يونيو</option>
+                    <option value="7" {% if current_month == 7 %}selected{% endif %}>يوليو</option>
+                    <option value="8" {% if current_month == 8 %}selected{% endif %}>أغسطس</option>
+                    <option value="9" {% if current_month == 9 %}selected{% endif %}>سبتمبر</option>
+                    <option value="10" {% if current_month == 10 %}selected{% endif %}>أكتوبر</option>
+                    <option value="11" {% if current_month == 11 %}selected{% endif %}>نوفمبر</option>
+                    <option value="12" {% if current_month == 12 %}selected{% endif %}>ديسمبر</option>
+                </select>
+                <select id="year" name="year" class="form-control" style="width: 100px; height: 38px; padding: 6px 12px; text-align: center;" onchange="this.form.submit()">
+                    {% for year in range(2025, current_year + 1) %}
+                    <option value="{{ year }}" {% if current_year == year %}selected{% endif %}>{{ year }}</option>
+                    {% endfor %}
+                </select>
+            </form>
+        </div>
+        <div class="col-md-6 col-sm-12 text-md-end text-center">
+            <a href="{{ url_for('main.employee_profile', employee_id=employee.id) }}" class="btn btn-secondary d-inline-flex align-items-center gap-1 px-4">
+                <i class="fas fa-arrow-left"></i> <span>رجوع</span>
+            </a>
+        </div>
+    </div>
+    
+    <div class="salary-summary">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
+            <div class="form-title">ملخص المرتب</div>
+            <div class="d-flex gap-2">
+                <button onclick="sendSalaryReport()" class="btn-primary no-print">
+                    <i class="fab fa-whatsapp"></i> ارسال التقرير
+                </button>
+                <button onclick="window.print()" class="btn-primary no-print">
+                    <i class="fas fa-print"></i> PDF
+                </button>
+            </div>
+        </div>
+        <div class="summary-grid">
+            <div class="summary-item">
+                <div class="summary-label">المرتب الأساسي</div>
+                <div class="summary-value">{{ base_salary|round(2) }} ج.م</div>
+            </div>
+            {% if employee.sales_commission_percentage and employee.sales_commission_percentage > 0 %}
+            <div class="summary-item">
+                <div class="summary-label">عمولة المبيعات</div>
+                <div class="summary-value">{{ sales_commission|round(2) }} ج.م</div>
+            </div>
+            <div class="summary-item">
+                <div class="summary-label">إجمالي المرتب</div>
+                <div class="summary-value">{{ total_salary|round(2) }} ج.م</div>
+            </div>
+            {% endif %}
+            <div class="summary-item">
+                <div class="summary-label">المكافآت</div>
+                <div class="summary-value">{{ total_bonuses|round(2) }} ج.م</div>
+            </div>
+            <div class="summary-item">
+                <div class="summary-label">الخصومات</div>
+                <div class="summary-value">{{ total_deductions|round(2) }} ج.م</div>
+            </div>
+            <div class="summary-item">
+                <div class="summary-label">السلف</div>
+                <div class="summary-value">{{ total_advances|round(2) }} ج.م</div>
+            </div>
+            <div class="summary-item net-salary">
+                <div class="summary-label">صافي المرتب</div>
+                <div class="summary-value">{{ net_salary|round(2) }} ج.م</div>
+            </div>
+            <div class="summary-item">
+                <div class="summary-label">المستحق حتى اليوم</div>
+                <div class="summary-value text-primary">{{ accrued_salary|round(2) }} ج.م</div>
+            </div>
+            <div class="summary-item">
+                <div class="summary-label">مستحق من الشهور السابقة</div>
+                <div class="summary-value {% if previous_months_dues >= 0 %}text-success{% else %}text-danger{% endif %}">{{ previous_months_dues|round(2) }} ج.م</div>
+            </div>
+        </div>
+    </div>
+
+    {% if employee.sales_commission_percentage and employee.sales_commission_percentage > 0 %}
+    <div class="row mb-4">
+        <div class="col-lg-3 col-md-6 col-sm-12 mb-3">
+          <div class="summary-item clickable" role="button" onclick="openModal('modal-recent-orders')" style="cursor: pointer; transition: all 0.3s;">
+            <div class="summary-label"><i class="fas fa-shopping-cart me-1"></i> إجمالي الطلبات المسجلة هذا الشهر</div>
+            <div class="summary-value">{{ total_orders }}</div>
+          </div>
+        </div>
+        <div class="col-lg-3 col-md-6 col-sm-12 mb-3">
+          <div class="summary-item clickable" role="button" onclick="openModal('modal-delivered-orders')" style="cursor: pointer; transition: all 0.3s;">
+            <div class="summary-label"><i class="fas fa-check-circle me-1"></i> إجمالي الطلبات المسلمة هذا الشهر</div>
+            <div class="summary-value">{{ delivered_orders_this_month|length }}</div>
+          </div>
+        </div>
+        <div class="col-lg-3 col-md-6 col-sm-12 mb-3">
+          <div class="summary-item">
+            <div class="summary-label"><i class="fas fa-dollar-sign me-1"></i> مبيعات الطلبات المسلمة (هذا الشهر)</div>
+            <div class="summary-value">{{ total_sales|round(2) }} ج.م</div>
+          </div>
+        </div>
+        <div class="col-lg-3 col-md-6 col-sm-12 mb-3">
+            <div class="summary-item">
+                <div class="summary-label"><i class="fas fa-percent me-1"></i> نسبة العمولة</div>
+                <div class="summary-value">{{ employee.sales_commission_percentage }}%</div>
+            </div>
+        </div>
+        <div class="col-lg-12 col-md-12 col-sm-12 mb-3">
+            <div class="summary-item" style="background: linear-gradient(135deg, #D79921 0%, #b8860b 100%);">
+              <div class="summary-label"><i class="fas fa-coins me-1"></i> إجمالي العمولة المستحقة</div>
+              <div class="summary-value">{{ total_commission|round(2) }} ج.م</div>
+            </div>
+    </div>
+</div>
+{% endif %}
+
+{% if employee.requires_attendance %}
+<div class="salary-summary">
+    <div class="form-title"><i class="fas fa-calendar-alt"></i> سجل الحضور - {{ current_month }}/{{ current_year }}</div>
+    <div class="attendance-grid">
+        {% set weekdays = ['أحد', 'اثن', 'ثلاث', 'أربع', 'خمي', 'جمعة', 'سبت'] %}
+        {% for w in weekdays %}
+        <div class="fw-bold text-center mb-2">{{ w }}</div>
+        {% endfor %}
+        {% set first_day = month_start.weekday() %}
+        {% set offset = (first_day + 1) % 7 %}
+        {% for _ in range(offset) %}
+        <div class="day-cell empty"></div>
+        {% endfor %}
+        {% set total_days = (month_end - month_start).days %}
+        {% for d in range(1, total_days + 1) %}
+        {% set day_date = month_start.replace(day=d) %}
+        {% set status = month_records_map.get(day_date.isoformat(), '') %}
+        {% set cls = 'present' if status == 'present' else ('half_day' if status == 'half_day' else ('absent' if status == 'absent' else '')) %}
+        {% set is_today = 'today' if day_date == today_date else '' %}
+        <div class="day-cell {{ cls }} {{ is_today }}">
+            <div class="day-num">{{ d }}</div>
+            <div class="day-label">{% if status == 'present' %}حاضر{% elif status == 'half_day' %}نصف يوم{% elif status == 'absent' %}غائب{% else %}-{% endif %}</div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+<!-- Modals for Tables -->
+    <div class="stats-modal" id="modal-recent-orders" onclick="if(event.target === this) closeModal(this)">
+      <div class="stats-modal-content">
+        <button class="close-btn" onclick="closeModal(this.closest('.stats-modal'))"><i class="fas fa-times"></i></button>
+        <h4 class="modal-title">جدول طلبات الموظف</h4>
+        <div class="modal-body">
+          {% if recent_orders %}
+          <div class="table-responsive">
+              <table class="table modern-table table-hover text-center align-middle" style="width: 100%;">
+                  <thead>
+                      <tr>
+                          <th style="width: 25%;">اسم العميل</th>
+                          <th style="width: 15%;">رقم الهاتف</th>
+                          <th style="width: 20%;">التاريخ</th>
+                          <th style="width: 15%;">الحالة</th>
+                          <th style="width: 15%;">إجمالي الطلب</th>
+                          <th style="width: 10%;">العمولة</th>
+                      </tr>
+                  </thead>
+                  <tbody>
+                      {% for order in recent_orders %}
+                      <tr class="order-row">
+                          <td>
+                              <a href="{{ url_for('main.edit_order', order_id=order.id) }}" target="_blank" class="text-decoration-none fw-bold" style="color: #0d6efd;">
+                                  <i class="fas fa-external-link-alt me-1" style="font-size: 0.8rem;"></i>
+                                  {{ order.customer_name }}
+                              </a>
+                          </td>
+                          <td dir="ltr">{{ order.customer_phone }}</td>
+                          <td>{{ order.date.strftime('%Y-%m-%d') }}</td>
+                          <td>
+                              {% if order.status == 'جديد' %}
+                                  <span class="badge" style="background: #007bff; color: white;">{{ order.status }}</span>
+                              {% elif order.status == 'خرج للتوصيل' %}
+                                  <span class="badge" style="background: #17a2b8; color: white;">{{ order.status }}</span>
+                              {% elif order.status == 'وصل' %}
+                                  <span class="badge badge-success">{{ order.status }}</span>
+                              {% elif order.status == 'رفض الاستلام' %}
+                                  <span class="badge" style="background: #ffc107; color: #212529;">{{ order.status }}</span>
+                              {% elif order.status == 'ملغي' %}
+                                  <span class="badge badge-danger">{{ order.status }}</span>
+                              {% else %}
+                                  <span class="badge" style="background: #6c757d; color: white;">{{ order.status }}</span>
+                              {% endif %}
+                          </td>
+                          <td><strong style="color: #28a745;">{{ order.total_amount|round(2) }} ج.م</strong></td>
+                          <td>
+                              {% if order.status in ['جديد', 'خرج للتوصيل', 'وصل', 'رفض الاستلام'] %}
+                                  <strong style="color: #ffc107;">{{ ((order.total_amount * employee.sales_commission_percentage) / 100)|round(2) }} ج.م</strong>
+                              {% else %}
+                                  <span style="color: #6c757d;">--</span>
+                              {% endif %}
+                          </td>
+                      </tr>
+                      {% endfor %}
+                  </tbody>
+              </table>
+          </div>
+          {% else %}
+          <div class="empty-state">
+              <i class="fas fa-shopping-cart"></i>
+              <h5>لا توجد طلبات</h5>
+              <p>لم يتم تسجيل أي طلبات لهذا الموظف</p>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <div class="stats-modal" id="modal-delivered-orders" onclick="if(event.target === this) closeModal(this)">
+      <div class="stats-modal-content">
+        <button class="close-btn" onclick="closeModal(this.closest('.stats-modal'))"><i class="fas fa-times"></i></button>
+        <h4 class="modal-title">إجمالي مبيعات الشهر الحالي (الطلبات المسلمة)</h4>
+        <div class="modal-body">
+          {% if delivered_orders_this_month %}
+          <div class="table-responsive">
+            <table class="table modern-table table-hover text-center align-middle" style="width: 100%;">
+              <thead>
+                <tr>
+                  <th style="width: 20%;">اسم العميل</th>
+                  <th style="width: 15%;">رقم الهاتف</th>
+                  <th style="width: 15%;">تاريخ الطلب</th>
+                  <th style="width: 15%;">تاريخ التسليم</th>
+                  <th style="width: 10%;">الحالة</th>
+                  <th style="width: 15%;">إجمالي الطلب</th>
+                  <th style="width: 10%;">العمولة</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for order in delivered_orders_this_month %}
+                <tr class="order-row">
+                  <td>
+                    <a href="{{ url_for('main.edit_order', order_id=order.id) }}" target="_blank" class="text-decoration-none fw-bold" style="color: #0d6efd;">
+                      <i class="fas fa-external-link-alt me-1" style="font-size: 0.8rem;"></i>
+                      {{ order.customer_name or '-' }}
+                    </a>
+                  </td>
+                  <td dir="ltr">{{ order.customer_phone or '-' }}</td>
+                  <td>{{ order.date.strftime('%Y-%m-%d') if order.date else '-' }}</td>
+                  <td>
+                    {% if order.status == 'وصل' %}
+                      {{ order.status_updated_at.strftime('%Y-%m-%d') if order.status_updated_at else '-' }}
+                    {% elif order.status == 'استبدال' %}
+                      {{ order.date.strftime('%Y-%m-%d') if order.date else '-' }}
+                    {% else %}
+                      {{ order.status_updated_at.strftime('%Y-%m-%d') if order.status_updated_at else '-' }}
+                    {% endif %}
+                  </td>
+                  <td>
+                    {% if order.status == 'وصل' %}
+                      <span class="badge badge-success">{{ order.status }}</span>
+                    {% elif order.status == 'استبدال' %}
+                      <span class="badge" style="background: #17a2b8; color: white;">استبدال</span>
+                    {% else %}
+                      <span class="badge" style="background: #6c757d; color: white;">{{ order.status }}</span>
+                    {% endif %}
+                  </td>
+                  <td><strong style="color: #28a745;">{{ order.total_amount|round(2) }} ج.م</strong></td>
+                  <td>
+                    <strong style="color: #ffc107;">{{ ((order.total_amount * employee.sales_commission_percentage) / 100)|round(2) }} ج.م</strong>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% else %}
+          <div class="empty-state">
+            <i class="fas fa-truck-loading"></i>
+            <h5>لا توجد مبيعات هذا الشهر</h5>
+            <p>لم يتم تسجيل أي طلبات محسوبة في العمولة خلال هذا الشهر</p>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    
+    <div class="form-section">
+        <div class="form-title">إضافة معاملة جديدة</div>
+        <form method="POST">
+            <input type="hidden" name="action" value="add_transaction">
+            <div class="form-row d-flex">
+                <div class="form-group">
+                    <select class="form-control" name="transaction_type" required>
+                        <option value="">اختر النوع</option>
+                        <option value="مكافأة">مكافأة <small class="text-muted">(تضاف لصافي المرتب)</small></option>
+                        <option value="خصم من المرتب">خصم من المرتب <small class="text-muted">(تخصم من صافي المرتب)</small></option>
+                        <option value="سلفه">سلفة <small class="text-muted">(تخصم من صافي المرتب)</small></option>
+                        <option value="باقي مستحق من الشهور السابقة">باقي مستحق من الشهور السابقة <small class="text-muted">(تضاف للرصيد التراكمي)</small></option>
+                        <option value="دفع مستحق من الشهور السابقة">دفع مستحق من الشهور السابقة <small class="text-muted">(تخصم من الرصيد التراكمي)</small></option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <input type="number" class="form-control" name="amount" step="0.01" min="0" required placeholder="المبلغ">
+                </div>
+                <div class="form-group">
+                    <div class="date-dmy-wrapper" style="width: 100%;">
+                        <input type="text" class="form-control" placeholder="dd/mm/yyyy" readonly>
+                        <input type="date" name="transaction_date" value="{{ today }}" required onchange="this.previousElementSibling.value=this.value.split('-').reverse().join('/')">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <input type="text" class="form-control" name="description" placeholder="سبب المعاملة">
+                </div>
+                <div class="form-group">
+                    <button type="submit" class="btn-primary" style="white-space: nowrap;">
+                        <i class="fas fa-plus-circle"></i> إضافة
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+    
+    <div class="transactions-section">
+        <div class="form-title">المعاملات</div>
+        {% if transactions %}
+        <table class="transactions-table">
+            <thead>
+                <tr>
+                    <th>التاريخ</th>
+                    <th>النوع</th>
+                    <th>المبلغ</th>
+                    <th>الوصف</th>
+                    <th>الإجراءات</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for transaction in transactions %}
+                <tr>
+                    <td>{{ transaction.transaction_date.strftime('%Y-%m-%d') }}</td>
+                    <td>
+                        {% if transaction.transaction_type == 'مكافأة' %}
+                            <span class="badge badge-success">{{ transaction.transaction_type }}</span>
+                        {% elif transaction.transaction_type == 'خصم من المرتب' %}
+                            <span class="badge badge-danger">{{ transaction.transaction_type }}</span>
+                        {% elif transaction.transaction_type == 'سلفه' %}
+                            <span class="badge badge-warning">{{ transaction.transaction_type }}</span>
+                        {% elif transaction.transaction_type == 'باقي مستحق من الشهور السابقة' %}
+                            <span class="badge" style="background: linear-gradient(135deg, #198754 0%, #157347 100%); color: white;">{{ transaction.transaction_type }}</span>
+                        {% elif transaction.transaction_type == 'دفع مستحق من الشهور السابقة' %}
+                            <span class="badge" style="background: linear-gradient(135deg, #6f42c1 0%, #5a32a3 100%); color: white;">{{ transaction.transaction_type }}</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                      <span class="{{ 'text-success' if transaction.is_positive else 'text-danger' }} fw-bold" style="font-size:16px;">
+                        {{ transaction.formatted_amount }} ج.م
+                      </span>
+                    </td>
+                    <td>{{ transaction.description or '-' }}</td>
+                    <td>
+                        {% if has_permission('can_delete_salary_transactions') %}
+                        <form method="POST" style="display: inline;" data-confirm="هل أنت متأكد من حذف هذه المعاملة؟" data-confirm-text="حذف" data-confirm-type="danger">
+                            <input type="hidden" name="action" value="delete_transaction">
+                            <input type="hidden" name="transaction_id" value="{{ transaction.id }}">
+                            <button type="submit" class="btn-danger">
+                                <i class="fas fa-trash"></i> حذف
+                            </button>
+                        </form>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div class="empty-state">
+            <i class="fas fa-receipt"></i>
+            <h5>لا توجد معاملات</h5>
+            <p>ابدأ بإضافة معاملة جديدة</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+
+<script>
+
+if (document.querySelector('select[name="transaction_type"]')) {
+  document.querySelector('select[name="transaction_type"]').addEventListener('change', function() {
+    const amountField = document.querySelector('input[name="amount"]');
+    const type = this.value;
+    if (type === 'خصم من المرتب') {
+      amountField.style.borderColor = '#dc3545';
+    } else if (type === 'مكافأة') {
+      amountField.style.borderColor = '#28a745';
+    } else if (type === 'سلفه') {
+      amountField.style.borderColor = '#ffc107';
+    } else {
+      amountField.style.borderColor = '#e9ecef';
+    }
+  });
+}
+
+function sendSalaryReport() {
+  const phone = '{{ employee.phone }}'.replace(/[^0-9+ ]/g, '').trim();
+  if (!phone) { alert('لا يوجد رقم هاتف مسجل لهذا الموظف'); return; }
+  const waPhone = phone.startsWith('+') ? phone.replace(/[^0-9]/g, '') : '2' + phone.replace(/[^0-9]/g, '');
+
+  const m = '{{ current_month }}', y = '{{ current_year }}';
+  const base = '{{ base_salary|round(2) }}';
+  const total = '{{ total_salary|round(2) }}';
+  const bonuses = '{{ total_bonuses|round(2) }}';
+  const deductions = '{{ total_deductions|round(2) }}';
+  const advances = '{{ total_advances|round(2) }}';
+  const net = '{{ net_salary|round(2) }}';
+  const accrued = '{{ accrued_salary|round(2) }}';
+  const balance = '{{ running_balance|round(2) }}';
+
+  let msg = '📋 *ملخص مرتب ' + '{{ employee.name }}' + '* - ' + m + '/' + y + '\n';
+  msg += '┅┅┅┅┅┅┅┅┅┅┅┅┅┅┅┅┅┅┅┅\n';
+  msg += '💵 المرتب الأساسي: ' + base + ' ج.م\n';
+  {% if employee.sales_commission_percentage and employee.sales_commission_percentage > 0 %}
+  msg += '📈 عمولة المبيعات: {{ sales_commission|round(2) }} ج.م\n';
+  {% endif %}
+  msg += '🏆 إجمالي المرتب: ' + total + ' ج.م\n';
+  msg += '🎁 المكافآت: ' + bonuses + ' ج.م\n';
+  msg += '🔻 الخصومات: ' + deductions + ' ج.م\n';
+  msg += '💰 السلف: ' + advances + ' ج.م\n';
+  msg += '✅ صافي المرتب: ' + net + ' ج.م\n';
+  msg += '📊 المستحق حتى اليوم: ' + accrued + ' ج.م\n';
+  msg += '🗓️ مستحق من السابق: ' + balance + ' ج.م\n';
+
+  {% if employee.requires_attendance %}
+  const att = {{ month_records_map|tojson }};
+  const days = Object.values(att).filter(v => v === 'present').length;
+  const half = Object.values(att).filter(v => v === 'half_day').length;
+  const absent = Object.values(att).filter(v => v === 'absent').length;
+  if (days || half || absent) {
+    msg += '┅┅┅┅┅┅┅┅┅┅┅┅┅┅┅┅┅┅┅┅\n';
+    msg += '📅 الحضور: ' + days + ' | نصف يوم: ' + half + ' | غياب: ' + absent + '\n';
+  }
+  {% endif %}
+
+  {% if transactions %}
+  msg += '┅┅┅┅┅┅┅┅┅┅┅┅┅┅┅┅┅┅┅┅\n';
+  msg += '📋 *المعاملات*\n';
+  {% for t in transactions %}
+  msg += '{{ t.transaction_date.strftime("%d/%m") }} {{ t.transaction_type }}: {{ t.amount|round(2) }} ج.م{% if t.description %} ({{ t.description }}){% endif %}\n';
+  {% endfor %}
+  {% endif %}
+
+  window.open('https://wa.me/' + waPhone + '?text=' + encodeURIComponent(msg), '_blank');
+}
+
+function openModal(modalId) {
+  document.getElementById(modalId).style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+}
+
+function closeModal(modalElement) {
+  modalElement.style.display = 'none';
+  document.body.style.overflow = '';
+}
+</script>
+{% endblock %} 

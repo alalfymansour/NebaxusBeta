@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% block title %}تسجيل حضور {{ employee.name }}{% endblock %}
+{% block content %}
+<style>
+  .attendance-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+  .attendance-grid .day-cell { padding: 8px; text-align: center; border-radius: 8px; font-size: 0.85rem; }
+  .day-cell.present { background: #d4edda; color: #155724; }
+  .day-cell.half_day { background: #fff3cd; color: #856404; }
+  .day-cell.absent { background: #f8d7da; color: #721c24; }
+  .day-cell.today { outline: 2px solid #007bff; outline-offset: -2px; }
+  .day-cell.empty { background: transparent; }
+  .day-cell .day-num { font-weight: bold; font-size: 1rem; }
+  .day-cell .day-label { font-size: 0.7rem; opacity: 0.8; }
+</style>
+
+<div class="container py-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h4><i class="fas fa-clipboard-check"></i> تسجيل حضور {{ employee.name }}</h4>
+    <div class="d-flex align-items-center gap-2">
+      <form method="GET" class="m-0">
+        <div class="date-dmy-wrapper">
+          <input type="text" class="form-control" value="{{ selected_date.strftime('%d/%m/%Y') }}" readonly>
+          <input type="date" name="date" value="{{ selected_date.isoformat() }}" onchange="this.previousElementSibling.value=this.value.split('-').reverse().join('/');this.form.submit()">
+        </div>
+      </form>
+      <a href="{{ url_for('main.employees') }}" class="btn btn-secondary"><i class="fas fa-arrow-right"></i> رجوع</a>
+    </div>
+  </div>
+
+  <div class="card card-box p-4 mb-4">
+
+    <form method="POST" class="mt-3">
+      <input type="hidden" name="date" value="{{ selected_date.isoformat() }}">
+      <div class="d-flex gap-3 align-items-center">
+        <span class="fw-bold">الحالة اليوم ({{ selected_date.strftime('%d/%m/%Y') }}):</span>
+        <div class="btn-group" role="group">
+          <button type="submit" name="status" value="present" class="btn {% if existing and existing.status == 'present' %}btn-success{% else %}btn-outline-success{% endif %}">
+            <i class="fas fa-check-circle"></i> حاضر
+          </button>
+          <button type="submit" name="status" value="half_day" class="btn {% if existing and existing.status == 'half_day' %}btn-warning{% else %}btn-outline-warning{% endif %}">
+            <i class="fas fa-adjust"></i> نصف يوم
+          </button>
+          <button type="submit" name="status" value="absent" class="btn {% if existing and existing.status == 'absent' %}btn-danger{% else %}btn-outline-danger{% endif %}">
+            <i class="fas fa-times-circle"></i> غائب
+          </button>
+        </div>
+      </div>
+    </form>
+  </div>
+
+  <div class="card card-box p-4">
+    <h5 class="mb-3"><i class="fas fa-calendar-alt"></i> حضور {{ selected_date.strftime('%m/%Y') }}</h5>
+    <div class="attendance-grid">
+      {% set weekdays = ['أحد', 'اثن', 'ثلاث', 'أربع', 'خمي', 'جمعة', 'سبت'] %}
+      {% for w in weekdays %}
+      <div class="fw-bold text-center mb-2">{{ w }}</div>
+      {% endfor %}
+      {% set first_day = month_start.weekday() %}
+      {# Monday=0 in Python, we need Sunday=0 for Arabic calendar #}
+      {% set offset = (first_day + 1) % 7 %}
+      {% for _ in range(offset) %}
+      <div class="day-cell empty"></div>
+      {% endfor %}
+      {% set total_days = (month_end - month_start).days %}
+      {% for d in range(1, total_days + 1) %}
+        {% set day_date = month_start.replace(day=d) %}
+        {% set status = month_records_map.get(day_date.isoformat(), '') %}
+        {% set cls = 'present' if status == 'present' else ('half_day' if status == 'half_day' else ('absent' if status == 'absent' else '')) %}
+        {% set is_today = 'today' if day_date == today else '' %}
+        {% set is_selected = 'today' if day_date == selected_date else '' %}
+      <div class="day-cell {{ cls }} {{ is_today }}">
+        <div class="day-num">{{ d }}</div>
+        <div class="day-label">
+          {% if status == 'present' %}حاضر{% elif status == 'half_day' %}نصف يوم{% elif status == 'absent' %}غائب{% else %}-{% endif %}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endblock %}

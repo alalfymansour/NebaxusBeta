@@ -1,0 +1,270 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<style>
+  :root { --gov-action-height: 46px; }
+  .modern-table {
+    border-radius: 1rem;
+    overflow: hidden;
+    background: #fff;
+    border: 1px solid #000;
+  }
+  .modern-table th {
+    background: #D79921 !important;
+    font-size: 1.1rem;
+    letter-spacing: 0.5px;
+    color: #333;
+    vertical-align: middle;
+    border-bottom: 1px solid #000 !important;
+  }
+  .modern-table td {
+    vertical-align: middle;
+    font-size: 1rem;
+    background: #fff;
+    border-bottom: 1px solid #000;
+  }
+  .modern-table tbody tr:hover td {
+    background: #fff3cd !important;
+    transition: background 0.2s;
+  }
+  /* Custom scrollbar for table */
+  .table-responsive::-webkit-scrollbar,
+  .table-responsive table::-webkit-scrollbar {
+    height: 8px;
+    background: #eee;
+  }
+  .table-responsive::-webkit-scrollbar-thumb,
+  .table-responsive table::-webkit-scrollbar-thumb {
+    background: #000 !important;
+    border-radius: 8px;
+  }
+  .table-responsive,
+  .table-responsive table {
+    scrollbar-color: #000 #eee !important; /* For Firefox */
+    scrollbar-width: thin;
+  }
+  /* Hide number input spinners for all browsers */
+  input[type=number]::-webkit-inner-spin-button,
+  input[type=number]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  input[type=number] {
+  appearance: textfield;
+  -moz-appearance: textfield;
+  }
+
+  /* Mobile-only tweaks: icon-only buttons and edge-to-edge table */
+  @media (max-width: 576px) {
+  /* Keep all four controls in one row */
+  .governorate-form { display: flex; flex-wrap: nowrap; gap: 0.5rem; align-items: center; }
+  .governorate-form > .d-flex { flex: 1 1 auto; display: flex; flex-wrap: nowrap; gap: 0.5rem; align-items: center; }
+
+  /* Unify control heights like customers page */
+  .governorate-form .form-select,
+  .governorate-form .form-control,
+  .governorate-form .btn { height: var(--gov-action-height) !important; }
+
+  /* Icon-only buttons, square size */
+  .governorate-form .btn { min-width: 0 !important; width: var(--gov-action-height) !important; padding: 0 !important; display: inline-flex; align-items: center; justify-content: center; }
+    .governorate-form .btn span { display: none !important; }
+    .governorate-form .btn i { margin: 0 !important; }
+  .governorate-form > a.btn { flex: 0 0 var(--gov-action-height); }
+  .governorate-form button[type="submit"] { flex: 0 0 var(--gov-action-height); }
+
+  /* Shrink fee input so row fits four controls */
+  .governorate-form input[name="fee"] { flex: 0 0 7rem; width: 7rem; max-width: 7rem; padding-inline: 0.35rem; text-align: center; }
+  /* Let select take the remaining space */
+  .governorate-form select.form-select { flex: 1 1 auto; min-width: 5.5rem; width: auto; }
+
+    /* Table: keep default outer spacing on mobile */
+    .governorate-page .table-responsive { margin-right: 0; margin-left: 0; padding-right: 0; padding-left: 0; }
+    /* Make table content fill the table width */
+  .governorate-page table.modern-table { width: 100% !important; table-layout: auto; border-collapse: collapse; }
+    .governorate-page .modern-table th,
+    .governorate-page .modern-table td { width: auto; }
+    .governorate-page .modern-table { border-radius: 1rem !important; }
+  }
+</style>
+<div class="container py-4 governorate-page" dir="rtl">
+  <div class="text-center mb-4">
+    <h2 class="fw-bold">إدارة <span class="text-warning">رسوم المحافظات</span></h2>
+    <p class="text-muted">يمكنك إضافة أو تعديل أو حذف رسوم التوصيل لكل محافظة</p>
+  </div>
+  <div class="row justify-content-center">
+    <div class="col-12">
+  <form method="POST" class="d-flex gap-2 mb-4 align-items-end justify-content-between governorate-form" action="{{ url_for('main.governorate_fees') }}">
+          <div class="d-flex flex-grow-1 gap-2 align-items-end">
+            <select name="name" class="form-select" style="max-width:140px;" required>
+              <option value="">اختر المحافظة</option>
+              <option value="لأقرب فرع بريد">لأقرب فرع بريد</option>
+              <option disabled>──────────</option>
+              <option value="القاهرة">القاهرة</option>
+              <option value="الجيزة">الجيزة</option>
+              <option value="الإسكندرية">الإسكندرية</option>
+              <option value="الدقهلية">الدقهلية</option>
+              <option value="البحر الأحمر">البحر الأحمر</option>
+              <option value="البحيرة">البحيرة</option>
+              <option value="الفيوم">الفيوم</option>
+              <option value="الغربية">الغربية</option>
+              <option value="الإسماعيلية">الإسماعيلية</option>
+              <option value="المنوفية">المنوفية</option>
+              <option value="المنيا">المنيا</option>
+              <option value="القليوبية">القليوبية</option>
+              <option value="الوادي الجديد">الوادي الجديد</option>
+              <option value="السويس">السويس</option>
+              <option value="أسوان">أسوان</option>
+              <option value="أسيوط">أسيوط</option>
+              <option value="بني سويف">بني سويف</option>
+              <option value="بورسعيد">بورسعيد</option>
+              <option value="دمياط">دمياط</option>
+              <option value="الشرقية">الشرقية</option>
+              <option value="جنوب سيناء">جنوب سيناء</option>
+              <option value="كفر الشيخ">كفر الشيخ</option>
+              <option value="مطروح">مطروح</option>
+              <option value="الأقصر">الأقصر</option>
+              <option value="قنا">قنا</option>
+              <option value="شمال سيناء">شمال سيناء</option>
+              <option value="سوهاج">سوهاج</option>
+            </select>
+            <input type="number" step="0.01" name="fee" class="form-control" style="max-width:135px;" placeholder="رسوم التوصيل" required>
+            <button type="submit" class="btn btn-success d-inline-flex align-items-center px-3" style="font-size:1.1rem; min-width:100px; height:38px;">
+              <i class="fas fa-plus me-1"></i> <span>إضافة / تحديث</span>
+            </button>
+          </div>
+          <div class="d-flex gap-2">
+            <button type="button" class="btn btn-warning d-inline-flex align-items-center gap-1 px-3" onclick="openCodFeeModal()" style="white-space:nowrap; min-width:100px;">
+              <i class="fas fa-money-bill-wave"></i> <span>رسوم التحصيل</span>
+            </button>
+            <a href="{{ url_for('main.dashboard') }}" class="btn btn-secondary d-inline-flex align-items-center gap-1 px-3" style="white-space:nowrap; min-width:100px;">
+              <i class="fas fa-arrow-left"></i> <span>رجوع</span>
+            </a>
+          </div>
+        </form>
+        {% if fees|length == 0 %}
+          <div class="alert alert-light border text-center text-muted mt-4 rounded-3 shadow-sm">
+            لا توجد رسوم توصيل مضافة لأي محافظة حتى الآن.
+          </div>
+        {% else %}
+          <div class="table-responsive">
+            <table class="table modern-table table-hover text-center align-middle mb-0" style="width: 100%;">
+              <colgroup>
+                <col style="width: 50%;">
+                <col style="width: 50%;">
+              </colgroup>
+              <thead>
+                <tr>
+                  <th>المحافظة</th>
+                  <th>رسوم التوصيل</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for fee in fees %}
+                <tr>
+                  <td>{{ fee.name }}</td>
+                  <td>{{ fee.fee }}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% endif %}
+    </div>
+  </div>
+</div>
+
+<div class="stats-modal" id="codFeeModal" tabindex="-1">
+  <div class="stats-modal-content">
+    <button type="button" class="close-btn" onclick="closeCodFeeModal()"><i class="fas fa-times"></i></button>
+    <h4 class="modal-title">تعديل رسوم التحصيل (COD Fee)</h4>
+    <div class="modal-body">
+      <p class="text-muted mb-3">رسوم التحصيل هي قيمة ثابتة تُضاف على جميع الطلبات التي لها مبلغ متبقي.</p>
+      <div class="mb-3">
+        <label for="codFeeInput" class="form-label">قيمة رسوم التحصيل (جنيه)</label>
+        <input type="number" step="0.01" min="0" class="form-control" id="codFeeInput" value="{{ cod_fee }}" placeholder="0.00">
+      </div>
+      <div id="codFeeAlert" class="alert d-none"></div>
+    </div>
+    <div class="d-flex justify-content-end gap-2 mt-4">
+      <button type="button" class="btn btn-secondary px-4" onclick="closeCodFeeModal()">إلغاء</button>
+      <button type="button" class="btn btn-success px-4" id="saveCodFeeBtn">
+        <i class="fas fa-save me-1"></i> حفظ
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const modal = document.getElementById('codFeeModal');
+  const saveBtn = document.getElementById('saveCodFeeBtn');
+  const input = document.getElementById('codFeeInput');
+  const alert = document.getElementById('codFeeAlert');
+  
+  saveBtn.addEventListener('click', async function() {
+    const codFee = parseFloat(input.value) || 0;
+    
+    if (codFee < 0) {
+      showAlert('danger', 'رسوم التحصيل يجب أن تكون قيمة موجبة أو صفر');
+      return;
+    }
+    
+    saveBtn.disabled = true;
+    saveBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> جاري الحفظ...';
+    
+    try {
+      const response = await fetch('/api/cod-fee', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ cod_fee: codFee })
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        showAlert('success', data.message || 'تم تحديث رسوم التحصيل بنجاح');
+        setTimeout(() => {
+          const bsModal = bootstrap.Modal.getInstance(modal);
+          bsModal.hide();
+          location.reload();
+        }, 1500);
+      } else {
+        showAlert('danger', data.message || 'حدث خطأ أثناء التحديث');
+      }
+    } catch (error) {
+      showAlert('danger', 'حدث خطأ في الاتصال بالخادم');
+    } finally {
+      saveBtn.disabled = false;
+      saveBtn.innerHTML = '<i class="fas fa-save me-1"></i> حفظ';
+    }
+  });
+
+  window.openCodFeeModal = function() {
+    modal.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+  };
+
+  window.closeCodFeeModal = function() {
+    modal.style.display = 'none';
+    document.body.style.overflow = '';
+  };
+
+  modal.addEventListener('click', function(e) {
+    if (e.target === this) closeCodFeeModal();
+  });
+  
+  function showAlert(type, message) {
+    alert.className = `alert alert-${type}`;
+    alert.textContent = message;
+    alert.classList.remove('d-none');
+    
+    setTimeout(() => {
+      alert.classList.add('d-none');
+    }, 5000);
+  }
+});
+</script>
+
+{% endblock %} 

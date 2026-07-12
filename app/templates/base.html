@@ -1,0 +1,1819 @@
+<!DOCTYPE html> 
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+  <title>NebaxusBeta</title>
+  
+  <link rel="icon" type="image/svg+xml" href="/static/img/logo.svg">
+  <link rel="apple-touch-icon" href="/static/img/logo.svg">
+  
+  <link rel="manifest" href="/manifest.json">
+  
+  <meta name="theme-color" content="#d79921">
+  
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="NebaxusBeta">
+  
+  <meta name="mobile-web-app-capable" content="yes">
+  
+  <meta name="application-name" content="NebaxusBeta">
+  <meta name="description" content="نظام إدارة المتجر والمبيعات">
+  
+  <meta name="format-detection" content="telephone=no">
+  
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+  <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+  <link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
+  <link rel="dns-prefetch" href="https://cdnjs.cloudflare.com">
+  <link rel="dns-prefetch" href="https://code.jquery.com">
+  
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css" rel="stylesheet" />
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet" />
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    i[class*="fa-"], i[data-lucide] { color: #D79921; }
+    .btn i, button i, .bottom-nav a i { color: inherit; }
+    .bottom-nav a.active i { color: #1d2021; }
+    i[data-lucide] { width: 1.05em; height: 1.05em; stroke-width: 2; vertical-align: -0.125em; }
+    .bottom-nav i[data-lucide] { width: 1.2em; height: 1.2em; }
+  </style>
+  <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+  <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  {% block extra_css %}{% endblock %}
+  <script>
+    
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function() {
+        navigator.serviceWorker.register('/static/sw.js')
+          .then(function(registration) {
+            console.log('SW Registered');
+          })
+          .catch(function(error) {
+            console.error('SW Registration failed:', error);
+          });
+      });
+    }
+    
+    let deferredPrompt;
+    const installButton = document.createElement('button');
+    installButton.textContent = '📱 تثبيت التطبيق';
+    installButton.style.cssText = `
+      position: fixed;
+      bottom: 90px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: linear-gradient(135deg, #D79921 0%, #b8860b 100%);
+      color: #000;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 50px;
+      font-weight: bold;
+      box-shadow: 0 4px 15px rgba(215, 153, 33, 0.4);
+      cursor: pointer;
+      z-index: 9999;
+      display: none;
+      font-family: "Cairo", "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      font-size: 14px;
+      transition: all 0.3s ease;
+    `;
+    installButton.onmouseover = () => {
+      installButton.style.transform = 'translateX(-50%) translateY(-2px)';
+      installButton.style.boxShadow = '0 6px 20px rgba(215, 153, 33, 0.5)';
+    };
+    installButton.onmouseout = () => {
+      installButton.style.transform = 'translateX(-50%)';
+      installButton.style.boxShadow = '0 4px 15px rgba(215, 153, 33, 0.4)';
+    };
+    
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+      
+      if (!window.matchMedia('(display-mode: standalone)').matches && !window.navigator.standalone) {
+        document.body.appendChild(installButton);
+        installButton.style.display = 'block';
+      }
+    });
+    
+    installButton.addEventListener('click', async () => {
+      if (!deferredPrompt) return;
+      
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      
+      if (outcome === 'accepted') {
+        console.log('User accepted the install prompt');
+        
+        setTimeout(() => {
+          if (typeof showToastNotification === 'function') {
+            showToastNotification('✅ تم التثبيت', 'تم تثبيت التطبيق بنجاح! يمكنك الآن الوصول إليه من الشاشة الرئيسية.');
+          }
+        }, 1000);
+      }
+      
+      deferredPrompt = null;
+      installButton.style.display = 'none';
+    });
+    
+    window.addEventListener('appinstalled', () => {
+      console.log('PWA was installed');
+      installButton.style.display = 'none';
+    });
+    
+    if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone) {
+      console.log('PWA Mode');
+      document.documentElement.classList.add('pwa-mode');
+      
+      const updateThemeColor = () => {
+        const meta = document.querySelector('meta[name="theme-color"]');
+        if (meta) meta.setAttribute('content', '#D79921');
+      };
+      
+      updateThemeColor();
+    }
+    function debounceSearch(el) {
+      if (el._debounceTimer) clearTimeout(el._debounceTimer);
+      el._debounceTimer = setTimeout(function() {
+        var f = el.closest('form');
+        if (f) f.submit();
+      }, 1000);
+    }
+    document.addEventListener('DOMContentLoaded', function() {
+      var searchInputs = document.querySelectorAll('input[id^="instant-search-"]');
+      searchInputs.forEach(function(inp) {
+        if (inp.value) {
+          inp.focus();
+          inp.setSelectionRange(inp.value.length, inp.value.length);
+        }
+      });
+    });
+  </script>
+  <style>
+    /* ── Gruvbox Hard White ── Design System Tokens ── */
+    :root {
+      --brand-gold:   #d79921;
+      --brand-amber:  #b57614;
+      --bg-light:     #f9f5d7;
+      --bg-page:      #f2ead5;        /* slightly warmer than card */
+      --text-light:   #3c3836;
+      --text-muted:   #7c6f64;
+      --card-light:   #fbf1c7;
+      --card-raised:  #fff8e1;        /* cards that should pop */
+      --border-light: #d5c4a1;
+      --border-soft:  #e0d4b0;
+      --accent-hover: #ebdbb2;
+      --shadow-sm:    0 1px 4px rgba(60,56,54,0.07), 0 2px 8px rgba(60,56,54,0.05);
+      --shadow-md:    0 4px 16px rgba(60,56,54,0.10), 0 1px 4px rgba(60,56,54,0.06);
+      --shadow-lg:    0 8px 32px rgba(60,56,54,0.13), 0 2px 8px rgba(60,56,54,0.07);
+      --radius-sm:    0.5rem;
+      --radius-md:    0.875rem;
+      --radius-lg:    1.25rem;
+      --radius-xl:    1.75rem;
+      --transition:   0.22s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    body {
+      background-color: var(--bg-page);
+      /* Subtle warm grain — gives depth without noise */
+      background-image:
+        radial-gradient(ellipse 80% 60% at 50% -10%, rgba(215,153,33,0.06) 0%, transparent 70%),
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='0.025'/%3E%3C/svg%3E");
+      min-height: 100vh;
+      min-height: 100dvh;
+      margin: 0;
+      padding-bottom: 70px;
+      font-family: "Cairo", "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      overflow-x: hidden;
+      color: var(--text-light);
+    }
+    
+    /* PWA Fullscreen support - handle safe areas on iOS */
+    @supports(padding: max(0px)) {
+      body {
+        padding-top: env(safe-area-inset-top);
+        padding-right: env(safe-area-inset-right);
+        padding-bottom: max(70px, env(safe-area-inset-bottom));
+        padding-left: env(safe-area-inset-left);
+      }
+    }
+    
+    /* Hide scrollbar when in fullscreen mode but keep scrolling */
+    @media (display-mode: fullscreen) {
+      body {
+        -ms-overflow-style: none;  /* IE and Edge */
+        scrollbar-width: none;  /* Firefox */
+      }
+      body::-webkit-scrollbar {
+        display: none; /* Chrome, Safari and Opera */
+      }
+    }
+    .content-wrapper {
+      max-width: 1400px;
+      margin: 0.5rem auto 5rem;
+      padding: 2.5rem 3rem 4rem;
+      border-radius: var(--radius-lg);
+      box-shadow: none;
+      min-height: 80vh;
+    }
+
+
+
+    /* ── Bottom Navigation Bar — Glassmorphism pill ── */
+    .bottom-nav {
+      position: fixed;
+      bottom: 14px;
+      left: 50%;
+      transform: translateX(-50%);
+      /* warm frosted glass */
+      background: rgba(251, 241, 199, 0.82);
+      backdrop-filter: blur(16px) saturate(1.4);
+      -webkit-backdrop-filter: blur(16px) saturate(1.4);
+      border: 1px solid rgba(213, 196, 161, 0.6);
+      box-shadow: 0 4px 24px rgba(60,56,54,0.12), 0 1px 4px rgba(60,56,54,0.06);
+      border-radius: 50px;
+      padding: 0.35rem 1rem;
+      display: flex;
+      gap: 4px;
+      z-index: 1050;
+      transition: box-shadow var(--transition);
+    }
+    
+    /* PWA mode adjustments for bottom nav */
+    @supports(padding: max(0px)) {
+      .bottom-nav {
+        bottom: max(10px, env(safe-area-inset-bottom));
+      }
+    }
+    
+    /* Additional PWA fullscreen mode adjustments */
+    @media (display-mode: fullscreen) {
+      .bottom-nav {
+        bottom: calc(10px + env(safe-area-inset-bottom));
+      }
+    }
+    body.modal-open .bottom-nav {
+      z-index: 1030 !important;
+      pointer-events: none;
+      opacity: 0.75;
+      filter: blur(1px);
+      transition: opacity var(--transition), filter var(--transition);
+    }
+    .bottom-nav a {
+      font-weight: 600;
+      color: var(--text-muted);
+      text-decoration: none;
+      padding: 7px 14px;
+      border-radius: 40px;
+      background-color: transparent;
+      transition: background-color var(--transition), color var(--transition), transform var(--transition);
+      user-select: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 0.92rem;
+    }
+    .bottom-nav a:hover {
+      color: var(--text-light);
+      background-color: rgba(215, 153, 33, 0.18);
+      transform: translateY(-1px);
+    }
+    .bottom-nav a:focus {
+      outline: none;
+      box-shadow: 0 0 0 3px rgba(215,153,33,0.35);
+    }
+    .bottom-nav a.active {
+      background-color: var(--brand-gold);
+      color: #1d2021;
+      box-shadow: 0 2px 8px rgba(215,153,33,0.35);
+    }
+
+    /* Standardize icon size */
+    .bottom-nav i {
+      font-size: 1.05rem;
+      line-height: 1;
+    }
+
+    /* Nav badge — auto-sizing circle that shrinks font for large numbers */
+    .nav-badge {
+      position: absolute; top: 2px; right: 2px;
+      min-width: 16px; height: 16px;
+      border-radius: 8px;
+      background: #cc241d; 
+      color: #fff;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 3px;
+      font-size: 0.6rem;
+      line-height: 1;
+      box-sizing: border-box;
+    }
+
+      /* Responsive adjustments for mobile only - فقط للشاشات الصغيرة (الهاتف) */
+      @media (max-width: 576px) {
+        /* Respect safe areas on modern phones (iOS/Android with gesture bars) */
+        body {
+          padding-bottom: calc(96px + env(safe-area-inset-bottom)) !important;
+        }
+
+        /* App logo size on phones */
+        .app-logo {
+          height: 70px !important;
+          width: auto !important;
+          max-width: 70px !important; /* if width-based scaling applies */
+        }
+
+        /* General touch targets + buttons */
+        .btn, .btn-lg, .btn-md, .btn-sm {
+          font-size: 0.98rem !important;
+          padding: 0.6rem 0.9rem !important;
+          min-height: 44px !important; /* أفضل مقاس للّمس */
+        }
+
+        /* Make the main wrapper use full width with tighter side padding */
+        .content-wrapper {
+          max-width: 100% !important;
+          width: 100% !important;
+          margin: 0.5rem auto 5.5rem !important;
+          padding: 0.6rem 0.25rem !important; /* reduce side padding to hug edges */
+          border-radius: 10px !important;
+          box-shadow: none !important;
+        }
+        /* Remove extra inner horizontal padding so pages using .container fill like dashboard */
+        .content-wrapper > .container,
+        .content-wrapper .container,
+        .content-wrapper .container-fluid {
+          padding-left: 0.25rem !important;
+          padding-right: 0.25rem !important;
+        }
+
+        /* So utility paddings don't re-introduce large side paddings on mobile */
+        .px-4, .px-sm-4, .px-md-4, .px-lg-4, .px-xl-4, .px-xxl-4 {
+          padding-left: 0.75rem !important; padding-right: 0.75rem !important;
+        }
+        .px-5, .px-sm-5, .px-md-5, .px-lg-5, .px-xl-5, .px-xxl-5 {
+          padding-left: 0.9rem !important; padding-right: 0.9rem !important;
+        }
+        .px-3, .px-sm-3, .px-md-3, .px-lg-3, .px-xl-3, .px-xxl-3 {
+          padding-left: 0.6rem !important; padding-right: 0.6rem !important;
+        }
+
+        /* Generic p-4 shrink inside content to match dashboard density */
+        .content-wrapper .p-4 { padding: 0.9rem 0.7rem !important; }
+
+        /* Trim default section paddings/margins so content uses more of the screen */
+        .container.py-4, .container.py-5, .container .py-4, .container .py-5 {
+          padding-top: 0.5rem !important;
+          padding-bottom: 0.6rem !important;
+        }
+        .mb-4 { margin-bottom: 0.6rem !important; }
+        .mt-4 { margin-top: 0.6rem !important; }
+  .mt-3 { margin-top: 0.6rem !important; }
+  .mb-5 { margin-bottom: 1.1rem !important; }
+
+  /* Default gutters for generic rows on mobile (pages without custom grid classes) */
+  .row { --bs-gutter-y: 0.5rem; --bs-gutter-x: 0.5rem; }
+
+        /* Cards and small containers */
+        .card, .custom-card {
+          padding: 0.8rem 0.6rem !important;
+          border-radius: 10px !important;
+          margin-bottom: 0.6rem !important;
+        }
+  /* Match dashboard card density */
+  .card-box { padding: 0.75rem 0.55rem !important; }
+  /* Also tighten any card explicitly using p-4 */
+  .content-wrapper .card.p-4 { padding: 0.9rem 0.7rem !important; }
+
+  /* Tighten common g-* rows like dashboard */
+  .row.g-4, .row.g-3, .row.g-2 { --bs-gutter-y: 0.4rem !important; --bs-gutter-x: 0.5rem !important; }
+  .row.g-4 > [class*="col-"],
+  .row.g-3 > [class*="col-"],
+  .row.g-2 > [class*="col-"] {
+    padding-left: 0.25rem !important;
+    padding-right: 0.25rem !important;
+  }
+
+  /* Push common g-* rows to edges for better horizontal fill */
+  .content-wrapper .row.g-4,
+  .content-wrapper .row.g-3,
+  .content-wrapper .row.g-2 {
+    margin-left: -0.25rem !important;
+    margin-right: -0.25rem !important;
+  }
+
+  /* Edge-fill for generic rows as well (pages that don't use g-*) */
+  .content-wrapper > .row,
+  .content-wrapper .container > .row,
+  .content-wrapper .container-fluid > .row {
+    margin-left: -0.25rem !important;
+    margin-right: -0.25rem !important;
+  }
+  .content-wrapper > .row > [class*="col-"],
+  .content-wrapper .container > .row > [class*="col-"],
+  .content-wrapper .container-fluid > .row > [class*="col-"] {
+    padding-left: 0.25rem !important;
+    padding-right: 0.25rem !important;
+  }
+
+  /* Push key rows to the edges to match dashboard horizontally */
+  .customers-grid,
+  .employees-grid,
+  .suppliers-grid,
+  .products-grid,
+  .orders-grid,
+  .replacements-grid,
+  .status-cards {
+          margin-left: -0.25rem !important;
+          margin-right: -0.25rem !important;
+        }
+
+  /* Titles and subtitles area: use less space */
+  .text-center.mb-4 { margin-bottom: 0.5rem !important; }
+  .text-center.mb-4 h2 { margin-bottom: 0.25rem !important; line-height: 1.2 !important; }
+  .text-center.mb-4 p { margin-bottom: 0 !important; }
+
+        /* Override any inline min-width used in templates (e.g., stats buttons) */
+        .stats-field, .stats-field[style], .btn[style] {
+          min-width: 0 !important;
+          width: auto !important;
+          white-space: nowrap !important;
+          overflow: hidden !important;
+          text-overflow: ellipsis !important;
+        }
+
+        /* Forms: larger inputs and stacked layout */
+        .form-control, .form-select {
+          font-size: 1rem !important;
+          padding: 0.5rem 0.75rem !important;
+        }
+        .form-inline, .input-group {
+          display: flex !important;
+          flex-direction: column !important;
+          gap: 0.5rem !important;
+        }
+
+        /* Headings smaller on mobile */
+        h1 { font-size: 1.2rem !important; }
+        h2 { font-size: 1.05rem !important; }
+        h3 { font-size: 1rem !important; }
+
+        /* Bottom nav: stretch to fit with comfortable spacing */
+        .bottom-nav {
+          bottom: calc(10px + env(safe-area-inset-bottom)) !important;
+          left: 50% !important;    /* center the pill */
+          right: auto !important;  /* no stretch */
+          transform: translateX(-50%) !important;
+          width: auto !important;  /* content width */
+          justify-content: center !important; /* compact cluster */
+          padding: 0.75rem 1.5rem !important; /* wider on mobile */
+          border-radius: 50px !important; /* match desktop radius */
+          gap: 8px !important; /* more space between icons on mobile */
+        }
+        .bottom-nav a {
+          padding: 6px 8px !important; /* narrower links */
+          font-size: 0.85rem !important;
+          gap: 6px !important;
+        }
+
+        /* Icons only on mobile: hide labels */
+        .bottom-nav .nav-label {
+          display: none !important;
+        }
+        .bottom-nav i { font-size: 1.05rem !important; }
+
+        /* Images and responsive media */
+        img, .img-fluid, video {
+          max-width: 100% !important;
+          height: auto !important;
+        }
+
+        /* Make tables horizontally scrollable instead of overflowing layout */
+        table, .table {
+          width: 100% !important;
+          display: block !important;
+          overflow-x: auto !important;
+          -webkit-overflow-scrolling: touch !important;
+        }
+        .table-responsive {
+          overflow-x: auto !important;
+        }
+
+        /* Stack bootstrap columns vertically for narrow screens to avoid squish */
+        .row > [class*="col-"] {
+          flex: 0 0 100% !important;
+          max-width: 100% !important;
+        }
+
+        /* Modals full-width friendly */
+        .modal-dialog {
+          max-width: 95% !important;
+          margin: 0.5rem auto !important;
+        }
+
+        /* Small utilities developers can use on templates when needed */
+        .hide-on-mobile { display: none !important; }
+        .show-on-mobile { display: block !important; }
+
+        /* Tracking input and selects: easier to tap */
+        .tracking-input {
+          padding: 0.5rem 0.6rem !important;
+          font-size: 1rem !important;
+        }
+        .status-select {
+          padding: 0.45rem 0.6rem !important;
+          font-size: 1rem !important;
+        }
+
+        /* Keep small helper elements readable */
+        .small, .form-text, .help-text { font-size: 0.9rem !important; }
+      }
+    
+    /* Gruvbox button palette — one base hue per role */
+    .text-warning { color: #d79921 !important; }
+    .table-warning { --bs-table-bg: #d79921 !important; border-color: #b57614 !important; }
+
+    .btn-primary { background-color: #d79921 !important; border-color: #d79921 !important; color: #1d2021 !important; }
+    .btn-primary:hover { background-color: #b57614 !important; border-color: #b57614 !important; color: #1d2021 !important; }
+    .btn-primary:focus { box-shadow: 0 0 0 0.2rem rgba(215,153,33,0.35) !important; }
+    .btn-primary:disabled { background-color: #bdae93 !important; border-color: #bdae93 !important; color: #3c3836 !important; }
+
+    .btn-secondary { background-color: #928374 !important; border-color: #928374 !important; color: #f9f5d7 !important; }
+    .btn-secondary:hover { background-color: #7c6f64 !important; border-color: #7c6f64 !important; color: #f9f5d7 !important; }
+
+    .btn-success { background-color: #98971a !important; border-color: #98971a !important; color: #f9f5d7 !important; }
+    .btn-success:hover { background-color: #79740e !important; border-color: #79740e !important; color: #f9f5d7 !important; }
+
+    .btn-danger { background-color: #cc241d !important; border-color: #cc241d !important; color: #f9f5d7 !important; }
+    .btn-danger:hover { background-color: #9d0006 !important; border-color: #9d0006 !important; color: #f9f5d7 !important; }
+
+    .btn-info { background-color: #458588 !important; border-color: #458588 !important; color: #f9f5d7 !important; }
+    .btn-info:hover { background-color: #076678 !important; border-color: #076678 !important; color: #f9f5d7 !important; }
+
+    .btn-warning { background-color: #d65d0e !important; border-color: #d65d0e !important; color: #f9f5d7 !important; }
+    .btn-warning:hover { background-color: #af3a03 !important; border-color: #af3a03 !important; color: #f9f5d7 !important; }
+
+    .btn-light { background-color: #fbf1c7 !important; border-color: #ebdbb2 !important; color: #1d2021 !important; }
+    .btn-light:hover { background-color: #ebdbb2 !important; border-color: #d5c4a1 !important; color: #1d2021 !important; }
+
+    .btn-dark { background-color: #1d2021 !important; border-color: #1d2021 !important; color: #ebdbb2 !important; }
+    .btn-dark:hover { background-color: #282828 !important; border-color: #282828 !important; color: #ebdbb2 !important; }
+
+    .btn-outline-primary { border-color: #d79921 !important; color: #d79921 !important; }
+    .btn-outline-primary:hover { background-color: #d79921 !important; border-color: #d79921 !important; color: #1d2021 !important; }
+    .btn-outline-danger { border-color: #cc241d !important; color: #cc241d !important; }
+    .btn-outline-danger:hover { background-color: #cc241d !important; border-color: #cc241d !important; color: #f9f5d7 !important; }
+
+    .btn-link { color: #458588 !important; }
+    .btn-link:hover { color: #076678 !important; }
+
+    /* Legacy alias — maps to btn-primary */
+    .btn-brand-yellow { background-color: #d79921 !important; border-color: #d79921 !important; color: #1d2021 !important; }
+    .btn-brand-yellow:disabled { background-color: #bdae93 !important; border-color: #bdae93 !important; color: #3c3836 !important; }
+
+    /* Toast Notification Styles */
+    .toast-notification {
+      position: fixed;
+      bottom: 80px;
+      right: 20px;
+      background: #fff;
+      border: 2px solid #D79921;
+      border-radius: 10px;
+      padding: 15px 20px;
+      box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+      z-index: 9999;
+      max-width: 300px;
+    }
+
+    /* Modal Backdrop (Windows 11-like acrylic, requested settings) */
+    .modal-backdrop {
+      z-index: 1040;
+      background-color: rgba(24,24,24,0.35);
+    }
+    .modal-backdrop.show {
+      opacity: 1 !important;
+      background-color: rgba(24,24,24,0.35) !important; /* dark light-tint */
+      backdrop-filter: blur(10px) saturate(1.2);
+      -webkit-backdrop-filter: blur(10px) saturate(1.2);
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.02);
+      pointer-events: auto;
+    }
+    
+    /* منع مشاكل الـ modal backdrop */
+    body.modal-open {
+      overflow: auto !important;
+      padding-right: 0 !important;
+    }
+
+    .toast-notification {
+      transform: translateX(100%);
+      transition: transform 0.3s ease;
+      direction: rtl;
+    }
+    
+    .toast-notification.show {
+      transform: translateX(0);
+    }
+    
+    .toast-notification .toast-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+    
+    .toast-notification .toast-icon {
+      color: #D79921;
+      font-size: 1.2rem;
+    }
+    
+    .toast-notification .toast-title {
+      font-weight: bold;
+      color: #333;
+      margin: 0;
+    }
+    
+    .toast-notification .toast-body {
+      color: #666;
+      font-size: 0.9rem;
+      margin: 0;
+    }
+    
+    .toast-notification .toast-close {
+      background: none;
+      border: none;
+      color: #999;
+      cursor: pointer;
+      font-size: 1rem;
+      margin-right: auto;
+    }
+    
+    .toast-notification .toast-close:hover {
+      color: #333;
+    }
+    
+    .toast-notification.clickable {
+      cursor: pointer;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    
+    .toast-notification.clickable:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(0,0,0,0.25);
+    }
+
+    /* Style for the interactive tracking input */
+    .tracking-input {
+        border-radius: 0.5rem; /* Match table radius */
+        border: 1px solid #ced4da;
+        text-align: center;
+        padding: 0.25rem 0.5rem;
+        transition: border-color .15s ease-in-out,box-shadow .15s ease-in-out;
+    }
+    .tracking-input:focus {
+        border-color: #D79921;
+        outline: 0;
+        box-shadow: 0 0 0 0.25rem rgba(215, 153, 33, 0.5);
+    }
+
+    /* Custom Scrollbar Styling */
+    /* For Webkit browsers (Chrome, Safari, Edge) */
+    ::-webkit-scrollbar {
+        width: 8px;
+    }
+    ::-webkit-scrollbar-track {
+        background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+        background-color: #D79921;
+        border-radius: 8px;
+        border: 2px solid var(--bg-light); /* Match body background */
+    }
+    /* For Firefox */
+    html {
+        scrollbar-width: thin;
+        scrollbar-color: #D79921 var(--bg-light);
+    }
+
+    /* Skeleton shimmer loading */
+    .sk { border-radius: 0.5rem; background: var(--accent-hover); position: relative; overflow: hidden; }
+    .sk::after { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent); transform: translateX(-100%); animation: sk-shimmer 1.5s infinite; }
+    @keyframes sk-shimmer { 100% { transform: translateX(100%); } }
+    .sk-text { height: 1rem; width: 60%; margin-bottom: 0.5rem; }
+    .sk-title { height: 1.25rem; width: 40%; margin-bottom: 0.75rem; }
+    .sk-card { height: 90px; }
+    .sk-row { height: 2.5rem; width: 100%; margin-bottom: 0.25rem; }
+    .sk-icon { width: 2.5rem; height: 2.5rem; border-radius: 50%; }
+    .sk-inline { display: inline-block; vertical-align: middle; }
+    .sk-loader { text-align: center; padding: 1rem 0; }
+    .sk-loader .sk-card { margin: 0 auto; }
+    /* ponytail: single shimmer keyframe, covers all skeleton variants */
+
+    /* Hide number input spinners for all browsers */
+    input[type=number]::-webkit-inner-spin-button,
+    input[type=number]::-webkit-outer-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+    input[type=number] {
+      appearance: textfield; /* Standard property for compatibility */
+      -moz-appearance: textfield;
+      direction: rtl;
+    }
+
+    /* Try to change select option highlight color to black */
+    select option:checked,
+    select option:focus,
+    select option:hover {
+      background: #000 !important;
+      color: #fff !important;
+    }
+
+
+
+  /* PWA specific styles */
+  .pwa-mode .content-wrapper {
+    max-height: calc(100vh - 160px);
+    max-height: calc(100dvh - 160px);
+    overflow-y: auto;
+  }
+  
+  /* Enhance touch targets in PWA mode */
+  @media (display-mode: fullscreen) {
+    button, .btn, a, input, select, textarea {
+      -webkit-tap-highlight-color: rgba(215, 153, 33, 0.2);
+    }
+    
+    /* Smooth scroll for better UX */
+    html {
+      scroll-behavior: smooth;
+    }
+    
+    /* Prevent pull-to-refresh on Chrome Android */
+    body {
+      overscroll-behavior-y: contain;
+    }
+  }
+  
+  /* iOS specific PWA styles */
+  @supports (-webkit-touch-callout: none) {
+    @media (display-mode: standalone) {
+      /* iOS notch support */
+      .content-wrapper {
+        padding-top: max(3rem, env(safe-area-inset-top));
+      }
+      
+      /* Adjust bottom nav for iOS home indicator */
+      .bottom-nav {
+        bottom: max(10px, calc(env(safe-area-inset-bottom) + 10px));
+        padding-bottom: max(0.4rem, env(safe-area-inset-bottom));
+      }
+    }
+  }
+
+  /* date-dmy-wrapper: show dd/mm/YYYY while keeping native date picker */
+  .date-dmy-wrapper { position: relative; display: inline-block; cursor: pointer; }
+  .date-dmy-wrapper input[type="text"] { background: #fff; pointer-events: none; }
+  .date-dmy-wrapper input[type="date"] { position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0.01; cursor: pointer; }
+
+  /* Modern tables — Gruvbox Light styling */
+  .modern-table,
+  .modern-table td,
+  .modern-table th {
+    border-color: var(--border-light) !important;
+  }
+  .modern-table,
+  .modern-table td {
+    background-color: var(--card-light) !important;
+    color: var(--text-light) !important;
+  }
+  .modern-table tbody tr:hover td {
+    background-color: var(--accent-hover) !important;
+  }
+  </style>
+</head>
+<body>
+  {% if trial_limit is defined %}
+  <div id="trial-banner" style="
+    background: #d79921;
+    color: #fff;
+    padding: 6px 16px;
+    font-size: 13px;
+    font-family: 'Cairo', 'Segoe UI', sans-serif;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+    position: sticky;
+    top: 0;
+    z-index: 9999;
+    direction: rtl;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  ">
+    <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+      <span style="font-weight: 700; font-size: 14px;">NebaxusBeta</span>
+      <span style="opacity: 0.9;">—</span>
+      <span style="opacity: 0.9;">نسخة تجريبية</span>
+      <span style="opacity: 0.5;">•</span>
+      <span style="opacity: 0.9;">{{ trial_used }} / {{ trial_limit }} طلب</span>
+      <div style="
+        width: 100px; height: 6px;
+        background: rgba(255,255,255,0.25);
+        border-radius: 3px;
+        overflow: hidden;
+        display: inline-block;
+        vertical-align: middle;
+      ">
+        <div style="
+          width: {{ trial_pct }}%;
+          height: 100%;
+          background: {% if trial_pct >= 90 %}#dc3545{% elif trial_pct >= 70 %}#ffc107{% else %}#fff{% endif %};
+          border-radius: 3px;
+          transition: width 0.5s ease;
+        "></div>
+      </div>
+      {% if trial_read_only %}
+      <span style="color: #fff; font-weight: 700; background: #cc241d; padding: 1px 8px; border-radius: 4px; font-size: 12px;">اكتمل الحد</span>
+      {% else %}
+      <span style="opacity: 0.7;">{{ trial_remaining }} متبقي</span>
+      {% endif %}
+    </div>
+    <a href="https://nebaxus.com" target="_blank" rel="noopener" style="
+      color: #fff; text-decoration: none; font-weight: 600;
+      border-bottom: 1px dashed rgba(255,255,255,0.5);
+      font-size: 12px;
+    ">
+      قريبًا: Nebaxus Cloud ←
+    </a>
+  </div>
+  {% endif %}
+
+  <main class="content-wrapper">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+      <script id="flashMessagesData" type="application/json">{{ messages | tojson }}</script>
+      {% endif %}
+    {% endwith %}
+    {% block content %}
+    
+    {% endblock %}
+  </main>
+
+  <nav class="bottom-nav" aria-label="شريط التنقل السفلي">
+    <a href="{{ url_for('main.dashboard') }}" aria-label="الرئيسية" class="{% if request.path == url_for('main.dashboard') %}active{% endif %}">
+      <i data-lucide="home" aria-hidden="true"></i>
+      <span class="nav-label">الرئيسية</span>
+    </a>
+    {% if has_permission('can_view_customers') %}
+    <a href="{{ url_for('main.customers') }}" aria-label="العملاء" class="{% if request.path == url_for('main.customers') %}active{% endif %}">
+      <i data-lucide="users" aria-hidden="true"></i>
+      <span class="nav-label">العملاء</span>
+    </a>
+    {% endif %}
+    {% if has_permission('can_view_orders') %}
+    <a href="{{ url_for('main.orders') }}" aria-label="الطلبات" class="{% if request.path == url_for('main.orders') %}active{% endif %}" style="position: relative;">
+      <i data-lucide="receipt" aria-hidden="true"></i>
+      <span class="nav-label">الطلبات</span>
+      <span class="nav-badge" id="navOverdueOrders" style="display:none;">0</span>
+    </a>
+    {% endif %}
+    {% if has_permission('can_view_replacements') %}
+    <a href="{{ url_for('main.replacement_orders') }}" aria-label="طلبات الاستبدال" class="{% if request.path == url_for('main.replacement_orders') %}active{% endif %}" style="position: relative;">
+      <i data-lucide="arrow-left-right" aria-hidden="true"></i>
+      <span class="nav-label">طلبات الاستبدال</span>
+      <span class="nav-badge" id="navOverdueRepl" style="display:none;">0</span>
+    </a>
+    {% endif %}
+    {% if has_permission('can_view_followups') %}
+    <a href="{{ url_for('main.followups') }}" aria-label="قائمة المتابعة" class="{% if request.path == url_for('main.followups') %}active{% endif %}" style="position: relative;">
+      <i data-lucide="clipboard-list" aria-hidden="true"></i>
+      <span class="nav-label">المتابعة</span>
+      {% if pending_followups_count and pending_followups_count > 0 %}
+        <span class="nav-badge">{{ pending_followups_count }}</span>
+      {% endif %}
+    </a>
+    {% endif %}
+  </nav>
+
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script>
+    $(document).ready(function() {
+        
+
+
+        $('.tracking-input').on('click', function(e) {
+            e.stopPropagation();
+        });
+
+    $('.status-select').on('click', function(e) {
+            e.stopPropagation();
+        });
+
+    $('.status-select').on('focus', function(){
+      $(this).data('prev', $(this).val());
+      
+      const select = $(this);
+      const currentStatus = select.val();
+      const rejectOption = select.find('option[value="رفض الاستلام"]');
+      
+      if (currentStatus === 'خرج للتوصيل' || currentStatus === 'رفض الاستلام') {
+        if (rejectOption.length === 0) {
+          
+          const afterDelivery = select.find('option[value="وصل"]');
+          if (afterDelivery.length > 0) {
+            afterDelivery.after('<option value="رفض الاستلام">رفض الاستلام</option>');
+          }
+        }
+      } else {
+        
+        rejectOption.remove();
+      }
+    });
+
+        $('.tracking-input').on('keypress', function(e) {
+            if (e.which === 13) { 
+                e.preventDefault();
+                
+                const input = $(this);
+                const orderId = input.data('order-id');
+                const trackingNumber = input.val();
+
+                $.ajax({
+                    url: `/api/order/${orderId}/update_tracking`,
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify({ tracking_number: trackingNumber }),
+                    success: function(response) {
+                        input.closest('td').css('background-color', '#d4edda').animate({
+                            backgroundColor: 'transparent'
+                        }, 1000);
+                        input.blur();
+
+                        if (response.new_status) {
+                            const statusSelect = input.closest('tr').find('.status-select');
+                            statusSelect.val(response.new_status);
+                            
+                            statusSelect.closest('td').css('background-color', '#d4edda').animate({
+                                backgroundColor: 'transparent'
+                            }, 1000);
+                        }
+                    },
+                    error: function() {
+                        input.closest('td').css('background-color', '#f8d7da').animate({
+                            backgroundColor: 'transparent'
+                        }, 1000);
+                    }
+                });
+            }
+        });
+
+    $('.status-select').on('change', function() {
+            const select = $(this);
+            const orderId = select.data('order-id');
+            const newStatus = select.val();
+
+            $.ajax({
+                url: `/api/order/${orderId}/update_status`,
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({ status: newStatus }),
+                success: function(response) {
+                    select.closest('td').css('background-color', '#d4edda').animate({
+                        backgroundColor: 'transparent'
+                    }, 1000);
+                },
+                error: function(xhr) {
+                    select.closest('td').css('background-color', '#f8d7da').animate({
+                        backgroundColor: 'transparent'
+                    }, 1000);
+                    
+                    const prev = select.data('prev');
+                    if (prev !== undefined) {
+                        select.val(prev);
+                    }
+                }
+            });
+        });
+    });
+  </script>
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.all.min.js"></script>
+
+  <script>
+    
+    document.addEventListener('DOMContentLoaded', function(){
+      if (window.bootstrap && bootstrap.Tooltip) {
+        document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(function(el){
+          try { new bootstrap.Tooltip(el); } catch(_) {}
+        });
+      }
+    });
+  </script>
+
+  <script>
+  
+  document.addEventListener('click', function (e) {
+    const openModal = document.querySelector('.modal.show');
+    if (!openModal) return;
+    const dialog = openModal.querySelector('.modal-dialog');
+    const clickedInsideDialog = dialog && dialog.contains(e.target);
+
+    if (openModal.contains(e.target) && !clickedInsideDialog) {
+      try {
+        if (window.bootstrap && bootstrap.Modal) {
+          bootstrap.Modal.getOrCreateInstance(openModal).hide();
+        } else {
+          
+          openModal.classList.remove('show');
+          openModal.style.display = 'none';
+          document.body.classList.remove('modal-open');
+          const backs = document.querySelectorAll('.modal-backdrop');
+          backs.forEach(b => b.remove());
+        }
+      } catch (_) {  }
+    }
+  }, true);
+  </script>
+
+  <div class="stats-modal" id="globalDeleteModal" tabindex="-1">
+    <div class="stats-modal-content" style="max-width: 500px;">
+      <button type="button" class="close-btn" data-bs-dismiss="modal" aria-label="إغلاق"><i class="fas fa-times"></i></button>
+      <h4 class="modal-title">تأكيد الحذف</h4>
+      <div class="modal-body" id="globalDeleteModalBody">
+        هل أنت متأكد أنك تريد حذف هذا العنصر؟ لا يمكن التراجع عن هذا الإجراء.
+      </div>
+      <div class="d-flex justify-content-end gap-2 mt-4">
+        <button type="button" class="btn btn-secondary px-4" data-bs-dismiss="modal">إلغاء</button>
+        <button type="button" class="btn btn-danger px-4" id="globalConfirmDeleteBtn">حذف</button>
+      </div>
+    </div>
+  </div>
+
+  <style>
+    .profile-header {
+      background: white;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 25px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+      border: 2px solid #D79921;
+    }
+
+    .avatar-container {
+      width: 80px;
+      height: 80px;
+      background: rgba(215, 153, 33, 0.25);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 1rem;
+      color: #D79921;
+      font-size: 32px;
+      font-weight: bold;
+    }
+
+    .stats-card {
+      background: white;
+      border-radius: 10px;
+      padding: 15px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+      border: 2px solid #dee2e6;
+      transition: all 0.3s ease;
+      height: 100%;
+    }
+
+    .stats-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+    }
+
+    .stats-card.primary {
+      border: 2px solid #D79921;
+      background: linear-gradient(135deg, #fff9e6 0%, #fff3cd 100%);
+    }
+
+    .badge-modern {
+      padding: 6px 12px;
+      border-radius: 16px;
+      font-weight: 600;
+      font-size: 12px;
+    }
+
+    .salary-summary {
+      background: white;
+      border-radius: 15px;
+      padding: 25px;
+      margin-bottom: 30px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+      border: 2px solid #D79921;
+    }
+
+    /* Desktop default: five side-by-side */
+    .summary-grid {
+      display: flex;
+      flex-direction: row;
+      gap: 12px;
+      margin-top: 20px;
+      justify-content: space-between;
+      align-items: stretch;
+      flex-wrap: nowrap;
+    }
+
+    .summary-item {
+      text-align: center;
+      padding: 15px 10px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+      border: 2px solid #dee2e6;
+      transition: all 0.3s ease;
+      flex: 1;
+      min-width: 100px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    .summary-item.net-salary {
+      background: linear-gradient(135deg, #D79921 0%, #b8860b 100%);
+      border: 2px solid #D79921;
+    }
+
+    /* Mobile: two columns, net salary spans full row */
+    @media (max-width: 576px) {
+      .summary-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+        margin-top: 20px;
+        align-items: stretch;
+      }
+      .summary-item.net-salary { grid-column: 1 / -1; }
+    }
+
+    .summary-label {
+      font-size: 12px;
+      color: #6c757d;
+      margin-bottom: 8px;
+      font-weight: 500;
+    }
+
+    .summary-value {
+      font-size: 16px;
+      font-weight: bold;
+      color: #212529;
+    }
+
+    .summary-item.net-salary .summary-label,
+    .summary-item.net-salary .summary-value {
+      color: #000;
+    }
+
+    .form-title {
+      font-size: 18px;
+      font-weight: bold;
+      margin-bottom: 20px;
+      color: #000;
+      border-bottom: 3px solid #D79921;
+      padding-bottom: 8px;
+    }
+
+    /* Modal Styles */
+    .stats-modal {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.6); z-index: 9999; display: none;
+      align-items: center; justify-content: center; backdrop-filter: blur(5px);
+      animation: fadeIn 0.2s ease;
+    }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    .stats-modal-content {
+      background: #fff; width: 95%; max-width: 600px; padding: 2rem;
+      border-radius: 1.5rem; position: relative; box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+      border-top: 5px solid #D79921; max-height: 90vh; display: flex; flex-direction: column;
+      direction: rtl;
+    }
+    .stats-modal .close-btn {
+      position: absolute; left: 1rem; top: 1rem; border: none;
+      background: #fff3cd; font-size: 1.2rem; color: #333;
+      width: 40px; height: 40px; border-radius: 50%; display: flex;
+      align-items: center; justify-content: center; cursor: pointer; transition: all 0.3s ease;
+      z-index: 10;
+    }
+    .stats-modal .close-btn:hover { background: #D79921; transform: rotate(90deg); }
+    .stats-modal .modal-title {
+      font-weight: 700; font-size: 1.5rem; color: #2c3e50;
+      margin-bottom: 1rem; padding-bottom: 0.75rem; border-bottom: 3px solid #D79921;
+    }
+    .stats-modal .modal-body {
+      overflow-y: auto; padding-right: 0.5rem; flex-grow: 1;
+    }
+    .stats-modal .modal-body::-webkit-scrollbar { width: 8px; }
+    .stats-modal .modal-body::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 10px; }
+    .stats-modal .modal-body::-webkit-scrollbar-thumb { background: #D79921; border-radius: 10px; }
+    .stats-modal .modal-body::-webkit-scrollbar-thumb:hover { background: #ffb347; }
+  </style>
+
+  <script>
+  let formToDelete = null;
+  let customDeleteMsg = null;
+  
+  function cleanupModalBackdrop() {
+    const modalBackdrops = document.querySelectorAll('.modal-backdrop');
+    modalBackdrops.forEach(backdrop => {
+      backdrop.remove();
+      
+    });
+    
+    document.body.classList.remove('modal-open');
+    document.body.style.overflow = '';
+    document.body.style.paddingRight = '';
+  }
+
+  document.addEventListener('DOMContentLoaded', function() {
+
+    const deleteModalEl = document.getElementById('globalDeleteModal');
+    
+    function openGlobalDeleteModal() {
+      deleteModalEl.style.display = 'flex';
+      document.body.style.overflow = 'hidden';
+    }
+    
+    function closeGlobalDeleteModal() {
+      deleteModalEl.style.display = 'none';
+      document.body.style.overflow = '';
+    }
+
+    deleteModalEl.addEventListener('click', (e) => {
+      if (e.target === deleteModalEl) closeGlobalDeleteModal();
+    });
+
+    document.querySelectorAll('[data-bs-dismiss="modal"]').forEach(btn => {
+      btn.addEventListener('click', closeGlobalDeleteModal);
+    });
+
+    document.querySelectorAll('.delete-btn').forEach(function(btn) {
+      btn.addEventListener('click', function(e) {
+        e.preventDefault();
+        
+        const formId = btn.getAttribute('data-form-id');
+        
+        if (formId) {
+          formToDelete = document.getElementById(formId);
+        } else {
+          
+          formToDelete = btn.closest('form');
+          
+          if (!formToDelete) {
+            formToDelete = document.getElementById('deleteOrderForm');
+          }
+        }
+        
+        customDeleteMsg = btn.getAttribute('data-confirm');
+        document.getElementById('globalDeleteModalBody').textContent = customDeleteMsg || 'هل أنت متأكد أنك تريد حذف هذا العنصر؟ لا يمكن التراجع عن هذا الإجراء.';
+        closeGlobalDeleteModal();
+        openGlobalDeleteModal();
+      });
+    });
+    document.getElementById('globalConfirmDeleteBtn').onclick = function() {
+      if (formToDelete) {
+        formToDelete.submit();
+        formToDelete = null;
+        closeGlobalDeleteModal();
+        
+        setTimeout(cleanupModalBackdrop, 300);
+      }
+    };
+    
+    document.getElementById('globalDeleteModal').addEventListener('hidden.bs.modal', function() {
+      closeGlobalDeleteModal();
+    });
+    
+    document.addEventListener('submit', function(e) {
+      var form = e.target;
+      var msg = form.getAttribute('data-confirm');
+      if (!msg) return;
+      e.preventDefault();
+      e.stopPropagation();
+      var confirmText = form.getAttribute('data-confirm-text') || 'تأكيد';
+      var type = form.getAttribute('data-confirm-type') || 'warning';
+      showConfirmDialog({ message: msg, type: type, confirmText: confirmText }).then(function(r) {
+        if (r) { form.submit(); }
+      });
+    });
+    
+    loadActiveNotifications();
+    setTimeout(cleanupModalBackdrop, 100);
+    
+
+  
+  setTimeout(() => {
+    
+    checkDueReminders();
+  }, 2000);
+  setInterval(() => {
+    
+    checkDueReminders();
+  }, 30000);
+
+  fetchOverdueCounts();
+  setInterval(fetchOverdueCounts, 30000);
+});
+
+function fetchOverdueCounts() {
+  var setBadge = function(id, count) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    if (count > 0) {
+      el.style.display = 'flex';
+      el.textContent = count;
+      // ponytail: shrink font as count grows, keep it in the circle
+      if (count < 10) el.style.fontSize = '0.6rem';
+      else if (count < 100) el.style.fontSize = '0.5rem';
+      else el.style.fontSize = '0.4rem';
+    } else {
+      el.style.display = 'none';
+    }
+  };
+  fetch('/api/overdue_all').then(function(r){ return r.json(); }).then(function(d){
+    if(!d.success) return;
+    setBadge('navOverdueOrders', d.orders);
+    setBadge('navOverdueRepl', d.replacements);
+  }).catch(function(){});
+}
+
+  function playNotificationSound() {
+    try {
+      
+      const audio = new Audio('/static/sounds/notification.mp3');
+      audio.play().then(() => {
+        
+      }).catch((error) => {
+        console.error('Failed to play sound:', error);
+      });
+    } catch (e) {
+      
+    }
+  }
+  
+  function showToastNotification(title, message, customerId = null) {
+    
+    
+    const notification = {
+      title: title,
+      message: message,
+      timestamp: Date.now(),
+      id: Date.now() + Math.random(),
+      customerId: customerId
+    };
+    
+    const notifications = JSON.parse(localStorage.getItem('activeNotifications') || '[]');
+    notifications.push(notification);
+    localStorage.setItem('activeNotifications', JSON.stringify(notifications));
+    
+    const toast = document.createElement('div');
+    toast.className = 'toast-notification';
+    if (customerId) {
+      toast.classList.add('clickable');
+      toast.onclick = function(e) {
+        
+        if (e.target.closest('.toast-close')) {
+          return;
+        }
+        
+        window.location.href = `/customer/${customerId}/profile`;
+      };
+    }
+    toast.setAttribute('data-notification-id', notification.id);
+    toast.innerHTML = `
+      <div class="toast-header">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <div class="toast-title">${title}</div>
+        </div>
+                    <button type="button" class="toast-close" onclick="dismissNotification('${notification.id}')">
+              <i class="fas fa-times"></i>
+            </button>
+      </div>
+      <div class="toast-body">${message}</div>
+    `;
+    
+    document.body.appendChild(toast);
+    
+    
+    setTimeout(() => {
+      toast.classList.add('show');
+      
+    }, 100);
+    
+    setTimeout(() => {
+      try {
+        dismissNotification(notification.id);
+      } catch (error) {
+        
+      }
+    }, 10000);
+  }
+
+  window.showFlashMessage = function(message, type) {
+    type = type || 'info';
+    var icons = {success: 'fa-check-circle', danger: 'fa-exclamation-circle', error: 'fa-exclamation-circle', warning: 'fa-exclamation-triangle', info: 'fa-info-circle'};
+    var cls = icons[type] || icons.info;
+    var colors = {success: '#28a745', danger: '#dc3545', error: '#dc3545', warning: '#f39c12', info: '#17a2b8'};
+    var color = colors[type] || colors.info;
+    var toast = document.createElement('div');
+    toast.style.cssText = 'position:fixed;top:80px;left:50%;transform:translateX(-50%) scale(0.9);z-index:10001;display:flex;align-items:center;justify-content:center;gap:12px;background:#fff;color:#333;padding:16px 26px;border-radius:14px;box-shadow:0 6px 30px rgba(0,0,0,0.18);border-top:4px solid ' + color + ';font-size:1.05rem;font-weight:600;direction:rtl;text-align:center;max-width:90vw;opacity:0;transition:opacity 0.3s ease,transform 0.3s ease;';
+
+    var iconEl = document.createElement('i'); iconEl.className = 'fas ' + cls; iconEl.style.cssText = 'font-size:1.4rem;flex-shrink:0;color:' + color + ';';
+    toast.appendChild(iconEl);
+    toast.appendChild(document.createTextNode(message));
+    document.body.appendChild(toast);
+    requestAnimationFrame(function() { toast.style.opacity = '1'; toast.style.transform = 'translateX(-50%) scale(1)'; });
+    setTimeout(function() { toast.style.opacity = '0'; toast.style.transform = 'translateX(-50%) scale(0.9)'; setTimeout(function() { if (toast.parentElement) toast.remove(); }, 300); }, 4000);
+  };
+
+  window.showConfirmDialog = function(options) {
+    if (typeof options === 'string') options = { message: options };
+    var type = options.type || 'warning';
+    var icons = {warning: 'fa-exclamation-triangle', danger: 'fa-times-circle', info: 'fa-info-circle', question: 'fa-question-circle'};
+    var icon = icons[type] || icons.warning;
+    var iconColors = {warning: '#f39c12', danger: '#e74c3c', info: '#3498db', question: '#f39c12'};
+    var iconColor = iconColors[type] || iconColors.warning;
+    var titles = {warning: 'تنبيه', danger: 'تأكيد الحذف', info: 'معلومات', question: 'تأكيد'};
+    var titleText = titles[type] || 'تأكيد';
+    var modal = document.createElement('div'); modal.className = 'stats-modal'; modal.style.display = 'flex'; modal.style.opacity = '0'; modal.style.transition = 'opacity 0.25s ease';
+    var content = document.createElement('div'); content.className = 'stats-modal-content'; content.style.cssText = 'max-width:480px;text-align:center;transform:scale(0.9);transition:transform 0.25s ease;';
+    var close = document.createElement('button'); close.className = 'close-btn'; close.innerHTML = '<i class="fas fa-times"></i>'; close.onclick = function() { cleanup(false); };
+    var h4 = document.createElement('h4'); h4.className = 'modal-title'; h4.textContent = titleText;
+    var body = document.createElement('div'); body.className = 'modal-body'; body.style.cssText = 'text-align:center;padding:1rem 0.5rem;';
+    var iconDiv = document.createElement('div'); iconDiv.style.cssText = 'margin-bottom:1rem;';
+    iconDiv.innerHTML = '<i class="fas ' + icon + '" style="font-size:3.5rem;color:' + iconColor + ';"></i>';
+    var msgDiv = document.createElement('div');
+    msgDiv.style.cssText = 'font-size:1.1rem;line-height:1.8;margin-bottom:1.5rem;font-weight:500;';
+    msgDiv.textContent = options.message;
+    var btnDiv = document.createElement('div'); btnDiv.style.cssText = 'display:flex;gap:12px;justify-content:center;';
+    var cancelBtn = document.createElement('button'); cancelBtn.className = 'btn btn-secondary px-4'; cancelBtn.style.borderRadius = '0.75rem'; cancelBtn.textContent = 'إلغاء';
+    var okBtn = document.createElement('button'); okBtn.className = 'btn px-4'; okBtn.style.cssText = 'background:' + iconColor + ';color:#fff;border:none;border-radius:0.75rem;'; okBtn.textContent = options.confirmText || 'تأكيد';
+    btnDiv.appendChild(cancelBtn); btnDiv.appendChild(okBtn);
+    body.appendChild(iconDiv); body.appendChild(msgDiv); body.appendChild(btnDiv);
+    content.appendChild(close); content.appendChild(h4); content.appendChild(body);
+    modal.appendChild(content); document.body.appendChild(modal);
+    requestAnimationFrame(function() { modal.style.opacity = '1'; content.style.transform = 'scale(1)'; });
+    return new Promise(function(resolve) {
+      function cleanup(result) { modal.style.opacity = '0'; content.style.transform = 'scale(0.9)'; setTimeout(function() { if (modal.parentElement) modal.remove(); }, 250); resolve(result); }
+      okBtn.onclick = function() { cleanup(true); };
+      cancelBtn.onclick = function() { cleanup(false); };
+      modal.onclick = function(e) { if (e.target === modal) cleanup(false); };
+    });
+  };
+
+  document.addEventListener('DOMContentLoaded', function() {
+    try {
+      var el = document.getElementById('flashMessagesData');
+      if (el) {
+        var msgs = JSON.parse(el.textContent);
+        msgs.forEach(function(m) { window.showFlashMessage(m[1], m[0]); });
+      }
+    } catch(e) {}
+  });
+
+  function removeNotification(id) {
+    
+    
+    try {
+      
+      const toast = document.querySelector(`[data-notification-id="${id}"]`);
+      if (toast) {
+        
+        toast.classList.remove('show');
+        setTimeout(() => {
+          try {
+            if (toast && toast.parentElement) {
+              toast.remove();
+              
+            }
+          } catch (error) {
+            
+          }
+        }, 300);
+      } else {
+        
+      }
+      
+      const modalBackdrops = document.querySelectorAll('.modal-backdrop');
+      modalBackdrops.forEach(backdrop => {
+        backdrop.remove();
+        
+      });
+      
+      document.body.classList.remove('modal-open');
+      document.body.style.overflow = '';
+      document.body.style.paddingRight = '';
+      
+    } catch (error) {
+      
+    }
+  }
+
+  function dismissNotification(id) {
+    
+    
+    try {
+      
+      const notifications = JSON.parse(localStorage.getItem('activeNotifications') || '[]');
+      const updatedNotifications = notifications.filter(n => n.id !== id);
+      localStorage.setItem('activeNotifications', JSON.stringify(updatedNotifications));
+      
+      
+      const toast = document.querySelector(`[data-notification-id="${id}"]`);
+      if (toast) {
+        
+        toast.classList.remove('show');
+        setTimeout(() => {
+          try {
+            if (toast && toast.parentElement) {
+              toast.remove();
+              
+            }
+          } catch (error) {
+            
+          }
+        }, 300);
+      } else {
+        
+      }
+      
+      const modalBackdrops = document.querySelectorAll('.modal-backdrop');
+      modalBackdrops.forEach(backdrop => {
+        backdrop.remove();
+        
+      });
+      
+      document.body.classList.remove('modal-open');
+      document.body.style.overflow = '';
+      document.body.style.paddingRight = '';
+      
+    } catch (error) {
+      
+    }
+  }
+  
+  function loadActiveNotifications() {
+    
+    const notifications = JSON.parse(localStorage.getItem('activeNotifications') || '[]');
+    const currentTime = Date.now();
+    
+    
+    
+    notifications.forEach(notification => {
+      const timeElapsed = currentTime - notification.timestamp;
+      const timeRemaining = 10000 - timeElapsed;
+      
+      
+      
+      if (timeRemaining > 0) {
+        
+        
+        const toast = document.createElement('div');
+        toast.className = 'toast-notification';
+        if (notification.customerId) {
+          toast.classList.add('clickable');
+          toast.onclick = function(e) {
+            
+            if (e.target.closest('.toast-close')) {
+              return;
+            }
+            
+            window.location.href = `/customer/${notification.customerId}/profile`;
+          };
+        }
+        toast.setAttribute('data-notification-id', notification.id);
+        toast.innerHTML = `
+          <div class="toast-header">
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <div class="toast-title">${notification.title}</div>
+            </div>
+            <button type="button" class="toast-close" onclick="dismissNotification('${notification.id}')">
+              <i class="fas fa-times"></i>
+            </button>
+          </div>
+          <div class="toast-body">${notification.message}</div>
+        `;
+        
+        document.body.appendChild(toast);
+        
+        
+        setTimeout(() => {
+          toast.classList.add('show');
+          
+        }, 100);
+        
+        setTimeout(() => {
+          try {
+            dismissNotification(notification.id);
+          } catch (error) {
+            
+          }
+        }, timeRemaining);
+      } else {
+        
+        
+        const updatedNotifications = notifications.filter(n => n.id !== notification.id);
+        localStorage.setItem('activeNotifications', JSON.stringify(updatedNotifications));
+      }
+    });
+  }
+  
+  function getCheckedReminders() {
+    try {
+      const stored = localStorage.getItem('checkedReminders');
+      return stored ? JSON.parse(stored) : [];
+    } catch (e) {
+      return [];
+    }
+  }
+  
+  function saveCheckedReminders(reminders) {
+    try {
+      localStorage.setItem('checkedReminders', JSON.stringify(reminders));
+    } catch (e) {
+      console.log('Failed to save checked reminders:', e);
+    }
+  }
+  
+  function checkDueReminders() {
+    fetch('/api/reminders/all')
+      .then(response => response.json())
+      .then(data => {
+        
+        
+        if (data.reminders && data.reminders.length > 0) {
+          const dueReminders = data.reminders.filter(reminder => reminder.is_due);
+          const lastCheckedReminders = getCheckedReminders();
+          
+          
+          
+          
+          dueReminders.forEach(reminder => {
+            const isNew = !lastCheckedReminders.includes(reminder.id);
+            
+            
+            if (isNew) {
+              
+              playNotificationSound();
+              showToastNotification(
+                '🔔 تنبيه بالمتابعة',
+                `حان موعد متابعة العميل: ${reminder.customer_name}\nالسبب: ${reminder.follow_up_reason}`,
+                reminder.customer_id
+              );
+            }
+          });
+          
+          const newCheckedReminders = dueReminders.map(r => r.id);
+          saveCheckedReminders(newCheckedReminders);
+        } else {
+          
+        }
+      })
+      .catch(error => {
+        console.error('Error checking due reminders:', error);
+      });
+  }
+  </script>
+
+  {% if trial_limit is defined %}
+  <script>
+  (function() {
+    function updateTrialStats() {
+      fetch('/api/trial-stats')
+        .then(function(r) { return r.json(); })
+        .then(function(d) {
+          var banner = document.getElementById('trial-banner');
+          if (!banner) return;
+          var textNode = banner.childNodes[0];
+          if (textNode) {
+            var pct = Math.min(100, Math.floor(d.used / d.limit * 100));
+            var bar = banner.querySelector('[style*="border-radius: 3px; transition"]');
+            if (bar) bar.style.width = pct + '%';
+          }
+        })
+        .catch(function() {});
+    }
+    setInterval(updateTrialStats, 60000);
+  })();
+  </script>
+  {% endif %}
+
+  <script>
+  // Map most-used FA icons to Lucide for brand-consistent stroke icons
+  var faToLucide = {
+    'users-cog':'user-cog','credit-card':'credit-card',
+    'plus':'plus','trash':'trash-2','trash-alt':'trash-2','arrow-left':'arrow-left',
+    'eye':'eye','times':'x','edit':'pencil','check':'check','save':'save',
+    'lock':'lock','copy':'copy','money-bill-wave':'dollar-sign','history':'history',
+    'user':'user','spinner':'loader-circle','exclamation-circle':'alert-circle',
+    'exclamation-triangle':'alert-triangle','exchange-alt':'arrow-left-right',
+    'arrow-right':'arrow-right','users':'users','search':'search',
+    'info-circle':'info','check-circle':'check-circle','shopping-cart':'shopping-cart',
+    'plus-circle':'plus-circle','file-invoice':'file-text','hand-holding-usd':'hand-coins',
+    'filter':'filter','chart-line':'trending-up','receipt':'receipt','phone-alt':'phone',
+    'map-marker-alt':'map-pin','hourglass-half':'hourglass','cogs':'settings',
+    'clipboard-check':'clipboard-check','calendar-alt':'calendar','user-tie':'user-cog',
+    'user-edit':'user-check','boxes':'boxes','warehouse':'warehouse',
+    'user-plus':'user-plus','user-check':'user-check','undo':'undo-2','undo-alt':'undo',
+    'file-excel':'file-spreadsheet','clipboard-list':'clipboard-list',
+    'calculator':'calculator','building':'building-2','box':'package','bell':'bell',
+    'truck':'truck','times-circle':'x-circle','handshake':'handshake','clock':'clock',
+    'chart-bar':'bar-chart-3','scale-balanced':'scale','phone':'phone','list':'list',
+    'landmark':'landmark','external-link-alt':'external-link','house':'home',
+    'right-left':'arrow-left-right','list-check':'clipboard-list','barcode':'barcode',
+    'pallet':'package','eye-slash':'eye-off','key':'key','envelope':'envelope',
+    'sort':'arrow-up-down','sync':'refresh-cw','sync-alt':'refresh-cw','home':'house',
+    'sign-out-alt':'log-out','sign-in-alt':'log-in','user-circle':'user-circle',
+    'question-circle':'help-circle','cog':'settings','wrench':'wrench','print':'printer',
+    'file':'file','file-alt':'file-text','folder':'folder','folder-open':'folder-open',
+    'tag':'tag','tags':'tags','star':'star','heart':'heart','heartbeat':'heart-pulse',
+    'comment':'message-square','comments':'messages-square','share':'share-2',
+    'share-alt':'share-2','link':'link','unlink':'unlink','paper-plane':'send',
+    'envelope-open':'mail-open','globe':'globe','flag':'flag','bookmark':'bookmark',
+    'thumbs-up':'thumbs-up','thumbs-down':'thumbs-down','calendar':'calendar',
+    'map':'map','compass':'compass','download':'download','upload':'upload',
+    'image':'image','images':'images','camera':'camera','video':'video',
+    'microphone':'mic','headphones':'headphones','play':'play','pause':'pause',
+    'stop':'stop','forward':'fast-forward','backward':'rewind',
+    'volume-up':'volume-2','volume-down':'volume-1','volume-off':'volume-x',
+    'expand':'maximize-2','compress':'minimize-2','arrows-alt':'maximize',
+    'arrows':'move','angle-left':'chevron-left','angle-right':'chevron-right',
+    'angle-up':'chevron-up','angle-down':'chevron-down','chevron-left':'chevron-left',
+    'chevron-right':'chevron-right','chevron-up':'chevron-up','chevron-down':'chevron-down',
+    'caret-down':'chevron-down','caret-up':'chevron-up','caret-left':'chevron-left',
+    'caret-right':'chevron-right','long-arrow-alt-down':'arrow-down',
+    'long-arrow-alt-up':'arrow-up','long-arrow-alt-left':'arrow-left',
+    'long-arrow-alt-right':'arrow-right','mobile-alt':'smartphone',
+    'tablet-alt':'tablet','laptop':'laptop','desktop':'monitor',
+    'database':'database','server':'server','hdd':'hard-drive',
+    'bolt':'zap','lightbulb':'lightbulb','sun':'sun','moon':'moon',
+    'cloud':'cloud','tint':'droplets','fire':'flame',
+    'smile':'smile','frown':'frown','meh':'meh',
+    'gift':'gift','gem':'gem','award':'award','medal':'medal','trophy':'trophy',
+    'crown':'crown','star-half':'star-half','bug':'bug',
+    'recycle':'recycle','leaf':'leaf','seedling':'seedling',
+    'paw':'paw-print','dog':'dog','cat':'cat',
+    'file-csv':'file-spreadsheet','file-pdf':'file-text','pallet':'package',
+    'shipping-fast':'truck','box-open':'package','clipboard':'clipboard',
+    'percentage':'percent','dollar-sign':'dollar-sign','money-check':'dollar-sign',
+    'hand-holding':'hand','shopping-bag':'shopping-bag','shopping-basket':'shopping-basket',
+    'store':'store','store-alt':'store','shipping-timed':'truck',
+    'parachute-box':'package','dolly':'package','weight-hanging':'weight',
+    'ruler-combined':'ruler','paint-brush':'brush','paint-roller':'roller',
+    'swatchbook':'swatch-book','palette':'palette','pen':'pen','pen-alt':'pen',
+    'pen-fancy':'pen','pen-nib':'pen','marker':'marker','highlighter':'highlighter',
+    'pencil-alt':'pencil','eraser':'eraser','cut':'scissors','scissors':'scissors',
+    'clip':'paperclip','paperclip':'paperclip','paper-plane':'send',
+    'inbox':'inbox','outdent':'indent','indent':'indent',
+    'quote-left':'quote','quote-right':'quote','quote-right':'quote',
+    'align-left':'align-left','align-center':'align-center','align-right':'align-right',
+    'align-justify':'align-justify','bold':'bold','italic':'italic','underline':'underline',
+    'strikethrough':'strikethrough','superscript':'superscript','subscript':'subscript',
+    'text-height':'text-size','text-width':'text','paragraph':'paragraph',
+    'list-ul':'list','list-ol':'list-ordered','list-alt':'list',
+    'th':'grid','th-large':'grid','th-list':'list','table':'table',
+    'columns':'columns','layer-group':'layers','sitemap':'sitemap',
+    'project-diagram':'git-branch','code':'code','code-branch':'git-branch',
+    'terminal':'terminal','powershell':'terminal','file-code':'file-code',
+    'copyright':'copyright','trademark':'trademark','registered':'registered',
+    'at':'at','hashtag':'hash','paragraph':'paragraph',
+    'wave-square':'wave-square','minus':'minus','divide':'divide',
+    'equals':'equals','not-equal':'not-equal','greater-than':'greater-than',
+    'less-than':'less-than','infinity':'infinity',
+  };
+  document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('i[class*="fa-"]').forEach(function(el) {
+      var classes = el.className.split(/\s+/);
+      var faIcon = null;
+      for (var c of classes) {
+        if (c.startsWith('fa-') && c !== 'fa-solid' && c !== 'fa-regular' && c !== 'fa-light' && c !== 'fa-thin' && c !== 'fa-duotone' && c !== 'fa-brands' && c !== 'fa-fw' && c !== 'fa-spin' && c !== 'fa-pulse' && c !== 'fa-flip' && c !== 'fa-beat' && c !== 'fa-fade' && c !== 'fa-shake' && c !== 'fa-beat-fade' && c !== 'fa-bounce') {
+          faIcon = c.replace('fa-', '');
+          break;
+        }
+      }
+      if (!faIcon || !faToLucide[faIcon]) return;
+      var keepClasses = classes.filter(function(c) { return !c.startsWith('fa') && c !== 'fas' && c !== 'far' && c !== 'fal' && c !== 'fab'; });
+      var i = document.createElement('i');
+      i.setAttribute('data-lucide', faToLucide[faIcon]);
+      i.setAttribute('aria-hidden', 'true');
+      if (el.getAttribute('style')) i.setAttribute('style', el.getAttribute('style'));
+      keepClasses.forEach(function(c) { i.classList.add(c); });
+      el.parentNode.replaceChild(i, el);
+    });
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+  });
+  </script>
+</body>
+</html>

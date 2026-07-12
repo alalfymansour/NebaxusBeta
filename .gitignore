@@ -1,0 +1,15 @@
+instance/
+logs/
+backups/
+exports/
+*.exe
+*.spec
+*.db
+build/
+dist/
+__pycache__/
+*.pyc
+*.pyo
+.env
+*.log
+*.ico

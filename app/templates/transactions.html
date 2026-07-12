@@ -1,0 +1,210 @@
+{% extends 'base.html' %}  
+
+{% block content %}
+<style>
+  /* Defaults: hide mobile-only elements on desktop */
+  .mobile-total-inline, .btn-add-mobile { display: none; }
+  :root { --parties-action-height: 46px; }
+  .card-box {
+    border-radius: 1rem;
+    box-shadow: 0 0 15px rgba(0,0,0,0.08);
+    transition: all 0.3s ease;
+  }
+  .card-box:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 0 20px rgba(0,0,0,0.12);
+  }
+
+  /* Search form layout */
+  .search-form { display: flex; align-items: stretch; gap: 0.5rem; }
+  .search-form .btn { display: inline-flex; align-items: center; }
+  .parties-actions .btn { display: inline-flex; align-items: center; }
+
+  /* Mobile-only layout */
+  @media (max-width: 576px) {
+    .search-form .form-control,
+    .search-form .btn { height: var(--parties-action-height) !important; }
+    .parties-actions .btn { height: var(--parties-action-height) !important; }
+    .mobile-total-inline { display: inline !important; }
+
+    /* Make search button icon-only on mobile */
+    .search-form .btn span { display: none !important; }
+    .search-form .btn i { margin: 0 !important; }
+
+    /* Show mobile add button */
+    .btn-add-mobile { display: inline-flex !important; height: var(--parties-action-height); align-items: center; justify-content: center; padding: 0 0.9rem; }
+    .parties-actions .btn-count-desktop,
+    .parties-actions .btn-add-desktop { display: none !important; }
+
+    .parties-grid {
+      row-gap: 0.4rem !important;
+      --bs-gutter-y: 0.4rem;
+      --bs-gutter-x: 0.5rem;
+    }
+    .parties-grid > [class*="col-"] {
+      padding-left: 0.25rem !important;
+      padding-right: 0.25rem !important;
+    }
+
+    .party-card {
+      display: flex !important;
+      flex-direction: row !important;
+      align-items: center !important;
+      justify-content: flex-start !important;
+      gap: 12px !important;
+      padding: 0.75rem 0.55rem !important;
+      text-align: right !important;
+    }
+    .party-card .avatar { margin: 0 !important; }
+    .party-card .avatar .rounded-circle {
+      width: 56px !important;
+      height: 56px !important;
+      font-size: 22px !important;
+    }
+    .party-card .party-info {
+      display: flex !important;
+      flex-direction: column !important;
+      align-items: flex-start !important;
+      gap: 2px !important;
+      flex: 1 1 auto !important;
+      min-width: 0;
+    }
+    .party-card .party-info h5 {
+      font-size: 1rem !important;
+      margin: 0 0 2px 0 !important;
+    }
+    .party-card .party-info p {
+      margin: 0 !important;
+      font-size: 0.9rem !important;
+      white-space: nowrap !important;
+      overflow: hidden !important;
+      text-overflow: ellipsis !important;
+      max-width: 100%;
+    }
+
+    .parties-actions {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.5rem;
+      width: 100%;
+    }
+  }
+
+  /* Desktop-only resets */
+  @media (min-width: 577px) {
+    .parties-actions { display: inline-block; width: auto; }
+    .btn-add-mobile { display: none !important; }
+    .party-card { text-align: center !important; }
+    .party-card .party-info { align-items: center !important; }
+  }
+
+  .balance-positive { color: #28a745; font-weight: bold; }
+  .balance-negative { color: #dc3545; font-weight: bold; }
+  .balance-zero { color: #6c757d; }
+
+  #parties-loader { padding: 1rem 0; }
+  
+  /* Dark mode support for transactions page */
+</style>
+<div class="container py-4" dir="rtl">
+
+  <div class="text-center mb-4">
+    <h2 class="fw-bold">قائمة <span class="text-warning">المتعاملين</span><span class="mobile-total-inline"> ({{ total_parties }})</span></h2>
+    <p class="text-muted">كل المتعاملين والمعاملات المالية معهم</p>
+  </div>
+
+  <div class="row mb-4">
+    <div class="col-md-3 col-sm-12 mb-2">
+      <form method="GET" class="search-form">
+        <input type="text" class="form-control" name="search" id="instant-search-parties"
+               placeholder="ابحث بالاسم أو الهاتف" value="{{ search_query or '' }}">
+        <a href="{{ url_for('main.add_party') }}" class="btn btn-success btn-add-mobile" aria-label="إضافة متعامل">
+          <i class="fas fa-plus"></i>
+        </a>
+      </form>
+    </div>
+    <div class="col-md-9 col-sm-12 text-md-end text-center">
+      <div class="parties-actions">
+        <button type="button" class="btn btn-primary d-inline-flex align-items-center btn-count-desktop" disabled>
+          <i class="fas fa-users me-1"></i>
+          <span>{{ total_parties }} متعامل</span>
+        </button>
+        <a href="{{ url_for('main.add_party') }}" class="btn btn-success d-inline-flex align-items-center btn-add-desktop">
+          <i class="fas fa-user-plus me-1"></i> <span>إضافة متعامل</span>
+        </a>
+        {% if has_permission('can_add_transactions') %}
+        <a href="{{ url_for('main.add_transaction_page') }}" class="btn btn-primary d-inline-flex align-items-center btn-add-desktop">
+          <i class="fas fa-plus-circle me-1"></i> <span>إضافة معاملة</span>
+        </a>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  {% if parties %}
+  <div class="row g-4 parties-grid" id="parties-grid" data-next-page="{{ next_page if has_more else '' }}" data-search="{{ search_query }}">
+    {% include 'partials/_party_cards.html' with context %}
+  </div>
+  {% else %}
+    <div class="alert alert-light border text-center text-muted mt-4">
+      <i class="fas fa-users fa-2x mb-3 text-muted"></i>
+      <h5 class="text-muted">لا يوجد متعاملين حاليًا</h5>
+      <p class="text-muted mb-0">ابدأ بإضافة متعامل جديد باستخدام الزر أعلاه</p>
+    </div>
+  {% endif %}
+  {% if has_more %}<div id="parties-loader" class="sk-loader"><div class="sk sk-card" style="height:110px; max-width:300px; margin:0 auto;"></div></div>{% endif %}
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  var searchInput = document.getElementById('instant-search-parties');
+  if (searchInput) {
+    var form = searchInput.closest('form');
+    var debounceTimer;
+    searchInput.addEventListener('input', function() {
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(function() { if (form) form.submit(); }, 400);
+    });
+  }
+});
+
+(function(){
+  const grid = document.getElementById('parties-grid');
+  if(!grid) return;
+  const loader = document.getElementById('parties-loader');
+  let loading = false;
+  function loadMore(){
+    if(loading) return;
+    const next = grid.getAttribute('data-next-page');
+    if(!next) { if(loader) loader.style.display='none'; observer && observer.disconnect(); return; }
+    loading = true;
+    const params = new URLSearchParams({ page: next });
+    const search = grid.getAttribute('data-search');
+    if(search) params.append('search', search);
+    fetch(`/transactions/more?${params.toString()}`)
+      .then(r=>r.json())
+      .then(data=>{
+        if(data.html){
+          const temp = document.createElement('div');
+          temp.innerHTML = data.html;
+          temp.querySelectorAll('.party-card-wrapper').forEach(card=>grid.appendChild(card));
+        }
+        if(data.has_more){
+          grid.setAttribute('data-next-page', data.next_page);
+        } else {
+          grid.removeAttribute('data-next-page');
+          if(loader) loader.style.display='none';
+          observer && observer.disconnect();
+        }
+      })
+      .catch(()=>{ if(loader) loader.style.display='none'; })
+      .finally(()=>{ loading=false; });
+  }
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach(entry=>{ if(entry.isIntersecting) loadMore(); });
+  }, { root: null, rootMargin: '150px', threshold: 0 });
+  if (document.getElementById('parties-loader')) observer.observe(document.getElementById('parties-loader'));
+})();
+</script>
+{% endblock %}

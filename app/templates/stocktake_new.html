@@ -1,0 +1,223 @@
+{% extends 'base.html' %}
+{% block content %}
+<style>
+  .card-box {
+    border-radius: 1rem;
+    box-shadow: 0 0 15px rgba(0,0,0,0.08);
+    transition: all 0.3s ease;
+  }
+  .card-box:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 0 20px rgba(0,0,0,0.12);
+  }
+  .modern-table {
+    width: 100% !important;
+    border-radius: 1rem;
+    overflow: hidden;
+    background: #fff;
+    border: 1px solid #000;
+  }
+  .modern-table th {
+    background: #D79921 !important;
+    font-size: 1.1rem;
+    letter-spacing: 0.5px;
+    color: #333;
+    vertical-align: middle;
+    border-bottom: 1px solid #000 !important;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    padding: 0.5rem 0.5rem;
+  }
+  .modern-table td {
+    vertical-align: middle;
+    font-size: 1rem;
+    background: #fff;
+    border-bottom: 1px solid #000;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    padding: 0.4rem 0.5rem;
+  }
+  .modern-table tbody tr:hover td {
+    background: #fff3cd !important;
+    transition: background 0.2s;
+  }
+</style>
+<div class="container py-4" dir="rtl">
+  <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap">
+    <div>
+      <h4 class="fw-bold mb-0">جرد المخزون</h4>
+      <small class="text-muted">تم البدء بواسطة: {{ stocktake.started_by.name if stocktake.started_by else 'غير معروف' }}</small>
+    </div>
+    <div class="d-flex align-items-center gap-2 mt-2 mt-md-0">
+      <input type="text" class="form-control" id="instant-search" placeholder="ابحث..." style="width: 160px; height: 46px;">
+      <form method="POST" action="{{ url_for('main.stocktake_finish', id=stocktake.id) }}" id="finish-form">
+        <button type="button" class="btn btn-success d-inline-flex align-items-center" id="finish-btn" style="height: 46px;">
+          <i class="fas fa-check me-1"></i> إنهاء العد
+        </button>
+      </form>
+      <a href="{{ url_for('main.stocktake_index') }}" class="btn btn-secondary d-inline-flex align-items-center" style="height: 46px;">
+        <i class="fas fa-arrow-right me-1"></i> رجوع
+      </a>
+    </div>
+  </div>
+
+  <div class="table-responsive" style="margin-top: 20px;">
+    <table class="table modern-table table-hover text-center align-middle" id="stocktake-table">
+      <thead>
+        <tr>
+          <th style="width: 6%;">#</th>
+          <th style="width: 44%;">اسم المنتج</th>
+          <th style="width: 15%;">المخزون الحالي</th>
+          <th style="width: 20%;">العدد الفعلي</th>
+          <th style="width: 15%;">الفرق</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for product in products %}
+        <tr data-product-id="{{ product.id }}" data-name="{{ product.name }}">
+          <td>{{ loop.index }}</td>
+          <td>{{ product.name }}</td>
+          <td class="system-stock">{{ product.stock }}</td>
+          <td>
+            <input type="number" min="0" class="form-control form-control-sm counted-input"
+                   style="width: 100px; margin: 0 auto;"
+                   data-product-id="{{ product.id }}"
+                   value="{{ existing_items[product.id].counted_stock if existing_items.get(product.id) and existing_items[product.id].counted_stock is not none else '' }}">
+          </td>
+          <td class="diff-cell">
+            {% if existing_items.get(product.id) and existing_items[product.id].counted_stock is not none and existing_items[product.id].system_stock is not none %}
+              {% set diff = existing_items[product.id].counted_stock - existing_items[product.id].system_stock %}
+              <span class="badge {% if diff > 0 %}bg-success{% elif diff < 0 %}bg-danger{% else %}bg-secondary{% endif %}">
+                {{ diff }}
+              </span>
+            {% else %}
+              <span class="text-muted">—</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="5" class="text-center text-muted">لا توجد منتجات متاحة للجرد.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="d-flex justify-content-end gap-2 mt-3">
+    <form method="POST" action="{{ url_for('main.stocktake_finish', id=stocktake.id) }}" id="finish-form-bottom">
+      <button type="button" class="btn btn-success d-inline-flex align-items-center" id="finish-btn-bottom" style="height: 46px;">
+        <i class="fas fa-check me-1"></i> إنهاء العد
+      </button>
+    </form>
+    <a href="{{ url_for('main.stocktake_index') }}" class="btn btn-secondary d-inline-flex align-items-center" style="height: 46px;">
+      <i class="fas fa-arrow-right me-1"></i> رجوع
+    </a>
+  </div>
+</div>
+
+<div class="modal fade" id="skipConfirmModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">تأكيد إنهاء العد</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="إغلاق"></button>
+      </div>
+      <div class="modal-body" id="skipConfirmBody">
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+        <button type="button" class="btn btn-success" id="confirm-finish-btn">تأكيد وإنهاء</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const searchInput = document.getElementById('instant-search');
+  const tableRows = document.querySelectorAll('#stocktake-table tbody tr[data-product-id]');
+  searchInput.addEventListener('input', function() {
+    const q = this.value.trim().toLowerCase();
+    tableRows.forEach(function(row) {
+      var name = (row.getAttribute('data-name') || '').toLowerCase();
+      if (name.indexOf(q) !== -1) {
+        row.style.display = '';
+      } else {
+        row.style.display = 'none';
+      }
+    });
+  });
+
+  const debounceTimers = {};
+
+  document.querySelectorAll('.counted-input').forEach(function(input) {
+    input.addEventListener('input', function() {
+      const productId = this.dataset.productId;
+      if (debounceTimers[productId]) {
+        clearTimeout(debounceTimers[productId]);
+      }
+      debounceTimers[productId] = setTimeout(function() {
+        autoSaveItem(productId, input.value);
+      }, 500);
+    });
+  });
+
+  function autoSaveItem(productId, countedStock) {
+    const val = countedStock === '' ? null : countedStock;
+    fetch('{{ url_for("main.stocktake_save_item", id=stocktake.id) }}', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({product_id: parseInt(productId), counted_stock: val !== null ? parseInt(val) : null}),
+    })
+    .then(function(r) {
+      if (!r.ok) { return r.json().then(function(d) { throw new Error(d.error || 'خطأ في الحفظ'); }); }
+      updateDiff(productId, val);
+    })
+    .catch(function(err) {
+      console.error('Auto-save error:', err);
+    });
+  }
+
+  function updateDiff(productId, countedVal) {
+    const row = document.querySelector('tr[data-product-id="' + productId + '"]');
+    if (!row) return;
+    const systemStock = parseInt(row.querySelector('.system-stock').textContent) || 0;
+    const diffCell = row.querySelector('.diff-cell');
+    if (countedVal === null || countedVal === '') {
+      diffCell.innerHTML = '<span class="text-muted">—</span>';
+      return;
+    }
+    const diff = parseInt(countedVal) - systemStock;
+    let cls = 'bg-secondary';
+    if (diff > 0) cls = 'bg-success';
+    else if (diff < 0) cls = 'bg-danger';
+    diffCell.innerHTML = '<span class="badge ' + cls + '">' + diff + '</span>';
+  }
+
+  function onFinishClick() {
+    const emptyInputs = document.querySelectorAll('.counted-input');
+    let skipped = 0;
+    emptyInputs.forEach(function(inp) {
+      if (inp.value === '') skipped++;
+    });
+    const body = document.getElementById('skipConfirmBody');
+    if (skipped > 0) {
+      body.innerHTML = '<p class="mb-0">' + skipped + ' منتج' + (skipped > 1 ? 'ات' : '') + ' لم يتم عدها. سيتم تسجيلها كمتطابقة مع المخزون الحالي.</p><p class="text-muted small mt-1">هل تريد المتابعة؟</p>';
+    } else {
+      body.innerHTML = '<p class="mb-0">تم عد جميع المنتجات. هل تريد إنهاء العد؟</p>';
+    }
+    var skipModal = new bootstrap.Modal(document.getElementById('skipConfirmModal'));
+    skipModal.show();
+  }
+
+  document.getElementById('finish-btn').addEventListener('click', onFinishClick);
+  document.getElementById('finish-btn-bottom').addEventListener('click', onFinishClick);
+
+  document.getElementById('confirm-finish-btn').addEventListener('click', function() {
+    document.getElementById('finish-form').submit();
+  });
+});
+</script>
+{% endblock %}

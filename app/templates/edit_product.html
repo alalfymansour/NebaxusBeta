@@ -1,0 +1,454 @@
+{% extends 'base.html' %}
+
+{% block extra_css %}
+<style>
+.modern-table {
+  border-radius: 1rem;
+  overflow: hidden;
+  background: #fff;
+  border: 1px solid #000;
+}
+.modern-table th {
+  background: #D79921 !important;
+  font-size: 1.1rem;
+  letter-spacing: 0.5px;
+  color: #333;
+  vertical-align: middle;
+  border-bottom: 1px solid #000 !important;
+}
+.modern-table td {
+  vertical-align: middle;
+  font-size: 1rem;
+  background: #fff;
+  border-bottom: 1px solid #000;
+}
+.modern-table tbody tr:hover td {
+  background: #fff3cd !important;
+  transition: background 0.2s;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4" dir="rtl">
+
+  {% if not product.is_bundle and product.stock == 0 %}
+  <div class="alert alert-danger d-flex align-items-center gap-2 shadow-sm" role="alert">
+    <i class="fas fa-exclamation-circle fa-lg"></i>
+    <div>
+      هذا المنتج <strong>غير متوفر حالياً (الكمية = 0)</strong>. سيظهر للمستخدمين كمنتج يمكن إضافته للطلبات الجديدة مع تحذير، ولن يُسمح بخروج الطلب للتوصيل إذا كان ضمنه منتج غير متوفر.
+    </div>
+  </div>
+  {% endif %}
+
+  <div class="text-center mb-4">
+    <h2 class="fw-bold">تعديل <span class="text-warning">المنتج</span></h2>
+    <p class="text-muted">قم بتحديث بيانات المنتج وأنواعه المختلفة</p>
+  </div>
+
+  <form method="POST" id="edit-product-form">
+
+    {% if product.is_bundle %}
+    
+    <div class="row mb-3 g-3">
+      <div class="col-md-8">
+        <label for="name" class="form-label fw-semibold">اسم البندل</label>
+        <input type="text" class="form-control" id="name" name="name" value="{{ product.name }}" required>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label fw-semibold">إجمالي سعر البندل</label>
+        <input type="text" class="form-control fw-bold text-success bg-light" id="bundle-total-price" readonly value="{{ '%.2f'|format(product.bundle_total_price or 0) }} ج.م">
+      </div>
+    </div>
+    
+    <div class="mb-3">
+      <h5 class="fw-bold mb-3">
+        <i class="fas fa-box-open text-primary me-2"></i>المنتجات داخل البندل
+      </h5>
+      <div id="bundle-items-container">
+        {% for bundle_item in product.bundle_items %}
+        <div class="row g-2 mb-4 align-items-end bundle-item-row border rounded-4 p-3 bg-light position-relative" data-bundle-item-id="{{ bundle_item.id }}">
+          <input type="hidden" name="bundle_item_ids[]" value="{{ bundle_item.id }}">
+          <div class="col-md-5">
+            <label class="form-label">المنتج</label>
+            <select class="form-select bundle-product-select" name="bundle_product_ids[]" onchange="updateBundleProductInfo(this)" required>
+              <option value="">اختر منتج</option>
+              {% for prod in available_products %}
+                <option value="{{ prod.id }}" 
+                        data-purchase-price="{{ '%.2f'|format(prod.purchase_price or 0) }}"
+                        {% if prod.id == bundle_item.product_id %}selected{% endif %}>
+                  {{ prod.name }}
+                </option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">سعر الشراء</label>
+            <input type="number" class="form-control bg-light bundle-purchase-price" readonly value="{{ '%.2f'|format(bundle_item.product.purchase_price or 0) }}" step="0.01">
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">سعر البيع في البندل</label>
+            <input type="number" class="form-control bundle-sale-price" name="bundle_sale_prices[]" required step="0.01" value="{{ '%.2f'|format(bundle_item.sale_price_in_bundle or 0) }}" onchange="updateBundleTotalPrice()" placeholder="0">
+          </div>
+          <div class="col-md-1">
+            <button type="button" class="btn btn-danger" onclick="removeBundleItem(this)" title="حذف">
+              <i class="fas fa-trash"></i>
+            </button>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      <button type="button" class="btn btn-success btn-sm mt-2" onclick="addBundleItem()">
+        <i class="fas fa-plus me-1"></i> إضافة منتج للبندل
+      </button>
+    </div>
+    {% else %}
+    
+    <div class="row mb-3">
+      <div class="col-md-3">
+        <label for="name" class="form-label fw-semibold">اسم المنتج</label>
+        <input type="text" class="form-control" id="name" name="name" value="{{ product.name }}" required>
+      </div>
+      <div class="col-md-3">
+        <label for="purchase_price" class="form-label fw-semibold">سعر الشراء</label>
+        {% if has_permission('can_view_purchase_price') %}
+        <input type="number" step="0.01" min="0" class="form-control" id="purchase_price" name="purchase_price" value="{{ '%.2f'|format(product.purchase_price or 0) }}" required>
+        {% else %}
+        <input type="text" class="form-control" value="{{ '%.2f'|format(product.purchase_price or 0) }}" readonly style="filter: blur(8px); user-select: none; pointer-events: none;">
+        <input type="hidden" name="purchase_price" value="{{ '%.2f'|format(product.purchase_price or 0) }}">
+        {% endif %}
+      </div>
+      <div class="col-md-3">
+        <label for="price" class="form-label fw-semibold">سعر البيع</label>
+        <input type="number" step="0.01" min="0" class="form-control" id="price" name="price" value="{{ '%.2f'|format(product.price or 0) }}" required>
+      </div>
+      <div class="col-md-3">
+        <label for="stock" class="form-label fw-semibold">الكمية</label>
+        <input type="number" class="form-control" id="stock" name="stock" value="{{ product.stock }}" required>
+      </div>
+    </div>
+
+    <div class="mb-3" id="variants-section">
+      <h5 class="fw-bold">أنواع المنتج</h5>
+      <div id="variantGroupsContainer">
+        {% for group_name, variants in grouped_variants.items() %}
+          {% set group_id = loop.index0 %}
+        <div class="variant-group border rounded-4 p-3 mb-4 bg-light position-relative" data-group-id="{{ group_id }}">
+          <div class="row align-items-end mb-3">
+            <div class="col-md-8">
+              <label class="form-label">نوع المنتج</label>
+              <select class="form-select group-type-select" name="group_types[]" onchange="updateGroupName({{ group_id }})">
+                <option value="">اختر النوع</option>
+                <option value="مقاس" {% if group_name == "مقاس" %}selected{% endif %}>مقاس</option>
+                <option value="لون" {% if group_name == "لون" %}selected{% endif %}>لون</option>
+                <option value="شكل" {% if group_name == "شكل" %}selected{% endif %}>شكل</option>
+              </select>
+            </div>
+            <div class="col-md-4 d-flex align-items-end justify-content-start">
+              <button type="button" class="btn btn-danger ms-2" onclick="removeGroup({{ group_id }})">
+                <i class="fas fa-trash-alt"></i>
+              </button>
+            </div>
+          </div>
+          <div class="variant-items" id="variants-{{ group_id }}">
+            {% for variant in variants %}
+            <div class="row g-2 mb-2 align-items-end variant-row">
+              <input type="hidden" name="variant_group_type[]" value="{{ group_name }}" class="group-type-hidden">
+              <input type="hidden" name="variant_group_name[]" value="{{ group_name }}" class="group-name-hidden">
+              <div class="col-md-8">
+                <label class="form-label">اسم الخيار</label>
+                <input type="text" class="form-control" name="variant_name[]" value="{{ variant.variant_name }}" required>
+              </div>
+              <div class="col-md-3">
+                <label class="form-label">السعر الإضافي</label>
+                <input type="number" step="0.01" class="form-control" name="variant_price[]" value="{{ variant.price or 0 }}" placeholder="0">
+              </div>
+              <div class="col-md-1">
+                <button type="button" class="btn btn-danger" style="height:38px; margin-bottom:0;" onclick="this.closest('.variant-row').remove()">
+                  <i class="fas fa-trash"></i>
+                </button>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+          <button type="button" class="btn btn-secondary opacity-75 btn-sm mt-2 px-3 d-inline-flex align-items-center gap-1 rounded" onclick="addVariant({{ group_id }})">
+            <i class="fas fa-plus me-1"></i> إضافة خيار
+          </button>
+        </div>
+        {% endfor %}
+      </div>
+      <button type="button" class="btn btn-success my-2 px-4 d-inline-flex align-items-center gap-1 rounded" onclick="addVariantGroup()">
+        <i class="fas fa-plus me-1"></i> إضافة نوع
+      </button>
+    </div>
+    {% endif %}
+
+    <hr class="my-4">
+
+    <div class="d-flex gap-2 align-items-center" id="action-row">
+      <button type="submit" class="btn btn-primary d-flex align-items-center gap-1" id="submit-btn">
+        <i class="fas fa-save"></i> <span>حفظ التعديلات</span>
+      </button>
+      <button type="button" class="btn btn-danger d-flex align-items-center gap-1" onclick="deleteProduct()">
+        <i class="fas fa-trash me-1"></i> حذف المنتج
+      </button>
+      <button type="button" class="btn btn-info d-flex align-items-center gap-1" onclick="showProductOrders({{ product.id }})">
+        <i class="fas fa-receipt"></i> عرض الطلبات
+      </button>
+      <a href="{{ url_for('main.products') }}" class="btn btn-secondary d-inline-flex align-items-center gap-1 px-4">
+        <i class="fas fa-arrow-left"></i> <span>رجوع</span>
+      </a>
+    </div>
+  </form>
+  
+  <form id="delete-form" method="POST" action="{{ url_for('main.delete_product', product_id=product.id) }}" style="display:none;">
+  </form>
+</div>
+
+<div class="stats-modal" id="productOrdersModal" aria-hidden="true">
+  <div class="stats-modal-content" style="max-width: 900px;">
+    <button type="button" class="close-btn" aria-label="إغلاق" data-close="button">
+      <i class="fas fa-times"></i>
+    </button>
+    <h5 class="modal-title">الطلبات التي تحتوي على: <span id="ordersProductName" class="fw-bold"></span></h5>
+    <div class="modal-body" id="ordersModalBody">
+      <div class="modern-table table-responsive">
+        <table class="table table-striped mb-0 text-center align-middle">
+          <thead>
+            <tr>
+              <th>العميل</th>
+              <th>الحالة</th>
+              <th>التاريخ</th>
+              <th>الكمية</th>
+              <th>السعر</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="ordersTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+  
+  function updateBundleTotalPrice() {
+    const salePriceInputs = document.querySelectorAll('.bundle-sale-price');
+    let total = 0;
+    salePriceInputs.forEach(input => {
+      const price = parseFloat(input.value || 0);
+      total += price;
+    });
+    const totalElement = document.getElementById('bundle-total-price');
+    if (totalElement) {
+      totalElement.value = total.toFixed(0) + ' ج.م';
+    }
+  }
+  function deleteProduct() {
+    console.log('Delete button clicked');
+    const form = document.getElementById('delete-form');
+    console.log('Form found:', form);
+    console.log('Form action:', form ? form.action : 'NO FORM');
+    
+    showConfirmDialog({ message: 'هل أنت متأكد من حذف هذا المنتج؟', type: 'danger', confirmText: 'حذف' }).then(function(confirmed) {
+      if (confirmed && form) { form.submit(); }
+    });
+  }
+
+  let nextGroupId = {{ grouped_variants|length }};
+  function addVariantGroup() {
+    const groupId = nextGroupId++;
+    const groupHTML = `
+      <div class="variant-group border rounded-4 p-3 mb-4 bg-light position-relative" data-group-id="${groupId}">
+        <div class="row align-items-end mb-3">
+          <div class="col-md-8">
+            <label class="form-label">نوع المنتج</label>
+            <select class="form-select group-type-select" name="group_types[]" onchange="updateGroupName(${groupId})">
+              <option value="">اختر النوع</option>
+              <option value="مقاس">مقاس</option>
+              <option value="لون">لون</option>
+              <option value="شكل">شكل</option>
+            </select>
+          </div>
+          <div class="col-md-4 d-flex align-items-end justify-content-start">
+            <button type="button" class="btn btn-danger ms-2" onclick="removeGroup(${groupId})">
+              <i class="fas fa-trash-alt"></i>
+            </button>
+          </div>
+        </div>
+        <div class="variant-items" id="variants-${groupId}"></div>
+        <button type="button" class="btn btn-secondary opacity-75 btn-sm mt-2 px-3 d-inline-flex align-items-center gap-1 rounded" onclick="addVariant(${groupId})">
+          <i class="fas fa-plus me-1"></i> إضافة خيار
+        </button>
+      </div>
+    `;
+    document.getElementById('variantGroupsContainer').insertAdjacentHTML('beforeend', groupHTML);
+    addVariant(groupId);
+  }
+
+  function addVariant(groupId) {
+    const container = document.getElementById(`variants-${groupId}`);
+    const groupTypeSelect = document.querySelector(`[data-group-id="${groupId}"] select[name="group_types[]"]`);
+    
+    const groupType = groupTypeSelect ? groupTypeSelect.value : '';
+
+    const variantHTML = `
+      <div class="row g-2 mb-2 align-items-end variant-row">
+        <input type="hidden" name="variant_group_type[]" value="${groupType}" class="group-type-hidden">
+        <input type="hidden" name="variant_group_name[]" value="${groupType}" class="group-name-hidden">
+        <div class="col-md-8">
+          <label class="form-label">اسم الخيار</label>
+          <input type="text" class="form-control" name="variant_name[]" required>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">السعر الإضافي</label>
+          <input type="number" step="0.01" class="form-control" name="variant_price[]" value="0" placeholder="0">
+        </div>
+        <div class="col-md-1">
+          <button type="button" class="btn btn-danger" style="height:38px; margin-bottom:0;" onclick="this.closest('.variant-row').remove()">
+            <i class="fas fa-trash"></i>
+          </button>
+        </div>
+      </div>
+    `;
+    container.insertAdjacentHTML('beforeend', variantHTML);
+  }
+
+  function updateGroupName(groupId) {
+    const groupTypeSelect = document.querySelector(`[data-group-id="${groupId}"] select[name="group_types[]"]`);
+    
+    if (groupTypeSelect) {
+      const groupType = groupTypeSelect.value;
+      if (groupType) {
+        updateGroupNames(groupId);
+      }
+    }
+  }
+
+  function updateGroupNames(groupId) {
+    const groupTypeSelect = document.querySelector(`[data-group-id="${groupId}"] select[name="group_types[]"]`);
+    
+    const groupType = groupTypeSelect ? groupTypeSelect.value : '';
+    
+    const variantRows = document.querySelectorAll(`[data-group-id="${groupId}"] .variant-row`);
+    variantRows.forEach(row => {
+      const typeHiddenInput = row.querySelector('input[name="variant_group_type[]"]');
+      const nameHiddenInput = row.querySelector('input[name="variant_group_name[]"]');
+      
+      if (typeHiddenInput) {
+        typeHiddenInput.value = groupType;
+      }
+      if (nameHiddenInput) {
+        nameHiddenInput.value = groupType;
+      }
+    });
+  }
+
+  function removeGroup(groupId) {
+    const group = document.querySelector(`[data-group-id="${groupId}"]`);
+    if (group) group.remove();
+  }
+
+  document.addEventListener('DOMContentLoaded', function() {
+    const pp = document.getElementById('purchase_price');
+    const sp = document.getElementById('price');
+    function toTwoDecimals(el){
+      if (!el) return;
+      const v = parseFloat(el.value);
+      if (!isNaN(v)) el.value = v.toFixed(0);
+    }
+    if (pp) pp.addEventListener('blur', () => toTwoDecimals(pp));
+    if (sp) sp.addEventListener('blur', () => toTwoDecimals(sp));
+  });
+
+  let isSubmitting = false;
+
+  document.getElementById('edit-product-form').addEventListener('submit', function(e) {
+    
+    if (isSubmitting) {
+      e.preventDefault();
+      return false;
+    }
+
+    const groups = Array.from(document.querySelectorAll('.variant-group'));
+    const validGroups = groups.filter(g => {
+      const groupType = g.querySelector('select[name="group_types[]"]').value;
+      const variants = g.querySelectorAll('input[name="variant_name[]"]');
+      return groupType && variants.length > 0;
+    });
+    
+    if (groups.length > 0 && validGroups.length === 0) {
+      e.preventDefault();
+      alert('يرجى إضافة أنواع صحيحة للمنتج أو حذف جميع الأنواع');
+      return false;
+    }
+
+    isSubmitting = true;
+    const submitBtn = document.getElementById('submit-btn');
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> جاري الحفظ...';
+  });
+
+var productOrdersModal = document.getElementById('productOrdersModal');
+var ordersModalBody = document.getElementById('ordersModalBody');
+
+function showProductOrders(productId) {
+  var tbody = document.getElementById('ordersTableBody');
+  tbody.innerHTML = '<tr><td colspan="6" class="text-muted py-3">جارٍ التحميل...</td></tr>';
+  productOrdersModal.style.display = 'flex';
+  productOrdersModal.setAttribute('aria-hidden', 'false');
+  document.body.style.overflow = 'hidden';
+
+  fetch('/api/products/' + productId + '/orders')
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      document.getElementById('ordersProductName').textContent = data.product_name;
+      if (!data.orders.length) {
+        tbody.innerHTML = '<tr><td colspan="6" class="text-muted py-3">لا توجد طلبات لهذا المنتج</td></tr>';
+        return;
+      }
+      var html = '';
+      data.orders.forEach(function(o, i) {
+        html += '<tr>' +
+          '<td class="text-start" dir="rtl">' + escapeHtml(o.customer_name) + '</td>' +
+          '<td>' + o.status + '</td>' +
+          '<td>' + o.date + '</td>' +
+          '<td>' + o.quantity + '</td>' +
+          '<td class="fw-bold">' + o.price + ' ج.م</td>' +
+          '<td><a href="/orders/' + o.order_id + '/edit" target="_blank" class="btn btn-sm btn-outline-primary">عرض</a></td>' +
+          '</tr>';
+      });
+      tbody.innerHTML = html;
+    })
+    .catch(function() {
+      tbody.innerHTML = '<tr><td colspan="6" class="text-danger py-3">حدث خطأ أثناء التحميل</td></tr>';
+    });
+}
+
+function closeProductOrders() {
+  productOrdersModal.style.display = 'none';
+  productOrdersModal.setAttribute('aria-hidden', 'true');
+  document.body.style.overflow = '';
+}
+
+productOrdersModal.addEventListener('click', function(e) {
+  if (e.target === productOrdersModal || e.target.dataset.close === 'button') {
+    closeProductOrders();
+  }
+});
+
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape' && productOrdersModal.style.display === 'flex') {
+    closeProductOrders();
+  }
+});
+
+function escapeHtml(str) {
+  var div = document.createElement('div');
+  div.appendChild(document.createTextNode(str));
+  return div.innerHTML;
+}
+</script>
+{% endblock %}

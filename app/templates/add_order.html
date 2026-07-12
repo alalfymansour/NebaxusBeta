@@ -1,0 +1,979 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid">
+  <div class="text-center mb-4">
+    <h2 class="fw-bold">إضافة <span class="text-warning">طلب جديد</span></h2>
+    <p class="text-muted">قم بإدخال بيانات الطلب مع تفاصيل العميل والمنتجات</p>
+  </div>
+
+  <form method="POST" action="{{ url_for('main.add_order') }}" id="addOrderForm">
+    <input type="hidden" name="submission_id" value="{{ submission_id }}">
+    <input type="hidden" name="allow_oos" id="allow_oos" value="0">
+    <div class="mb-4">
+      <label class="form-label fw-semibold">نوع الطلب</label>
+      <div class="d-flex gap-4 mb-3">
+        <div class="form-check">
+          <input class="form-check-input" type="radio" name="order_type" id="orderTypeDelivery" value="delivery" checked>
+          <label class="form-check-label fw-semibold" for="orderTypeDelivery">توصيل</label>
+        </div>
+        <div class="form-check">
+          <input class="form-check-input" type="radio" name="order_type" id="orderTypeWalkin" value="walkin">
+          <label class="form-check-label fw-semibold" for="orderTypeWalkin">زبون أرضية</label>
+        </div>
+      </div>
+    </div>
+
+    <div class="mb-4" id="employeeSection">
+      <label class="form-label fw-semibold">الموظف المسؤول</label>
+      <div class="row g-2">
+        <div class="col-md-2">
+          <select class="form-select" name="employee_id" id="employeeSelect" required>
+            <option value="">اختر الموظف</option>
+            <option value="0">بدون</option>
+            {% for emp in employees %}
+            <option value="{{ emp.id }}">{{ emp.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="mb-4" id="customerDataSection">
+      <label class="form-label fw-semibold">بيانات العميل</label>
+      <div class="row g-2">
+        <div class="col-md-2">
+          <label class="form-label fw-semibold">رقم الهاتف</label>
+          <input type="text" class="form-control" name="customer_phone" id="customerPhone" placeholder="رقم الهاتف" inputmode="numeric" autocomplete="off" maxlength="11" pattern="01[0-9]{9}" title="رقم مكون من 11 رقم ويبدأ ب 01" required>
+          <div id="phoneError" class="text-danger small mt-1 d-none"></div>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label fw-semibold">اسم العميل</label>
+          <input type="text" class="form-control" name="customer_name" id="customerName" placeholder="اسم العميل" required>
+        </div>
+        <div class="col-md-2">
+          <label class="form-label fw-semibold">المحافظة</label>
+          <select class="form-select" name="customer_governorate" id="customerGovernorate" required>
+            <option value="">اختر المحافظة</option>
+            <option value="القاهرة">القاهرة</option>
+            <option value="الجيزة">الجيزة</option>
+            <option value="الإسكندرية">الإسكندرية</option>
+            <option value="الدقهلية">الدقهلية</option>
+            <option value="البحر الأحمر">البحر الأحمر</option>
+            <option value="البحيرة">البحيرة</option>
+            <option value="الفيوم">الفيوم</option>
+            <option value="الغربية">الغربية</option>
+            <option value="الإسماعيلية">الإسماعيلية</option>
+            <option value="المنوفية">المنوفية</option>
+            <option value="المنيا">المنيا</option>
+            <option value="القليوبية">القليوبية</option>
+            <option value="الوادي الجديد">الوادي الجديد</option>
+            <option value="السويس">السويس</option>
+            <option value="أسوان">أسوان</option>
+            <option value="أسيوط">أسيوط</option>
+            <option value="بني سويف">بني سويف</option>
+            <option value="بورسعيد">بورسعيد</option>
+            <option value="دمياط">دمياط</option>
+            <option value="الشرقية">الشرقية</option>
+            <option value="جنوب سيناء">جنوب سيناء</option>
+            <option value="كفر الشيخ">كفر الشيخ</option>
+            <option value="مطروح">مطروح</option>
+            <option value="الأقصر">الأقصر</option>
+            <option value="قنا">قنا</option>
+            <option value="شمال سيناء">شمال سيناء</option>
+            <option value="سوهاج">سوهاج</option>
+          </select>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label fw-semibold">باقي العنوان</label>
+          <input type="text" class="form-control" name="customer_address_details" id="customerAddressDetails" placeholder="باقي العنوان (مدينة، حي، شارع...)" required>
+        </div>
+      </div>
+    </div>
+
+    <hr>
+
+    <h5 class="fw-bold mb-3">المنتجات</h5>
+    <div id="productsContainer"></div>
+    <button type="button" class="btn btn-secondary mb-4" onclick="window.addProductRow()">
+      <i class="fas fa-plus"></i> <span>منتج جديد</span>
+    </button>
+
+    <div class="row g-3 mb-4">
+      <div class="col-md-3" id="deliveryFeesSection">
+        <label class="form-label fw-semibold d-flex align-items-center gap-2">
+          رسوم التوصيل
+          <input type="checkbox" id="nearestPostBranch" name="is_nearest_post_branch" value="1" class="form-check-input ms-2">
+          <span style="font-size:0.95em;">لأقرب فرع بريد</span>
+        </label>
+        <input name="delivery_fees" id="deliveryFees" type="number" step="0.01" class="form-control bg-light" value="0" readonly required>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label fw-semibold">المبلغ المدفوع</label>
+        <input name="amount_paid" id="amountPaid" type="number" step="0.01" class="form-control" value="0" oninput="window.calculateTotals()" required>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label fw-semibold">الإجمالي</label>
+        <input id="totalAmount" type="text" class="form-control bg-light" readonly value="0.00">
+      </div>
+      <div class="col-md-3">
+        <label class="form-label fw-semibold">المتبقي</label>
+        <input name="remaining_amount" id="remainingAmount" type="text" class="form-control bg-light" readonly value="0.00">
+      </div>
+    </div>
+
+    <div class="mb-4">
+      <label class="form-label fw-semibold">ملاحظات</label>
+      <textarea class="form-control" name="notes" rows="3" placeholder="ملاحظات اختيارية"></textarea>
+    </div>
+
+    <div id="shippingSection">
+    <div class="mb-3">
+        <label for="weight" class="form-label">وزن الشحنة (جرام)</label>
+        <input type="number"
+               class="form-control"
+               id="weight"
+               name="weight"
+               min="0"
+               step="0.1"
+               value=""
+               placeholder="مثال: 500">
+    </div>
+
+    <div class="mb-3">
+        <label for="package_volume" class="form-label">حجم الشحنة</label>
+        <select class="form-select" id="package_volume" name="package_volume">
+            <option value="">-- اختر الحجم --</option>
+            <option value="Small">Small</option>
+            <option value="medium">Medium</option>
+            <option value="Large">Large</option>
+            <option value="Extra Weight">Extra Weight</option>
+        </select>
+    </div>
+
+    <div class="mb-3">
+        <label for="delivery_notes" class="form-label">ملاحظات التوصيل</label>
+        <textarea class="form-control"
+                  id="delivery_notes"
+                  name="delivery_notes"
+                  rows="2"
+                  placeholder="ملاحظات خاصة بالمندوب أو التوصيل"></textarea>
+    </div>
+    </div>
+
+    <input type="hidden" name="order_items_data" id="order_items_data" value="[]">
+    <input type="hidden" name="tracking_number" id="tracking_number" value="">
+
+    <div class="d-flex gap-2 mt-4 flex-wrap">
+  <button type="submit" class="btn btn-primary d-flex align-items-center gap-1" id="submitBtn">
+        <i class="fas fa-plus"></i> <span>إضافة الطلب</span>
+      </button>
+      <a href="{{ url_for('main.orders') }}" class="btn btn-secondary d-inline-flex align-items-center gap-1 px-4">
+        <i class="fas fa-arrow-left"></i> <span>رجوع</span>
+      </a>
+    </div>
+
+  </form>
+</div>
+
+<script id="nearestPostFeeData" type="application/json">{{ nearest_post_branch_fee|default(40)|tojson }}</script>
+<script id="governorateFeesData" type="application/json">{{ governorate_fees|tojson }}</script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  
+  try {
+    const nearestScript = document.getElementById('nearestPostFeeData');
+    window.nearestPostBranchFee = nearestScript ? JSON.parse(nearestScript.textContent || '40') : 40;
+  } catch (e) { window.nearestPostBranchFee = 40; }
+  try {
+    const govScript = document.getElementById('governorateFeesData');
+    window.governorateFees = govScript ? JSON.parse(govScript.textContent || '{}') : {};
+  } catch (e) { window.governorateFees = {}; }
+  
+  const form = document.getElementById('addOrderForm');
+  const submitBtn = document.getElementById('submitBtn');
+  
+  // جمع بيانات الطلب بصيغة JSON قبل الإرسال
+  window.collectOrderItemsData = function() {
+    const items = [];
+    $('#productsContainer .product-row').each(function() {
+      const row = $(this);
+      const index = row.data('index');
+      const pid = parseInt(row.find('.product-select').val());
+      const qty = parseInt(row.find('input[name$="[quantity]"]').val()) || 1;
+      const price = parseFloat(row.find('input[name$="[price]"]').val()) || 0;
+      
+      if (!pid) return;
+      
+      const payload = {
+        id: null,
+        product_id: pid,
+        variant_id: null,
+        size_variant_id: parseInt(row.find('input[name$="[size_variant_id]"]').val()) || null,
+        color_variant_id: parseInt(row.find('input[name$="[color_variant_id]"]').val()) || null,
+        style_variant_id: parseInt(row.find('input[name$="[style_variant_id]"]').val()) || null,
+        quantity: qty,
+        price: price,
+        bundle_variants: null
+      };
+      
+      // جمع bundle_variants من DOM
+      const bundles = {};
+      row.find('.bundle-variant-select').each(function() {
+        const sel = $(this);
+        const itemIdx = String(sel.data('bundle-item-idx'));
+        const prodId = parseInt(sel.data('bundle-item-product-id'));
+        const field = sel.data('field');
+        const val = sel.val();
+        
+        if (!itemIdx || !field) return;
+        if (!(itemIdx in bundles)) bundles[itemIdx] = { product_id: prodId };
+        if (val) bundles[itemIdx][field] = parseInt(val);
+      });
+      
+      if (Object.keys(bundles).length > 0) {
+        payload.bundle_variants = bundles;
+      }
+      
+      items.push(payload);
+    });
+    
+    return items;
+  };
+  
+  if (form && submitBtn) {
+    let priceValidationInProgress = false;
+    form.addEventListener('submit', function(e) {
+      if (priceValidationInProgress) {
+        e.preventDefault();
+        return;
+      }
+      const itemsData = window.collectOrderItemsData();
+      if (!itemsData.length) return;
+      
+      priceValidationInProgress = true;
+      e.preventDefault();
+      const validateUrl = "{{ url_for('main.validate_order_prices') }}";
+      $.ajax({
+        url: validateUrl,
+        method: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify(itemsData),
+        cache: false,
+        success: function(response) {
+          if (response.all_valid) {
+            $('#order_items_data').val(JSON.stringify(itemsData));
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> جارٍ الإرسال...';
+            form.submit();
+          } else {
+            response.results.forEach(function(r) {
+              if (!r.valid) {
+                $('.product-row').each(function() {
+                  if ($(this).find('.product-select').val() == r.product_id) {
+                    $(this).find('.price-error').removeClass('d-none').text('السعر أقل من سعر الشراء');
+                  }
+                });
+              }
+            });
+            priceValidationInProgress = false;
+            alert('يرجى تصحيح أسعار المنتجات الأقل من سعر الشراء');
+          }
+        },
+        error: function() {
+          $('#order_items_data').val(JSON.stringify(itemsData));
+          submitBtn.disabled = true;
+          submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> جارٍ الإرسال...';
+          form.submit();
+        }
+      });
+    });
+  }
+  
+  const checkbox = document.getElementById('nearestPostBranch');
+  const deliveryFees = document.getElementById('deliveryFees');
+  const governorateSelect = document.getElementById('customerGovernorate');
+  let nearestPostFee = null;
+  try {
+    nearestPostFee = window.nearestPostBranchFee;
+  } catch (e) {}
+  if (checkbox && deliveryFees && governorateSelect) {
+    checkbox.addEventListener('change', function() {
+      if (checkbox.checked && nearestPostFee !== null) {
+        deliveryFees.value = nearestPostFee;
+      } else {
+        let gov = governorateSelect.value;
+        if (gov && window.governorateFees && window.governorateFees[gov] !== undefined) {
+          deliveryFees.value = window.governorateFees[gov];
+        } else {
+          deliveryFees.value = 0;
+        }
+      }
+      if (typeof window.calculateTotals === 'function') {
+        window.calculateTotals();
+      }
+    });
+    governorateSelect.addEventListener('change', function() {
+      if (governorateSelect.value === 'لأقرب فرع بريد') {
+        checkbox.checked = true;
+        if (nearestPostFee !== null) {
+          deliveryFees.value = nearestPostFee;
+        }
+      } else {
+        checkbox.checked = false;
+        let gov = governorateSelect.value;
+        if (gov && window.governorateFees && window.governorateFees[gov] !== undefined) {
+          deliveryFees.value = window.governorateFees[gov];
+        } else {
+          deliveryFees.value = 0;
+        }
+      }
+      if (typeof window.calculateTotals === 'function') {
+        window.calculateTotals();
+      }
+    });
+  }
+
+  // Walkin / Delivery toggle
+  const deliveryRadio = document.getElementById('orderTypeDelivery');
+  const walkinRadio = document.getElementById('orderTypeWalkin');
+  const customerDataSection = document.getElementById('customerDataSection');
+  const walkinInfoSection = document.getElementById('walkinInfoSection');
+  const deliveryFeesSection = document.getElementById('deliveryFeesSection');
+  const shippingSection = document.getElementById('shippingSection');
+  const employeeSection = document.getElementById('employeeSection');
+  const employeeSelect = document.getElementById('employeeSelect');
+
+  function toggleOrderType() {
+    const isWalkin = walkinRadio && walkinRadio.checked;
+    if (customerDataSection) {
+      customerDataSection.classList.toggle('d-none', isWalkin);
+    }
+    if (walkinInfoSection) {
+      walkinInfoSection.classList.toggle('d-none', !isWalkin);
+    }
+    if (deliveryFeesSection) {
+      deliveryFeesSection.classList.toggle('d-none', isWalkin);
+    }
+    if (shippingSection) {
+      shippingSection.classList.toggle('d-none', isWalkin);
+    }
+    if (employeeSection) {
+      employeeSection.classList.toggle('d-none', isWalkin);
+    }
+    if (isWalkin) {
+      if (deliveryFees) deliveryFees.value = '0';
+      if (checkbox) checkbox.checked = false;
+      if (employeeSelect) { employeeSelect.value = '0'; employeeSelect.removeAttribute('required'); }
+    } else {
+      if (employeeSelect) employeeSelect.setAttribute('required', '');
+    }
+    const fields = [
+      document.getElementById('customerPhone'),
+      document.getElementById('customerName'),
+      document.getElementById('customerGovernorate'),
+      document.getElementById('customerAddressDetails'),
+    ];
+    fields.forEach(function(el) {
+      if (el) {
+        if (isWalkin) {
+          el.removeAttribute('required');
+        } else {
+          el.setAttribute('required', '');
+        }
+      }
+    });
+    if (typeof window.calculateTotals === 'function') {
+      window.calculateTotals();
+    }
+  }
+
+  if (deliveryRadio && walkinRadio) {
+    deliveryRadio.addEventListener('change', toggleOrderType);
+    walkinRadio.addEventListener('change', toggleOrderType);
+  }
+});
+</script>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.rtl.min.css" rel="stylesheet" />
+<script id="productData" type="application/json">
+  {{ products | tojson }}
+</script>
+<script>
+window.productPriceApiBase = "{{ url_for('main.get_product_price', product_id=0) }}";
+const products = JSON.parse(document.getElementById('productData')?.textContent || '[]');
+let productIndex = 0;
+
+window.getGroupValues = function(variants, groupName) {
+  const values = variants
+    .filter(v => v.group_name === groupName)
+    .map(v => v.variant_name);
+  return [...new Set(values)];
+}
+
+window.addProductRow = function() {
+    const container = document.getElementById('productsContainer');
+    if (!container) return;
+  let productOptions = '<option value=""></option>';
+    if (products && products.length > 0) {
+        products.forEach(product => {
+            productOptions += `<option value="${product.id}">${product.name}</option>`;
+        });
+    } else {
+        productOptions = '<option disabled selected>لا توجد منتجات</option>';
+    }
+    const row = document.createElement('div');
+    row.className = 'row g-2 mb-3 align-items-end product-row';
+    row.setAttribute('data-index', productIndex);
+    row.innerHTML = `
+        <div class="d-flex align-items-end gap-2 w-100 flex-wrap">
+            <div class="d-flex align-items-end gap-2 flex-grow-1" style="flex-wrap: nowrap;">
+                <select class="form-select product-select" name="products[${productIndex}][product_id]" required>
+                    ${productOptions}
+                </select>
+                <div class="variant-groups-container d-flex align-items-end gap-2 flex-grow-1"></div>
+            </div>
+            <div class="position-relative" style="max-width:90px;">
+              <input type="number" class="form-control pe-4 ps-4 text-center" name="products[${productIndex}][quantity]" min="1" value="1" required placeholder="الكمية" style="font-weight: 500; color: #333;">
+              <button type="button" class="btn btn-link btn-sm position-absolute start-0 top-0 h-100 text-secondary" onclick="window.decreaseQuantity(this)" style="border: none; background: transparent; z-index: 5; width: 25px; padding: 0;">
+                <i class="fas fa-minus"></i>
+              </button>
+              <button type="button" class="btn btn-link btn-sm position-absolute end-0 top-0 h-100 text-secondary" onclick="window.increaseQuantity(this)" style="border: none; background: transparent; z-index: 5; width: 25px; padding: 0;">
+                <i class="fas fa-plus"></i>
+              </button>
+            </div>
+            <input type="number" step="0.01" class="form-control" style="max-width:100px;" name="products[${productIndex}][price]" value="0" placeholder="السعر">
+            <div class="price-error text-danger small d-none" style="max-width:100px;"></div>
+            <input type="hidden" name="products[${productIndex}][size_variant_id]" value="">
+            <input type="hidden" name="products[${productIndex}][color_variant_id]" value="">
+            <input type="hidden" name="products[${productIndex}][style_variant_id]" value="">
+            <button type="button" class="btn btn-danger" onclick="window.removeProductRow(this)">حذف</button>
+        </div>
+    `;
+    container.appendChild(row);
+
+    const productSelect = $(row).find('.product-select');
+    productSelect.select2({
+      dropdownParent: $(row),
+      width: '100%',
+      theme: 'bootstrap-5',
+      placeholder: 'ابحث باسم المنتج',
+      allowClear: true,
+      dir: 'rtl',
+      minimumInputLength: 0
+    });
+
+    productSelect.on('select2:select', function(e) {
+      handleProductSelectChange(this);
+      $(this).closest('.product-row').find('.price-error').addClass('d-none');
+    });
+
+    productIndex++;
+    window.calculateTotals();
+}
+
+window.removeProductRow = function(button) {
+    $(button).closest('.product-row').remove();
+    window.reindexProductRows();
+    window.calculateTotals();
+}
+
+window.increaseQuantity = function(button) {
+    const quantityInput = $(button).closest('.position-relative').find('input[name$="[quantity]"]');
+    const currentValue = parseInt(quantityInput.val()) || 1;
+    quantityInput.val(currentValue + 1).trigger('input');
+}
+
+window.decreaseQuantity = function(button) {
+    const quantityInput = $(button).closest('.position-relative').find('input[name$="[quantity]"]');
+    const currentValue = parseInt(quantityInput.val()) || 1;
+    if (currentValue > 1) {
+        quantityInput.val(currentValue - 1).trigger('input');
+    }
+}
+
+window.reindexProductRows = function() {
+    $('.product-row').each(function(index) {
+        const row = $(this);
+        row.attr('data-index', index);
+        row.find('select[name^="products["]').attr('name', `products[${index}][product_id]`);
+        row.find('input[name^="products["]').each(function() {
+            const input = $(this);
+            const oldName = input.attr('name');
+            if (oldName.includes('[quantity]')) {
+                input.attr('name', `products[${index}][quantity]`);
+            } else if (oldName.includes('[price]')) {
+                input.attr('name', `products[${index}][price]`);
+            } else if (oldName.includes('[size_variant_id]')) {
+                input.attr('name', `products[${index}][size_variant_id]`);
+            } else if (oldName.includes('[color_variant_id]')) {
+                input.attr('name', `products[${index}][color_variant_id]`);
+            } else if (oldName.includes('[style_variant_id]')) {
+                input.attr('name', `products[${index}][style_variant_id]`);
+            }
+        });
+        row.find('.group-select').attr('data-index', index);
+    });
+}
+
+window.calculateTotals = function() {
+    let productsTotal = 0;
+    $('.product-row').each(function() {
+        const price = parseFloat($(this).find('input[name$="[price]"]').val()) || 0;
+        const quantity = parseFloat($(this).find('input[name$="[quantity]"]').val()) || 0;
+        productsTotal += price * quantity;
+    });
+    const delivery = parseFloat($('#deliveryFees').val()) || 0;
+    const paid = parseFloat($('#amountPaid').val()) || 0;
+    const totalAmount = productsTotal + delivery;
+    const remaining = totalAmount - paid;
+    $('#totalAmount').val(totalAmount.toFixed(0));
+    $('#remainingAmount').val(remaining.toFixed(0));
+}
+
+function handleProductSelectChange(selectElement) {
+    const row = $(selectElement).closest('.product-row');
+    const index = row.data('index');
+    const productId = $(selectElement).val();
+    const product = products.find(p => p.id == productId);
+    const groupsContainer = row.find('.variant-groups-container');
+    groupsContainer.empty();
+    
+    row.find('input[name$="[size_variant_id]"]').val('');
+    row.find('input[name$="[color_variant_id]"]').val('');
+    row.find('input[name$="[style_variant_id]"]').val('');
+
+    if (product && product.is_bundle && product.bundle_items && product.bundle_items.length > 0) {
+        
+        product.bundle_items.forEach((item, itemIdx) => {
+            const itemBlock = $('<div>').addClass('mb-3 p-3 bg-light border rounded')
+                .attr('data-bundle-item-index', itemIdx)
+                .attr('data-bundle-item-product-id', item.product_id);
+            
+            const itemNameDiv = $('<div>').addClass('fw-semibold text-primary mb-2');
+            itemNameDiv.html(`<span class="text-muted me-2">├─</span>${item.product_name}`);
+            itemBlock.append(itemNameDiv);
+            
+            if (item.product_variants && item.product_variants.length > 0) {
+                const variantsRow = $('<div>').addClass('d-flex gap-2 flex-wrap');
+                
+                const groupOrder = ["مقاس", "لون", "شكل"].filter(g => 
+                    item.product_variants.some(v => v.group_name === g)
+                );
+                
+                groupOrder.forEach(groupName => {
+                    const values = item.product_variants
+                        .filter(v => v.group_name === groupName)
+                        .map(v => v.variant_name);
+                    const uniqueValues = [...new Set(values)];
+                    
+                    const selectGroup = $('<div>').addClass('flex-grow-1');
+                    const label = $('<label>').addClass('form-label mb-1 small fw-semibold').text(groupName);
+                    
+                    let fieldName = '';
+                    if (groupName === 'مقاس') fieldName = 'size_variant_id';
+                    else if (groupName === 'لون') fieldName = 'color_variant_id';
+                    else if (groupName === 'شكل') fieldName = 'style_variant_id';
+                    
+                    const select = $('<select>').addClass('form-select form-select-sm bundle-variant-select')
+                        .attr('name', `products[${index}][bundle_${itemIdx}_${item.product_id}_${fieldName}]`)
+                        .attr('data-group', groupName)
+                        .attr('data-field', fieldName)
+                        .attr('data-bundle-item-idx', itemIdx)
+                        .attr('data-bundle-item-product-id', item.product_id);
+                    
+                    const defaultOption = $('<option>').val('').text(`اختر ${groupName}`);
+                    select.append(defaultOption);
+                    
+                    item.product_variants
+                        .filter(v => v.group_name === groupName)
+                        .forEach(v => {
+                            const option = $('<option>').val(v.id).text(v.variant_name);
+                            select.append(option);
+                        });
+                    
+                    selectGroup.append(label).append(select);
+                    variantsRow.append(selectGroup);
+                });
+                
+                itemBlock.append(variantsRow);
+            } else {
+                
+                const noVariants = $('<div>').addClass('text-muted small').text('لا توجد أنواع');
+                itemBlock.append(noVariants);
+            }
+            
+            groupsContainer.append(itemBlock);
+        });
+    }
+    
+    else if (product && product.variants && product.variants.length > 0) {
+        const groupOrder = ["مقاس", "لون", "شكل"].filter(g => product.variants.some(v => v.group_name === g));
+        groupOrder.forEach(groupName => {
+            const values = window.getGroupValues(product.variants, groupName);
+            const selectContainer = $('<div>').addClass('flex-grow-1');
+            const label = $('<label>').addClass('form-label mb-1 fw-semibold').text(groupName);
+            const select = $('<select>').addClass('form-select group-select')
+                .attr('name', `products[${index}][${groupName}_variant_name]`)
+                .attr('data-group', groupName)
+                .attr('data-index', index);
+            const defaultOption = $('<option>').val('').text(`اختر ${groupName}`);
+            select.append(defaultOption);
+            values.forEach(val => {
+                const option = $('<option>').val(val).text(val);
+                select.append(option);
+            });
+            select.attr('title', `اختر ${groupName} للمنتج`);
+            selectContainer.append(label).append(select);
+            groupsContainer.append(selectContainer);
+        });
+        groupsContainer.removeClass('row').addClass('d-flex align-items-end gap-2');
+    } else if (product) {
+        groupsContainer.html('<span class="text-muted small">لا توجد أنواع لهذا المنتج</span>');
+    } else {
+        groupsContainer.empty();
+    }
+    
+    row.find('.price-error').addClass('d-none');
+    const priceInput = row.find('input[name$="[price]"]');
+
+    if (product) {
+        const apiUrl = window.productPriceApiBase.replace('0', productId) + '?_=' + Date.now();
+        $.ajax({
+            url: apiUrl,
+            dataType: 'json',
+            cache: false,
+            success: function(data) {
+                const price = data.price || 0;
+                priceInput.val(price).trigger('input');
+            },
+            error: function() {
+                const fallback = (product.price > 0 ? product.price : product.wholesale_price) || 0;
+                priceInput.val(fallback).trigger('input');
+            }
+        });
+    } else {
+        priceInput.val(0).trigger('input');
+    }
+    
+}
+
+$(document).on('change', '.group-select', function() {
+    const $select = $(this);
+    const row = $select.closest('.product-row');
+    const index = row.data('index');
+    
+    if ($select.hasClass('bundle-variant-select')) {
+        return; 
+    }
+    
+    const productId = row.find('.product-select').val();
+    const product = products.find(p => p.id == productId);
+
+    row.find('input[name$="[size_variant_id]"]').val('');
+    row.find('input[name$="[color_variant_id]"]').val('');
+    row.find('input[name$="[style_variant_id]"]').val('');
+    
+    if (product && product.variants && product.variants.length > 0) {
+        const groupSelections = {};
+        row.find('.group-select:not(.bundle-variant-select)').each(function() {
+            const group = $(this).data('group');
+            const value = $(this).val();
+            if (value) {
+                groupSelections[group] = value;
+            }
+        });
+
+        for (const [groupName, groupValue] of Object.entries(groupSelections)) {
+            const variant = product.variants.find(v => v.group_name === groupName && v.variant_name === groupValue);
+            if (variant) {
+                if (groupName === 'مقاس') {
+                    row.find('input[name="products['+index+'][size_variant_id]"]').val(variant.id);
+                } else if (groupName === 'لون') {
+                    row.find('input[name="products['+index+'][color_variant_id]"]').val(variant.id);
+                } else if (groupName === 'شكل') {
+                    row.find('input[name="products['+index+'][style_variant_id]"]').val(variant.id);
+                }
+            }
+        }
+    }
+    window.calculateTotals();
+});
+
+$(document).on('blur', 'input[name$="[price]"]', function() {
+    const row = $(this).closest('.product-row');
+    const productId = row.find('.product-select').val();
+    const price = parseFloat($(this).val()) || 0;
+    if (!productId || !price) return;
+    const baseUrl = "{{ url_for('main.validate_price', product_id=0) }}";
+    const apiUrl = baseUrl.replace('0', productId) + '?price=' + price + '&_=' + Date.now();
+    $.ajax({
+        url: apiUrl,
+        dataType: 'json',
+        cache: false,
+        success: function(data) {
+            const err = row.find('.price-error');
+            data.valid ? err.addClass('d-none') : err.removeClass('d-none').text('السعر أقل من سعر الشراء');
+        }
+    });
+});
+
+$(document).on('input change', 'input[name$="[price]"], input[name$="[quantity]"], #deliveryFees, #amountPaid', window.calculateTotals);
+
+$(document).on('input change', 'input[name$="[quantity]"]', function(){
+  const $inp = $(this);
+  let val = parseInt($inp.val());
+  if (isNaN(val)) return; 
+  if (val <= 0){
+    alert('⚠️ لا يمكن إضافة منتج بكمية صفر. سيتم ضبط القيمة إلى 1.');
+    $inp.val(1).trigger('input');
+  }
+});
+
+function checkRowStock(row){
+  const productId = row.find('.product-select').val();
+  const product = products.find(p=> String(p.id) === String(productId));
+  
+  row.find('.out-of-stock-badge').remove();
+  
+  if (product && product.is_bundle) {
+    row.removeClass('border border-danger');
+    return;
+  }
+  if (product && (product.stock === 0 || product.stock === null)) {
+    
+    const selectWrapper = row.find('.product-select').closest('.select2');
+    const badge = $('<span class="out-of-stock-badge badge bg-danger ms-2" style="font-size:0.65rem;">غير متوفر</span>');
+    if (selectWrapper.length){
+      selectWrapper.after(badge);
+    } else {
+      row.find('.product-select').after(badge);
+    }
+    row.addClass('border border-danger rounded');
+  } else {
+    row.removeClass('border border-danger');
+  }
+}
+
+function validateAllStock(){
+  
+  const zeroStockNames = [];
+  $('#productsContainer .product-row').each(function(){
+    checkRowStock($(this));
+    const productId = $(this).find('.product-select').val();
+    const product = products.find(p=> String(p.id) === String(productId));
+    
+    if (product && product.is_bundle) return;
+    if (product && (product.stock === 0 || product.stock === null)) {
+      zeroStockNames.push(product.name);
+    }
+  });
+  return zeroStockNames; 
+}
+
+$(document).on('select2:select', '.product-select', function(){
+  const row = $(this).closest('.product-row');
+  checkRowStock(row);
+});
+
+let pendingSubmit = false;
+$('#addOrderForm').on('submit', function(e){
+  if (pendingSubmit) { return; }
+  const zeroStockNames = validateAllStock();
+  if (zeroStockNames.length){
+    e.preventDefault();
+    e.stopPropagation();
+    const listHtml = zeroStockNames.map(n => `<li class="mb-1">${n}</li>`).join('');
+    $('#oosProductsList').html(listHtml);
+    openOosConfirmModal();
+  }
+});
+
+window.openOosConfirmModal = function() {
+  const modal = document.getElementById('oosConfirmModal');
+  modal.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+};
+
+window.closeOosConfirmModal = function() {
+  const modal = document.getElementById('oosConfirmModal');
+  modal.style.display = 'none';
+  document.body.style.overflow = '';
+};
+
+document.addEventListener('click', function(ev){
+  const btn = ev.target.closest('#confirmOOSProceed');
+  if (!btn) return;
+  closeOosConfirmModal();
+  document.getElementById('allow_oos').value = '1';
+  pendingSubmit = true;
+  
+  const submitBtn = document.getElementById('submitBtn');
+  if (submitBtn){
+    submitBtn.disabled = false;
+    submitBtn.innerHTML = '<i class="fas fa-plus"></i> <span>إضافة الطلب</span>';
+  }
+  document.getElementById('addOrderForm').submit();
+});
+
+document.addEventListener('click', function(ev){
+  const btn = ev.target.closest('#cancelOOSProceed');
+  if (!btn) return;
+  pendingSubmit = false;
+  const submitBtn = document.getElementById('submitBtn');
+  if (submitBtn){
+    submitBtn.disabled = false;
+    submitBtn.innerHTML = '<i class="fas fa-plus"></i> <span>إضافة الطلب</span>';
+  }
+});
+
+const _origAddProductRow = window.addProductRow;
+window.addProductRow = function(){
+  _origAddProductRow();
+  const lastRow = $('#productsContainer .product-row').last();
+  checkRowStock(lastRow);
+};
+
+window.onload = function() {
+    window.addProductRow();
+    window.calculateTotals();
+};
+
+</script>
+
+<div class="stats-modal" id="oosConfirmModal" tabindex="-1">
+  <div class="stats-modal-content">
+    <button type="button" class="close-btn" onclick="closeOosConfirmModal()"><i class="fas fa-times"></i></button>
+    <h4 class="modal-title fw-semibold"><i class="fas fa-exclamation-triangle text-warning me-2"></i>منتجات غير متوفرة</h4>
+    <div class="modal-body" style="max-height:320px; overflow-y:auto;">
+      <p class="mb-2">المنتجات التالية غير متوفرة حالياً في المخزون وسيتم حفظ الطلب بحالة <strong>جديد</strong> دون خصم كميات:</p>
+      <ul class="list-unstyled small mb-3" id="oosProductsList"></ul>
+      <div class="alert alert-info py-2 mb-0 small">
+        يمكنك لاحقاً تعديل الطلب وتحويله إلى <strong>خرج للتوصيل</strong> بعد توافر المخزون.
+      </div>
+    </div>
+    <div class="d-flex justify-content-end gap-2 mt-4">
+      <button type="button" class="btn btn-secondary px-4" onclick="closeOosConfirmModal()" id="cancelOOSProceed">إلغاء</button>
+      <button type="button" class="btn btn-primary px-4" id="confirmOOSProceed"><i class="fas fa-check me-1"></i> متابعة و حفظ</button>
+    </div>
+  </div>
+</div>
+
+</script>
+<script>
+
+function normalizeDigits(value) {
+  const arabicIndic = {'٠':'0','١':'1','٢':'2','٣':'3','٤':'4','٥':'5','٦':'6','٧':'7','٨':'8','٩':'9','۰':'0','۱':'1','۲':'2','۳':'3','۴':'4','۵':'5','۶':'6','۷':'7','۸':'8','۹':'9'};
+  return value.replace(/[٠-٩۰-۹]/g, d => arabicIndic[d] || d);
+}
+
+const phoneInput = document.getElementById('customerPhone');
+const phoneError = document.getElementById('phoneError');
+const orderForm = document.getElementById('addOrderForm');
+
+function validatePhone(showMessage=true) {
+  if (!phoneInput) return false;
+  
+  let raw = phoneInput.value.trim();
+  raw = normalizeDigits(raw);
+  
+  const digitsOnly = raw.replace(/[^0-9]/g, '');
+  if (raw !== phoneInput.value) {
+    phoneInput.value = digitsOnly; 
+  }
+  let errorMsg = '';
+  if (digitsOnly.length === 0) {
+    errorMsg = 'يرجى إدخال رقم الهاتف';
+  } else if (digitsOnly.length < 11) {
+    errorMsg = 'رقم الهاتف يجب أن يكون 11 رقم بالإنجليزية';
+  } else if (digitsOnly.length > 11) {
+    errorMsg = 'رقم الهاتف لا يجب أن يزيد عن 11 رقم';
+  } else if (!digitsOnly.startsWith('01')) {
+    errorMsg = 'رقم الهاتف يجب أن يبدأ بـ 01';
+  }
+  if (errorMsg) {
+    if (showMessage) {
+      phoneError.classList.remove('d-none');
+      phoneError.textContent = errorMsg;
+      phoneInput.classList.add('is-invalid');
+    }
+    return false;
+  } else {
+    phoneError.classList.add('d-none');
+    phoneError.textContent = '';
+    phoneInput.classList.remove('is-invalid');
+    phoneInput.classList.add('is-valid');
+    return true;
+  }
+}
+
+if (phoneInput) {
+  phoneInput.addEventListener('input', function() {
+    
+    const pos = this.selectionStart;
+    validatePhone(false);
+    this.setSelectionRange(pos, pos);
+  });
+  phoneInput.addEventListener('blur', function() { validatePhone(true); });
+}
+
+if (orderForm) {
+  orderForm.addEventListener('submit', function(e) {
+    if (document.getElementById('orderTypeWalkin')?.checked) return;
+    if (!validatePhone(true)) {
+      e.preventDefault();
+      e.stopPropagation();
+      phoneInput.focus();
+    }
+  });
+}
+</script>
+<style>
+.select2-container { width: 100% !important; }
+.select2-container--bootstrap-5 .select2-selection--single { border: 1px solid #ced4da; border-radius: .375rem; height: calc(2.25rem + 2px); min-height: calc(2.25rem + 2px); display:flex; align-items:center; }
+.select2-container--bootstrap-5 .select2-selection--single .select2-selection__rendered { padding: 0 .75rem; line-height: 1.5; }
+.select2-container--bootstrap-5 .select2-selection--single .select2-selection__arrow { height: 100%; display:flex; align-items:center; }
+.select2-container--default .select2-selection--single { border: 1px solid #ced4da; border-radius: .375rem; height: calc(2.25rem + 2px); min-height: calc(2.25rem + 2px); display:flex; align-items:center; }
+.select2-container--default .select2-selection--single .select2-selection__rendered { line-height:1.5; padding: 0 .75rem; }
+</style>
+<script>
+
+$('#customerPhone').on('blur', function() {
+  const phone = $(this).val().trim();
+  if (phone.length > 0) {
+    $.get('/api/customer_by_phone', { phone: phone })
+      .done(function(data) {
+        if (data.found) {
+          $('#customerName').val(data.name);
+          $('#customerGovernorate').val(data.governorate || '');
+          $('#customerAddressDetails').val(data.address_details || '');
+          
+          if (data.governorate) {
+            $.get('/api/governorate-fee', {name: data.governorate}, function(feeData) {
+              if (feeData.fee !== undefined) {
+                $('#deliveryFees').val(feeData.fee).trigger('input');
+              }
+            });
+          }
+        }
+      });
+  }
+});
+
+$('#customerGovernorate').on('change', function() {
+  var gov = $(this).val();
+  if (gov) {
+    $.get('/api/governorate-fee', {name: gov}, function(data) {
+      if (data.fee !== undefined) {
+        $('#deliveryFees').val(data.fee).trigger('input');
+      }
+    });
+  }
+});
+</script>
+
+{% endblock %}

@@ -1,0 +1,127 @@
+{% extends 'base.html' %}
+{% block content %}
+<style>
+  .card-box {
+    border-radius: 0.375rem;
+    box-shadow: 0 0 15px rgba(0,0,0,0.08);
+    transition: all 0.3s ease;
+  }
+  .card-box:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 0 20px rgba(0,0,0,0.12);
+  }
+
+  /* Defaults for mobile-only elements */
+  .btn-add-mobile { display: none; }
+  :root { --damaged-action-height: 46px; }
+
+  /* Actions container behavior */
+  .damaged-actions .btn { display: inline-flex; align-items: center; }
+
+  /* Mobile-only adjustments */
+  @media (max-width: 576px) {
+    /* Tighten page sides a bit on mobile (kept modest as base.html already trims) */
+    .container.py-4 { padding-left: 0.2rem !important; padding-right: 0.2rem !important; }
+
+    /* Unify control heights */
+    .damaged-actions .btn { height: var(--damaged-action-height) !important; }
+
+    /* Show mobile add button; hide desktop add */
+    .btn-add-mobile { display: inline-flex !important; height: var(--damaged-action-height); align-items: center; justify-content: center; padding: 0 0.9rem; }
+    .damaged-actions .btn-add-desktop { display: none !important; }
+
+    /* Compact the log rows */
+    .damaged-log-row { padding: 0.55rem 0.55rem !important; min-height: 56px !important; }
+    .damaged-log-row .fw-bold { font-size: 0.98rem !important; }
+    .damaged-log-row .text-muted { font-size: 0.9rem !important; }
+    .damaged-log-row [style*="min-width: 190px;"] { min-width: 150px !important; }
+  }
+
+  /* Desktop guard: never show mobile add on md+ */
+  @media (min-width: 577px) { .btn-add-mobile { display: none !important; } }
+</style>
+<div class="container py-4" dir="rtl">
+  <div class="text-center mb-4">
+    <h2 class="fw-bold text-dark mb-1">
+      <span class="text-dark">سجل</span>
+      <span class="fw-bold text-warning">المنتجات التالفة</span>
+    </h2>
+    <div class="text-muted mb-2" style="font-size:1.1rem;">كل العمليات المسجلة للمنتجات التالفة</div>
+  </div>
+
+  <div class="row mb-4">
+    <div class="col-12">
+      <div class="d-flex justify-content-between align-items-center damaged-actions">
+        <div class="d-flex gap-2">
+          <a href="{{ url_for('main.add_damaged_product') }}" class="btn btn-success d-inline-flex align-items-center gap-2 px-4 shadow btn-add-desktop">
+            <i class="fas fa-plus"></i> <span>إضافة منتج تالف</span>
+          </a>
+          
+          <a href="{{ url_for('main.add_damaged_product') }}" class="btn btn-success btn-add-mobile" aria-label="إضافة منتج تالف">
+            <i class="fas fa-plus"></i>
+          </a>
+        </div>
+        <div class="d-flex gap-2">
+          <button type="button" class="btn btn-danger d-inline-flex align-items-center gap-2 shadow" title="إجمالي تكلفة المنتجات التالفة">
+            <i class="fas fa-warehouse"></i>
+            <span>{{ (total_loss or 0)|round(2) }} ج.م</span>
+          </button>
+          <a href="{{ url_for('main.products') }}" class="btn btn-secondary d-inline-flex align-items-center gap-2 px-4 shadow">
+            <i class="fas fa-arrow-left"></i> <span>رجوع</span>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {% if logs and logs|length > 0 %}
+    {% for log in logs %}
+  <div class="card card-box bg-white w-100 mb-3 px-3 py-2 position-relative d-flex flex-row align-items-center justify-content-between damaged-log-row" style="min-height:56px;" dir="ltr">
+        
+        <div style="min-width: 110px;">
+          <span class="badge bg-danger text-white">منتج تالف</span>
+        </div>
+
+        <div class="flex-grow-1 text-start" style="padding-right:2rem;">
+          <span class="fw-bold text-dark" style="font-size:1.08rem;">
+            {{ log.product.name if log.product else ('منتج #' ~ log.product_id) }}
+            — كمية: {{ log.quantity }} — خسارة: {{ '%.2f'|format(log.total_loss) }} ج.م
+          </span>
+          {% if log.notes %}
+            <div class="text-muted" style="font-size:0.95rem;">ملاحظة: {{ log.notes }}</div>
+          {% endif %}
+        </div>
+
+        <div class="d-flex align-items-center gap-2" style="min-width: 190px;">
+          <i class="fas fa-calendar-alt fa-lg text-secondary"></i>
+          <span class="text-secondary fw-semibold" style="font-size: 1rem;">
+            {{ log.created_at.strftime('%Y-%m-%d') if log.created_at else '' }}
+            {{ log.created_at.strftime('%I') if log.created_at else '' }}:{{ log.created_at.strftime('%M') if log.created_at else '' }}
+            {{ 'ص' if log.created_at and log.created_at.strftime('%p') == 'AM' else 'م' if log.created_at else '' }}
+          </span>
+          <form method="POST" action="{{ url_for('main.delete_damaged_product', log_id=log.id) }}" class="m-0 delete-log-form">
+            <button type="submit" class="btn btn-sm btn-link text-danger p-0 delete-log-btn" title="حذف">
+              <i class="fas fa-trash"></i>
+            </button>
+          </form>
+        </div>
+      </div>
+    {% endfor %}
+  {% else %}
+    <div class="alert alert-light border text-center text-muted mt-4">لا توجد سجلات منتجات تالفة.</div>
+  {% endif %}
+</div>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  document.querySelectorAll('.delete-log-form').forEach(function(form) {
+    form.addEventListener('submit', function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      showConfirmDialog({ message: 'هل أنت متأكد أنك تريد حذف هذا السجل؟ سيتم استرجاع الكمية للمخزون.', type: 'danger', confirmText: 'حذف' }).then(function(confirmed) {
+        if (confirmed) { form.submit(); }
+      });
+    });
+  });
+});
+</script>
+{% endblock %}

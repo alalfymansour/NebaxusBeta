@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+{% block title %}تسجيل الحضور{% endblock %}
+{% block content %}
+<style>
+  .modern-table {
+    border-radius: 1rem;
+    overflow: hidden;
+    background: #fff;
+    border: 1px solid #000;
+  }
+  .modern-table th {
+    background: #D79921 !important;
+    font-size: 1.1rem;
+    letter-spacing: 0.5px;
+    color: #333;
+    vertical-align: middle;
+    border-bottom: 1px solid #000 !important;
+  }
+  .modern-table td {
+    vertical-align: middle;
+    font-size: 1rem;
+    background: #fff;
+    border-bottom: 1px solid #000;
+  }
+  .modern-table tbody tr:hover td {
+    background: #fff3cd !important;
+    transition: background 0.2s;
+  }
+  .attendance-btn-group { display: flex; gap: 4px; justify-content: center; }
+  .attendance-btn-group .btn { padding: 0.25rem 0.5rem; font-size: 0.85rem; white-space: nowrap; }
+  @media (max-width: 576px) {
+    .modern-table th, .modern-table td { white-space: nowrap !important; }
+    .attendance-btn-group .btn span { display: none; }
+    .attendance-btn-group .btn i { margin: 0 !important; }
+    .attendance-btn-group .btn { padding: 0.25rem 0.4rem; }
+  }
+</style>
+
+<div class="container py-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h4><i class="fas fa-clipboard-check"></i> تسجيل حضور</h4>
+    <div class="d-flex align-items-center gap-2">
+      <form method="GET" class="m-0" id="date-filter-form">
+        <div class="date-dmy-wrapper">
+          <input type="text" class="form-control" value="{{ selected_date.strftime('%d/%m/%Y') }}" readonly>
+          <input type="date" name="date" value="{{ selected_date.isoformat() }}" onchange="this.previousElementSibling.value=this.value.split('-').reverse().join('/');this.form.submit()">
+        </div>
+      </form>
+      <a href="{{ url_for('main.employees') }}" class="btn btn-secondary"><i class="fas fa-arrow-right"></i> رجوع</a>
+    </div>
+  </div>
+
+  <div class="table-responsive">
+    <table class="table modern-table table-hover text-center align-middle">
+      <thead>
+        <tr>
+          <th>الموظف</th>
+          <th>الحالة</th>
+          <th>تسجيل</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for emp in employees %}
+        {% set status = today_map.get(emp.id, '') %}
+        <tr>
+          <td class="text-start" dir="rtl">{{ emp.name }}</td>
+          <td>
+            {% if status == 'present' %}
+            <span class="badge bg-success">حاضر</span>
+            {% elif status == 'half_day' %}
+            <span class="badge bg-warning text-dark">نصف يوم</span>
+            {% elif status == 'absent' %}
+            <span class="badge bg-danger">غائب</span>
+            {% else %}
+            <span class="badge bg-secondary">لم يسجل</span>
+            {% endif %}
+          </td>
+          <td>
+            <div class="attendance-btn-group">
+              <button onclick="recordAttendance({{ emp.id }}, 'present', this)" class="btn {% if status == 'present' %}btn-success{% else %}btn-outline-success{% endif %}">
+                <i class="fas fa-check-circle"></i> <span>حاضر</span>
+              </button>
+              <button onclick="recordAttendance({{ emp.id }}, 'half_day', this)" class="btn {% if status == 'half_day' %}btn-warning{% else %}btn-outline-warning{% endif %}">
+                <i class="fas fa-adjust"></i> <span>نصف يوم</span>
+              </button>
+              <button onclick="recordAttendance({{ emp.id }}, 'absent', this)" class="btn {% if status == 'absent' %}btn-danger{% else %}btn-outline-danger{% endif %}">
+                <i class="fas fa-times-circle"></i> <span>غائب</span>
+              </button>
+            </div>
+          </td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="3" class="text-muted">لا يوجد موظفون يتطلبون تسجيل حضور.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+function recordAttendance(empId, status, btn) {
+  var dateVal = document.querySelector('#date-filter-form input[type="date"]').value;
+  fetch('/employees/' + empId + '/attendance', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+    body: 'status=' + encodeURIComponent(status) + '&date=' + encodeURIComponent(dateVal)
+  }).then(function(r) {
+    if (r.ok) location.reload();
+  });
+}
+</script>
+{% endblock %}

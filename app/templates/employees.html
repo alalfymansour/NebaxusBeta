@@ -1,0 +1,198 @@
+{% extends "base.html" %}
+
+{% block title %}الموظفين{% endblock %}
+
+{% block content %}
+<style>
+  .card-box {
+    border-radius: 1rem;
+    box-shadow: 0 0 15px rgba(0,0,0,0.08);
+    transition: all 0.3s ease;
+  }
+  .card-box:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 0 20px rgba(0,0,0,0.12);
+  }
+  /* Defaults: hide mobile-only elements on desktop */
+  .btn-add-mobile { display: none; }
+
+  /* Search form layout */
+  .search-form { display: flex; align-items: stretch; gap: 0.5rem; }
+  .search-form .btn { display: inline-flex; align-items: center; }
+  /* Keep inline-flex for better vertical centering on desktop, let height be Bootstrap default */
+  .employees-actions .btn { display: inline-flex; align-items: center; }
+
+  /* Mobile-only layout: make card horizontal to reduce height */
+  @media (max-width: 576px) {
+    :root { --list-action-height: 46px; }
+    /* Unify control heights on mobile */
+    .search-form .form-control,
+    .search-form .btn { height: var(--list-action-height) !important; }
+    .employees-actions .btn { height: var(--list-action-height) !important; }
+
+    /* Make search button icon-only on mobile */
+    .search-form .btn span { display: none !important; }
+    .search-form .btn i { margin: 0 !important; }
+
+    /* Show mobile add button and hide desktop add on mobile */
+    .btn-add-mobile { display: inline-flex !important; height: var(--list-action-height); align-items: center; justify-content: center; padding: 0 0.9rem; }
+    .employees-actions .btn-add-desktop { display: none !important; }
+
+    /* Match dashboard-like spacing on mobile */
+    .employees-grid {
+      row-gap: 0.4rem !important;
+      --bs-gutter-y: 0.4rem;
+      --bs-gutter-x: 0.5rem;
+    }
+    .employees-grid > [class*="col-"] {
+  padding-left: 0.25rem !important;
+  padding-right: 0.25rem !important;
+    }
+
+    .employee-card {
+      display: flex !important;
+      flex-direction: row !important;
+      align-items: center !important;
+      justify-content: flex-start !important;
+      gap: 12px !important;
+      padding: 0.75rem 0.55rem !important;
+      text-align: right !important;
+    }
+    .employee-card .avatar { margin: 0 !important; }
+    .employee-card .avatar .rounded-circle {
+      width: 56px !important;
+      height: 56px !important;
+      font-size: 22px !important;
+    }
+    .employee-card .employee-info {
+      display: flex !important;
+      flex-direction: column !important;
+      align-items: flex-start !important;
+      gap: 2px !important;
+      flex: 1 1 auto !important;
+      min-width: 0;
+    }
+    .employee-card .employee-info h5 {
+      font-size: 1rem !important;
+      margin: 0 0 2px 0 !important;
+    }
+    .employee-card .employee-info p {
+      margin: 0 !important;
+      font-size: 0.9rem !important;
+      white-space: nowrap !important;
+      overflow: hidden !important;
+      text-overflow: ellipsis !important;
+      max-width: 100%;
+    }
+
+    /* Actions row on mobile: space between */
+    .employees-actions {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.5rem;
+      width: 100%;
+    }
+  }
+
+  /* Desktop-only resets */
+  @media (min-width: 577px) {
+    .btn-add-mobile { display: none !important; }
+    .employee-card { text-align: center !important; }
+    .employee-card .employee-info { align-items: center !important; }
+  }
+  
+  /* Dark mode support for employees page */
+</style>
+<div class="container py-4" dir="rtl">
+
+  <div class="text-center mb-4">
+    <h2 class="fw-bold">قائمة <span class="text-warning">الموظفين</span></h2>
+    <p class="text-muted">كل الموظفين المسجلين في النظام</p>
+  </div>
+
+  <div class="row mb-4">
+    <div class="col-md-4 col-sm-12 mb-2">
+      <div class="search-form">
+        <input type="text" class="form-control" id="instant-search-employees"
+               placeholder="ابحث بالاسم أو الوظيفة أو رقم الهاتف" style="width: 200px;">
+        
+        <a href="{{ url_for('main.add_employee_basic') }}" class="btn btn-success btn-add-mobile" aria-label="إضافة موظف">
+          <i class="fas fa-plus"></i>
+        </a>
+      </div>
+    </div>
+    <div class="col-md-8 col-sm-12 text-md-end text-center">
+      <div class="employees-actions">
+        {% if has_permission('can_manage_attendance') %}
+        <a href="{{ url_for('main.attendance_today') }}" class="btn btn-info d-inline-flex align-items-center me-2">
+          <i class="fas fa-clipboard-check me-1"></i> <span>تسجيل الحضور</span>
+        </a>
+        {% endif %}
+        <a href="{{ url_for('main.add_employee_basic') }}" class="btn btn-success d-inline-flex align-items-center me-2 btn-add-desktop">
+          <i class="fas fa-plus me-1"></i> <span>إضافة موظف</span>
+        </a>
+      </div>
+
+    </div>
+  </div>
+
+  {% if employees %}
+  <div class="row g-4 employees-grid">
+    {% for employee in employees %}
+    <div class="col-12 col-md-6 col-lg-3">
+      <div class="d-flex flex-column gap-2">
+      <a href="{{ url_for('main.employee_profile', employee_id=employee.id) }}" class="card card-box text-decoration-none p-4 d-block bg-white h-100 d-flex flex-column justify-content-center align-items-center employee-card" data-name="{{ employee.name }}" data-position="{{ employee.position }}" data-phone="{{ employee.phone }}">
+        
+        <div class="mb-3 avatar">
+          <div class="rounded-circle mx-auto" style="width: 80px; height: 80px; font-size: 32px; font-weight: bold; background-color: rgba(215, 153, 33, 0.25); color: #D79921; display: flex; align-items: center; justify-content: center;">
+            {{ employee.name[0] }}
+          </div>
+        </div>
+        <div class="employee-info">
+          
+          <h5 class="fw-bold mb-2 text-dark">{{ employee.name }}</h5>
+          
+          <p class="text-muted mb-1">
+            <i class="fas fa-briefcase me-2"></i>{{ employee.position }}
+          </p>
+          
+          <p class="text-muted mb-0">
+            <i class="fas fa-phone-alt me-2"></i>{{ employee.phone }}
+          </p>
+        </div>
+      </a>
+
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+    <div class="alert alert-light border text-center text-muted mt-4">
+      لا يوجد موظفين حاليًا.
+    </div>
+  {% endif %}
+
+</div>
+
+<form id="delete-form" method="POST" style="display: none;">
+</form>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  var input = document.getElementById('instant-search-employees');
+  if (!input) return;
+  var cards = document.querySelectorAll('.employee-card');
+  input.addEventListener('input', function() {
+    var q = this.value.trim().toLowerCase();
+    cards.forEach(function(card) {
+      var name = (card.getAttribute('data-name') || '').toLowerCase();
+      var pos = (card.getAttribute('data-position') || '').toLowerCase();
+      var phone = (card.getAttribute('data-phone') || '').toLowerCase();
+      var match = name.indexOf(q) !== -1 || pos.indexOf(q) !== -1 || phone.indexOf(q) !== -1;
+      card.closest('.col-12').style.display = match ? '' : 'none';
+    });
+  });
+});
+</script>
+{% endblock %} 

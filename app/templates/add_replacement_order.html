@@ -1,0 +1,2154 @@
+{% extends 'base.html' %}
+{% block content %}
+<style>
+  .step-indicator {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 2rem;
+    position: relative;
+  }
+  
+  .step-indicator::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: #e9ecef;
+    z-index: 1;
+  }
+  
+  .step {
+    position: relative;
+    z-index: 2;
+    background: white;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid #e9ecef;
+    font-weight: bold;
+    color: #6c757d;
+    transition: all 0.3s ease;
+  }
+  
+  .step.active {
+    border-color: #0d6efd;
+    background: #0d6efd;
+    color: white;
+  }
+  
+  .step.completed {
+    border-color: #198754;
+    background: #198754;
+    color: white;
+  }
+  
+  .step-label {
+    text-align: center;
+    margin-top: 0.5rem;
+    font-size: 0.875rem;
+    color: #6c757d;
+  }
+  
+  .step-label.active {
+    color: #0d6efd;
+    font-weight: bold;
+  }
+  
+  .step-label.completed {
+    color: #198754;
+    font-weight: bold;
+  }
+  
+  .step-content {
+    display: none;
+  }
+  
+  .step-content.active {
+    display: block;
+  }
+  
+  .product-card {
+    transition: all 0.3s ease;
+    border: 1px solid #e9ecef;
+    cursor: pointer;
+  }
+  
+  .product-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    border-color: #0d6efd;
+  }
+  
+  .product-card.selected {
+    border-color: #0d6efd;
+    background-color: rgba(13, 110, 253, 0.1);
+  }
+  
+  .product-item {
+    transition: all 0.2s ease;
+  }
+  
+  .product-item:hover {
+    background-color: #f8f9fa;
+  }
+  
+  .product-checkbox:checked + .product-item {
+    background-color: rgba(13, 110, 253, 0.1);
+    border-color: #0d6efd;
+  }
+  
+  .damage-status {
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    font-size: 0.75rem;
+    font-weight: bold;
+  }
+  
+  .damage-status.damaged {
+    background-color: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+  }
+  
+  .damage-status.good {
+    background-color: #d1edff;
+    color: #0c5460;
+    border: 1px solid #bee5eb;
+  }
+  
+  .damage-status.untested {
+    background-color: #fff3cd;
+    color: #856404;
+    border: 1px solid #ffeaa7;
+  }
+  
+  .accounting-summary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 1rem;
+  }
+  
+  .summary-card {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 0.75rem;
+    backdrop-filter: blur(10px);
+  }
+  
+  /* تحسين أحجام الأزرار */
+  .btn {
+    padding: 0.5rem 1rem;
+    font-size: 0.9rem;
+    border-radius: 0.5rem;
+    transition: all 0.3s ease;
+  }
+  
+  .btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+  }
+  
+  .btn-success {
+    background: linear-gradient(135deg, #28a745, #20c997);
+    border: none;
+  }
+  
+  .btn-primary {
+    background: linear-gradient(135deg, #007bff, #0056b3);
+    border: none;
+  }
+  
+  .btn-secondary {
+    background: linear-gradient(135deg, #6c757d, #495057);
+    border: none;
+  }
+  
+  /* ضبط أحجام العناصر في الصفوف */
+  .form-control, .form-select {
+    height: 38px;
+    font-size: 0.9rem;
+  }
+  
+  .form-control-sm, .form-select-sm {
+    height: 32px;
+    font-size: 0.85rem;
+  }
+  
+  /* ضبط أحجام الأزرار في الصفوف */
+  .btn-sm {
+    height: 32px;
+    padding: 0.25rem 0.5rem;
+    font-size: 0.85rem;
+  }
+  
+  /* ضبط المسافات بين العناصر */
+  .row > .col-md-2, .row > .col-md-4 {
+    margin-bottom: 1rem;
+  }
+  
+  /* تحسين عرض الأعمدة */
+  .col-md-2 {
+    min-width: 120px;
+  }
+  
+  .col-md-4 {
+    min-width: 200px;
+  }
+</style>
+
+<div class="container py-4" dir="rtl">
+  <form method="post" id="replacementOrderForm" onsubmit="updateFinalSummary(); return true;">
+  
+  <div class="text-center mb-4">
+    <h2 class="fw-bold">إضافة طلب <span class="text-primary">استبدال جديد</span></h2>
+    <p class="text-muted">نظام محاسبة متقدم لطلبات الاستبدال</p>
+  </div>
+  
+  <div class="step-indicator">
+    <div class="text-center">
+      <div class="step active" id="step1-indicator">
+        <i class="fas fa-search"></i>
+      </div>
+      <div class="step-label active" id="step1-label">البحث عن العميل</div>
+    </div>
+    
+    <div class="text-center">
+      <div class="step" id="step2-indicator">
+        <i class="fas fa-list"></i>
+      </div>
+      <div class="step-label" id="step2-label">اختيار الطلب</div>
+    </div>
+    
+    <div class="text-center">
+      <div class="step" id="step3-indicator">
+        <i class="fas fa-box"></i>
+      </div>
+      <div class="step-label" id="step3-label">حالة المنتجات</div>
+    </div>
+    
+    <div class="text-center">
+      <div class="step" id="step4-indicator">
+        <i class="fas fa-plus"></i>
+      </div>
+      <div class="step-label" id="step4-label">منتجات جديدة</div>
+    </div>
+    
+    <div class="text-center">
+      <div class="step" id="step5-indicator">
+        <i class="fas fa-check"></i>
+      </div>
+      <div class="step-label" id="step5-label">المراجعة والإرسال</div>
+    </div>
+  </div>
+  
+  <div class="step-content active" id="step1-content">
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-primary bg-opacity-10 border-0 py-3">
+        <h6 class="mb-0 fw-semibold text-primary">
+          <i class="fas fa-search me-2"></i>المرحلة الأولى: البحث عن العميل
+        </h6>
+      </div>
+      <div class="card-body">
+        <div class="row align-items-end">
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">رقم هاتف العميل</label>
+            <input type="text" class="form-control form-control-lg" name="search_phone" 
+                   value="{{ customer_phone }}" placeholder="أدخل رقم الهاتف" required>
+          </div>
+          <div class="col-md-3">
+            <button type="button" class="btn btn-primary w-100" onclick="searchCustomer()">
+              <i class="fas fa-search me-1"></i>بحث
+            </button>
+          </div>
+          <div class="col-md-3">
+            <a href="{{ url_for('main.replacement_orders') }}" class="btn btn-secondary w-100">
+              <i class="fas fa-arrow-left me-1"></i>رجوع
+            </a>
+          </div>
+        </div>
+
+  {% if customer %}
+        <div class="alert alert-success mt-3">
+          <h6 class="mb-1">✅ تم العثور على العميل</h6>
+          <p class="mb-0"><strong>{{ customer.name }}</strong> - {{ customer.phone }}</p>
+          {% if customer.governorate %}
+            <small class="text-muted">{{ customer.governorate }}</small>
+          {% endif %}
+        </div>
+        
+        <div class="text-center mt-3">
+          <button type="button" class="btn btn-success" onclick="nextStep(2)">
+            التالي: اختيار الطلب <i class="fas fa-arrow-left ms-1"></i>
+          </button>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div class="step-content" id="step2-content">
+    <div class="card border-0 shadow-sm">
+    <div class="card-header bg-info bg-opacity-10 border-0 py-3">
+      <h6 class="mb-0 fw-semibold text-info">
+          <i class="fas fa-list me-2"></i>المرحلة الثانية: اختيار الطلب الأصلي
+      </h6>
+    </div>
+    <div class="card-body">
+
+      {% if customer_orders or customer_replacement_orders %}
+
+        <!-- Tabs -->
+        <ul class="nav nav-tabs mb-3" id="orderTypeTabs">
+          <li class="nav-item">
+            <button class="nav-link {% if not selected_replacement_order %}active{% endif %}" 
+                    id="tab-orders" type="button"
+                    onclick="switchOrderTab('orders')">
+              <i class="fas fa-box me-1"></i>طلبات عادية
+              <span class="badge bg-primary ms-1">{{ customer_orders|length }}</span>
+            </button>
+          </li>
+          <li class="nav-item">
+            <button class="nav-link {% if selected_replacement_order %}active{% endif %}" 
+                    id="tab-replacements" type="button"
+                    onclick="switchOrderTab('replacements')">
+              <i class="fas fa-exchange-alt me-1"></i>طلبات استبدال سابقة
+              <span class="badge bg-warning text-dark ms-1">{{ customer_replacement_orders|length }}</span>
+            </button>
+          </li>
+        </ul>
+
+        <!-- Regular Orders -->
+        <div id="tab-orders-content" {% if selected_replacement_order %}style="display:none"{% endif %}>
+          {% if customer_orders %}
+            <div class="row">
+              {% for order in customer_orders %}
+              <div class="col-md-6 mb-3">
+                <div class="product-card card h-100 {% if selected_order and selected_order.id == order.id %}border-success border-2{% endif %}"
+                     data-order-id="{{ order.id }}"
+                     onclick="selectOrder({{ order.id }}, this)">
+                  <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                      <h6 class="card-title mb-0">طلب رقم {{ order.id }}</h6>
+                      <span class="badge bg-primary">{{ order.status }}</span>
+                    </div>
+                    <p class="card-text text-muted mb-2">
+                      <i class="fas fa-calendar me-1"></i>{{ order.date.strftime('%Y-%m-%d') }}
+                    </p>
+                    <p class="card-text mb-2">
+                      <strong>إجمالي الطلب:</strong> {{ order.total_amount }} ج.م
+                    </p>
+                    <p class="card-text mb-0">
+                      <strong>عدد المنتجات:</strong> {{ order.items|length }} منتج
+                    </p>
+                  </div>
+                </div>
+              </div>
+              {% endfor %}
+            </div>
+          {% else %}
+            <div class="alert alert-secondary">لا توجد طلبات عادية لهذا العميل</div>
+          {% endif %}
+        </div>
+
+        <!-- Replacement Orders -->
+        <div id="tab-replacements-content" {% if not selected_replacement_order %}style="display:none"{% endif %}>
+          {% if customer_replacement_orders %}
+            <div class="row">
+              {% for ro in customer_replacement_orders %}
+              <div class="col-md-6 mb-3">
+                <div class="product-card card h-100 {% if selected_replacement_order and selected_replacement_order.id == ro.id %}border-success border-2{% endif %}"
+                     data-replacement-order-id="{{ ro.id }}"
+                     onclick="selectReplacementOrder({{ ro.id }}, this)">
+                  <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                      <h6 class="card-title mb-0">
+                        <i class="fas fa-exchange-alt text-warning me-1"></i>استبدال رقم {{ ro.id }}
+                      </h6>
+                      <span class="badge bg-warning text-dark">{{ ro.status }}</span>
+                    </div>
+                    <p class="card-text text-muted mb-2">
+                      <i class="fas fa-calendar me-1"></i>{{ ro.date.strftime('%Y-%m-%d') }}
+                    </p>
+                    <p class="card-text mb-2">
+                      <strong>إجمالي الطلب:</strong> {{ ro.total_amount }} ج.م
+                    </p>
+                    <p class="card-text mb-0">
+                      {% set new_items_count = ro.items | rejectattr('state', 'equalto', 'تالف') | rejectattr('state', 'equalto', 'مرتجع') | list | length %}
+                      <strong>عدد المنتجات:</strong> {{ new_items_count }} منتج
+                    </p>
+                    {% if ro.original_order_id %}
+                    <p class="card-text mb-0">
+                      <small class="text-muted">بناءً على طلب رقم {{ ro.original_order_id }}</small>
+                    </p>
+                    {% elif ro.original_replacement_order_id %}
+                    <p class="card-text mb-0">
+                      <small class="text-muted">بناءً على استبدال رقم {{ ro.original_replacement_order_id }}</small>
+                    </p>
+                    {% endif %}
+                  </div>
+                </div>
+              </div>
+              {% endfor %}
+            </div>
+          {% else %}
+            <div class="alert alert-secondary">لا توجد طلبات استبدال سابقة لهذا العميل</div>
+          {% endif %}
+        </div>
+
+        {% if selected_order %}
+        <div class="alert alert-success mt-3">
+          <h6 class="mb-2">✅ تم اختيار الطلب</h6>
+          <p class="mb-0">طلب رقم <strong>{{ selected_order.id }}</strong> بتاريخ {{ selected_order.date.strftime('%Y-%m-%d') }}</p>
+        </div>
+        <div class="text-center mt-3">
+          <button type="button" class="btn btn-success" onclick="nextStep(3)">
+            التالي: تحديد حالة المنتجات <i class="fas fa-arrow-left ms-1"></i>
+          </button>
+        </div>
+        {% elif selected_replacement_order %}
+        <div class="alert alert-success mt-3">
+          <h6 class="mb-2">✅ تم اختيار طلب الاستبدال</h6>
+          <p class="mb-0">طلب استبدال رقم <strong>{{ selected_replacement_order.id }}</strong> بتاريخ {{ selected_replacement_order.date.strftime('%Y-%m-%d') }}</p>
+        </div>
+        <div class="text-center mt-3">
+          <button type="button" class="btn btn-success" onclick="nextStep(3)">
+            التالي: تحديد حالة المنتجات <i class="fas fa-arrow-left ms-1"></i>
+          </button>
+        </div>
+        {% endif %}
+
+      {% else %}
+        <div class="alert alert-warning">
+          <h6 class="mb-2">⚠️ لا توجد طلبات</h6>
+          <p class="mb-0">هذا العميل ليس لديه طلبات سابقة</p>
+        </div>
+      {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div class="step-content" id="step3-content">
+    <div class="card border-0 shadow-sm">
+    <div class="card-header bg-warning bg-opacity-10 border-0 py-3">
+      <h6 class="mb-0 fw-semibold text-warning">
+          <i class="fas fa-box me-2"></i>المرحلة الثالثة: تحديد حالة المنتجات
+      </h6>
+    </div>
+    <div class="card-body">
+        <div class="alert alert-warning">
+          <h6 class="mb-2">📋 قواعد تحديد الحالة:</h6>
+          <ul class="mb-0">
+            <li><strong>تالف:</strong> خسارة في الشراء + قيمة البيع مستحقة للعميل</li>
+            <li><strong>سليم:</strong> لا قيمة مستحقة (يحصل على نفس المنتج مجاناً)</li>
+            <li><strong>مرتجع:</strong> لا خسارة في الشراء + قيمة البيع مستحقة للعميل + المنتج يرجع المخزون</li>
+          </ul>
+        </div>
+        
+        <div id="products-container" style="display: none;">
+          
+        </div>
+        
+        <div class="table-responsive">
+          <table class="table table-hover">
+            <thead class="table-light">
+              <tr>
+                <th></th>
+                <th>المنتج</th>
+                <th>النوع</th>
+                <th>السعر</th>
+                <th>حالة المنتج</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% if selected_order and selected_order.items %}
+                
+                {% for item in selected_order.items %}
+                  {% set qty = item.quantity if item.quantity else 1 %}
+                  
+                  {% if item.product and item.product.is_bundle %}
+                    
+                    {% for bundle_item in item.product.bundle_items %}
+                      {% if bundle_item.product %}
+                        {% for u in range(qty) %}
+        <tr class="product-item" 
+          data-original-item-id="{{ item.id }}"
+          data-unit-index="{{ u + 1 }}"
+          data-product-id="{{ bundle_item.product.id }}"
+          data-bundle-parent="{{ item.product.id }}"
+          data-bundle-name="{{ item.product.name }}"
+          data-size-variant-id=""
+          data-color-variant-id=""
+          data-style-variant-id="">
+                  <td>
+                    <input type="checkbox" name="selected_items" value="{{ item.id }}::{{ bundle_item.id }}::{{ u + 1 }}" class="product-checkbox" onchange="toggleProductState(this)">
+                  </td>
+                  <td>
+                    <strong>{{ bundle_item.product.name }}</strong>
+                    <br><span class="badge bg-info" style="font-size: 0.7rem;">من البندل: {{ item.product.name }}</span>
+                    {% if qty > 1 %}<br><span class="badge bg-secondary">قطعة {{ u + 1 }} من {{ qty }}</span>{% endif %}
+                    {% if item.state and item.state != 'لم يتم التجربة بعد' %}
+                      <br><small class="text-muted">الحالة الحالية (أصلية): {{ item.state }}</small>
+                    {% endif %}
+                  </td>
+                  <td>
+                    
+                    <span class="text-muted">--</span>
+                  </td>
+                  <td>{{ bundle_item.sale_price_in_bundle }} ج.م</td>
+                  <td>
+                    <select name="product_state_{{ item.id }}_{{ bundle_item.id }}_{{ u + 1 }}" class="form-select form-select-sm" style="display:none" disabled>
+                      <option value="سليم">سليم</option>
+                      <option value="تالف">تالف</option>
+                      <option value="مرتجع">مرتجع</option>
+                    </select>
+                  </td>
+                </tr>
+                        {% endfor %}
+                      {% endif %}
+                    {% endfor %}
+                  {% else %}
+                    
+                    {% for u in range(qty) %}
+        <tr class="product-item" 
+          data-original-item-id="{{ item.id }}"
+          data-unit-index="{{ u + 1 }}"
+          data-product-id="{{ item.product.id if item.product else (item.product_id or '') }}"
+          data-size-variant-id="{{ item.size_variant_id or '' }}"
+          data-color-variant-id="{{ item.color_variant_id or '' }}"
+          data-style-variant-id="{{ item.style_variant_id or '' }}">
+                  <td>
+                    <input type="checkbox" name="selected_items" value="{{ item.id }}::{{ u + 1 }}" class="product-checkbox" onchange="toggleProductState(this)">
+                  </td>
+                  <td>
+                    <strong>{{ item.product.name if item.product else 'منتج محذوف' }}</strong>
+                    {% if qty > 1 %}<br><span class="badge bg-secondary">قطعة {{ u + 1 }} من {{ qty }}</span>{% endif %}
+                    {% if item.state and item.state != 'لم يتم التجربة بعد' %}
+                      <br><small class="text-muted">الحالة الحالية (أصلية): {{ item.state }}</small>
+                    {% endif %}
+                  </td>
+                  <td>
+                    {% for label, variant in item.selected_variants.items() %}
+                      <span class="badge bg-primary me-1">{{ label }}: {{ variant.variant_name }}</span>
+                    {% endfor %}
+                  </td>
+                  <td>{{ item.price }} ج.م</td>
+                  <td>
+                    <select name="product_state_{{ item.id }}_{{ u + 1 }}" class="form-select form-select-sm" style="display:none" disabled>
+                      <option value="سليم">سليم</option>
+                      <option value="تالف">تالف</option>
+                      <option value="مرتجع">مرتجع</option>
+                    </select>
+                  </td>
+                </tr>
+                    {% endfor %}
+                  {% endif %}
+                {% endfor %}
+              {% else %}
+                {% if selected_replacement_order and selected_replacement_order.items %}
+                  {% for item in selected_replacement_order.items %}
+                    {% if item.state not in ['تالف', 'مرتجع'] %}
+                    {% set qty = item.quantity if item.quantity else 1 %}
+                    {% for u in range(qty) %}
+        <tr class="product-item"
+          data-original-item-id="{{ item.id }}"
+          data-unit-index="{{ u + 1 }}"
+          data-product-id="{{ item.product.id if item.product else (item.product_id or '') }}"
+          data-size-variant-id="{{ item.size_variant_id or '' }}"
+          data-color-variant-id="{{ item.color_variant_id or '' }}"
+          data-style-variant-id="{{ item.style_variant_id or '' }}">
+                  <td>
+                    <input type="checkbox" name="selected_items" value="{{ item.id }}::{{ u + 1 }}" class="product-checkbox" onchange="toggleProductState(this)">
+                  </td>
+                  <td>
+                    <strong>{{ item.product.name if item.product else 'منتج محذوف' }}</strong>
+                    <span class="badge bg-warning text-dark ms-1" style="font-size:0.7rem;">من استبدال</span>
+                    {% if qty > 1 %}<br><span class="badge bg-secondary">قطعة {{ u + 1 }} من {{ qty }}</span>{% endif %}
+                    {% if item.state and item.state != 'لم يتم التجربة بعد' %}
+                      <br><small class="text-muted">الحالة الحالية: {{ item.state }}</small>
+                    {% endif %}
+                  </td>
+                  <td>
+                    {% if item.size_variant %}<span class="badge bg-primary me-1">مقاس: {{ item.size_variant.variant_name }}</span>{% endif %}
+                    {% if item.color_variant %}<span class="badge bg-info me-1">لون: {{ item.color_variant.variant_name }}</span>{% endif %}
+                    {% if item.style_variant %}<span class="badge bg-secondary me-1">نوع: {{ item.style_variant.variant_name }}</span>{% endif %}
+                  </td>
+                  <td>{{ item.price }} ج.م</td>
+                  <td>
+                    <select name="product_state_{{ item.id }}_{{ u + 1 }}" class="form-select form-select-sm" style="display:none" disabled>
+                      <option value="سليم">سليم</option>
+                      <option value="تالف">تالف</option>
+                      <option value="مرتجع">مرتجع</option>
+                    </select>
+                  </td>
+                </tr>
+                    {% endfor %}
+                    {% endif %}
+                  {% endfor %}
+                {% else %}
+                  <tr><td colspan="5" class="text-center text-muted">لا توجد منتجات في هذا الطلب</td></tr>
+                {% endif %}
+              {% endif %}
+            </tbody>
+          </table>
+<script>
+function toggleProductState(checkbox) {
+  var select = checkbox.closest('tr').querySelector('select[name^="product_state_"]');
+  if (select) {
+    if (checkbox.checked) {
+      select.style.display = '';
+      select.disabled = false;
+    } else {
+      select.style.display = 'none';
+      select.disabled = true;
+    }
+  }
+  updateSelectedCount();
+}
+</script>
+        </div>
+
+        <div class="d-flex justify-content-between align-items-center mt-3">
+          <span class="text-muted">
+            تم اختيار <span id="selectedCount">0</span> منتج
+          </span>
+          <div class="d-flex gap-2">
+            <button type="button" class="btn btn-secondary" onclick="previousStep(2)">
+              <i class="fas fa-arrow-right me-1"></i>السابق
+            </button>
+            <button type="button" class="btn btn-outline-primary" onclick="saveDraft('product_condition')">
+              <i class="fas fa-save me-1"></i>حفظ كمسودة
+            </button>
+            <button type="button" class="btn btn-success" onclick="nextStep(4)" id="step3-next" disabled>
+              التالي: إضافة منتجات جديدة <i class="fas fa-arrow-left ms-1"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <div class="step-content" id="step4-content">
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-success bg-opacity-10 border-0 py-3">
+        <h6 class="mb-0 fw-semibold text-success">
+          <i class="fas fa-plus me-2"></i>المرحلة الرابعة: إضافة منتجات جديدة (اختياري)
+        </h6>
+      </div>
+      <div class="card-body">
+        <div class="alert alert-success">
+          <h6 class="mb-2">💡 معلومات مهمة</h6>
+          <p class="mb-0">يمكنك إضافة منتجات جديدة للعميل (تباع كأول مرة) إذا كان يحتاجها</p>
+        </div>
+        <div class="row">
+          <div class="col-md-4">
+            <label class="form-label">اسم المنتج</label>
+            <select class="form-control" id="new_product_select" style="width:100%">
+              <option value=""></option>
+            </select>
+          </div>
+          <div class="col-md-2" id="newProductVariants">
+            
+          </div>
+          <div class="col-md-1">
+            <label class="form-label">السعر</label>
+            <input type="number" class="form-control" name="new_product_price" step="0.01" min="0" placeholder="السعر" readonly>
+          </div>
+          <div class="col-md-1">
+            <label class="form-label">الكمية</label>
+            <input type="number" class="form-control" name="new_product_quantity" min="1" value="1">
+          </div>
+          <div class="col-md-2 d-flex align-items-end">
+            <button type="button" class="btn btn-success w-100" onclick="addNewProduct()">
+              <i class="fas fa-plus me-1"></i>إضافة
+            </button>
+          </div>
+        </div>
+        </div>
+        
+        <div id="newProductsList" class="mt-3" style="display: none;">
+          <h6 class="text-success mb-2">المنتجات الجديدة المضافة:</h6>
+          <div class="table-responsive">
+            <table class="table table-sm table-success">
+              <thead>
+                <tr>
+                  <th>المنتج</th>
+                  <th>السعر</th>
+                  <th>الكمية</th>
+                  <th>الإجمالي</th>
+                  <th>الإجراء</th>
+                </tr>
+              </thead>
+              <tbody id="newProductsTableBody">
+              </tbody>
+            </table>
+          </div>
+        </div>
+        
+        <div class="d-flex justify-content-end align-items-center mt-4 mb-2 gap-2">
+          <button type="button" class="btn btn-secondary" onclick="previousStep(3)">
+            <i class="fas fa-arrow-right me-1"></i>السابق
+          </button>
+          <button type="button" class="btn btn-outline-primary" onclick="saveDraft('new_products')">
+            <i class="fas fa-save me-1"></i>حفظ كمسودة
+          </button>
+          <button type="button" class="btn btn-success" onclick="nextStep(5)">
+            التالي: المراجعة والإرسال <i class="fas fa-arrow-left ms-1"></i>
+          </button>
+        </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <div class="step-content" id="step5-content">
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-danger bg-opacity-10 border-0 py-3">
+        <h6 class="mb-0 fw-semibold text-danger">
+          <i class="fas fa-check me-2"></i>المرحلة الخامسة: المراجعة والإرسال
+        </h6>
+      </div>
+      <div class="card-body">
+        
+        <div class="row">
+          <div class="col-md-12">
+            <div class="card">
+              <div class="card-header d-flex justify-content-between align-items-center">
+                <h6 class="mb-0">معلومات العميل</h6>
+                <div class="form-check form-switch">
+                  <input class="form-check-input" type="checkbox" id="addNewCustomerData" onchange="toggleCustomerEditByCheckbox()">
+                  <label class="form-check-label" for="addNewCustomerData">تحديث بيانات العميل</label>
+                </div>
+              </div>
+              <div class="card-body" id="customerDataView">
+                <p><strong>الاسم:</strong> {{ customer.name if customer else 'غير محدد' }}</p>
+                <p><strong>الهاتف:</strong> {{ customer.phone if customer else 'غير محدد' }}</p>
+                <p><strong>العنوان:</strong>
+                  {% if customer and (customer.governorate or customer.address_details) %}
+                    {{ customer.governorate if customer.governorate else '' }}
+                    {% if customer.governorate and customer.address_details %} - {% endif %}
+                    {{ customer.address_details if customer.address_details else '' }}
+                  {% else %}غير محدد{% endif %}
+                </p>
+              </div>
+              <div class="card-body d-none" id="customerDataEdit">
+                <div class="mb-2"><input type="text" class="form-control" name="customer_name" placeholder="اسم العميل" value="{{ customer.name if customer else '' }}"></div>
+                <div class="mb-2"><input type="text" class="form-control" name="customer_phone" placeholder="رقم الهاتف" value="{{ customer.phone if customer else '' }}"></div>
+                <div class="mb-2"><input type="text" class="form-control" name="customer_address" placeholder="العنوان الكامل (المحافظة - باقي العنوان)" value="{% if customer and (customer.governorate or customer.address_details) %}{{ customer.governorate if customer.governorate else '' }}{% if customer.governorate and customer.address_details %} - {% endif %}{{ customer.address_details if customer.address_details else '' }}{% endif %}"></div>
+                
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="card mt-3">
+          <div class="card-header">
+            <h6 class="mb-0">المنتجات التي سيتم إرسالها</h6>
+          </div>
+          <div class="card-body p-0">
+            <div class="table-responsive">
+              <table class="table table-bordered mb-0">
+                <thead class="table-light">
+                  <tr>
+                    <th>اسم المنتج</th>
+                    <th>الأنواع</th>
+                    <th>الكمية</th>
+                    <th>السعر</th>
+                    <th>الإجمالي</th>
+                  </tr>
+                </thead>
+                <tbody id="finalProductsTableBody">
+                  
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        
+        <div class="card mt-3">
+          <div class="card-header bg-danger bg-opacity-10">
+            <h6 class="mb-0 text-danger">المنتجات التالفة والمرتجعة (لن تُرسل)</h6>
+          </div>
+          <div class="card-body p-0">
+            <div class="table-responsive">
+              <table class="table table-bordered mb-0">
+                <thead class="table-light">
+                  <tr>
+                    <th>اسم المنتج</th>
+                    <th>الأنواع</th>
+                    <th>الكمية</th>
+                    <th>سعر البيع (مستحق للعميل)</th>
+                    <th>الحالة</th>
+                  </tr>
+                </thead>
+                <tbody id="damagedProductsTableBody">
+                  
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <div class="card mt-3">
+          <div class="card-header">
+            <h6 class="mb-0">الملخص المالي</h6>
+          </div>
+          <div class="card-body">
+            <div class="row g-2 align-items-end">
+              <div class="col-md-2">
+                <label class="form-label">رسوم التوصيل (علي نيباكسس)</label>
+                <input type="number" class="form-control" name="delivery_fees_me" step="0.01" min="0" value="0">
+              </div>
+              <div class="col-md-2">
+                <label class="form-label">رسوم التوصيل (على العميل)</label>
+                <input type="number" class="form-control" name="delivery_fees_customer" step="0.01" min="0" value="0">
+              </div>
+              <div class="col-md-2">
+                <label class="form-label">مبلغ مستحق للعميل</label>
+                <input type="number" class="form-control" name="customer_refund" step="0.01" min="0" value="0" readonly tabindex="-1" style="background:#f8f9fa;pointer-events:none;">
+              </div>
+              <div class="col-md-2">
+                <label class="form-label">المبلغ المدفوع</label>
+                <input type="number" class="form-control" name="amount_paid" step="0.01" min="0" value="0">
+              </div>
+              <div class="col-md-2">
+                <label class="form-label">الإجمالي</label>
+                <input type="number" class="form-control" name="order_total" step="0.01" min="0" value="0" readonly tabindex="-1" style="background:#f8f9fa;pointer-events:none;">
+              </div>
+              <div class="col-md-2">
+                <label class="form-label">المتبقي</label>
+                <input type="number" class="form-control" name="order_remaining" step="0.01" min="0" value="0" readonly tabindex="-1" style="background:#f8f9fa;pointer-events:none;">
+              </div>
+            </div>
+            <div class="row mt-2">
+              <div class="col-12">
+                <label class="form-label">ملاحظات</label>
+                <input type="text" class="form-control" name="notes" placeholder="ملاحظات إضافية">
+              </div>
+            </div>
+            <div class="row mt-2">
+              <div class="col-md-4">
+                <label for="weight" class="form-label">وزن الشحنة (جرام)</label>
+                <input type="number" class="form-control" id="weight" name="weight" min="0" step="0.1" value="" placeholder="مثال: 500">
+              </div>
+              <div class="col-md-4">
+                <label for="package_volume" class="form-label">حجم الشحنة</label>
+                <select class="form-select" id="package_volume" name="package_volume">
+                    <option value="">-- اختر الحجم --</option>
+                    <option value="Small">Small</option>
+                    <option value="medium">Medium</option>
+                    <option value="Large">Large</option>
+                    <option value="Extra Weight">Extra Weight</option>
+                </select>
+              </div>
+              <div class="col-md-4">
+                <label for="delivery_notes" class="form-label">ملاحظات التوصيل</label>
+                <input type="text" class="form-control" id="delivery_notes" name="delivery_notes" placeholder="ملاحظات خاصة بالمندوب أو التوصيل">
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="d-flex justify-content-between align-items-center mt-4">
+          <button type="button" class="btn btn-secondary" onclick="previousStep(4)">
+            <i class="fas fa-arrow-right me-1"></i>السابق
+          </button>
+          <div class="d-flex gap-2">
+            <button type="button" class="btn btn-outline-primary" onclick="saveDraft('review')">
+              <i class="fas fa-save me-1"></i>حفظ كمسودة
+            </button>
+            <button type="submit" class="btn btn-success" onclick="return confirmSubmit()">
+              <i class="fas fa-check me-1"></i>إنشاء طلب الاستبدال
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <input type="hidden" name="original_order_id" value="{{ selected_order.id if selected_order else '' }}" id="original_order_id_input">
+  <input type="hidden" name="original_replacement_order_id" value="{{ selected_replacement_order.id if selected_replacement_order else '' }}" id="original_replacement_order_id_input">
+  <input type="hidden" name="customer_id" value="{{ customer.id if customer else '' }}">
+  <input type="hidden" name="update_customer_data" value="0">
+  <input type="hidden" name="final_products_data" id="final_products_data">
+  <input type="hidden" name="allow_oos" id="allow_oos" value="0">
+
+  </form>
+</div>
+
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.rtl.min.css" rel="stylesheet" />
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script id="productData" type="application/json">
+  {{ products | tojson }}
+</script>
+
+<div class="modal fade" id="oosConfirmModal" tabindex="-1" aria-labelledby="oosConfirmModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="oosConfirmModalLabel">بعض المنتجات غير متوفرة بالمخزون</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <p class="mb-2">المنتجات التالية ليس لها كمية كافية حالياً:</p>
+        <ul id="oosProductsList" class="mb-0"></ul>
+        <hr/>
+        <p class="small text-muted mb-0">يمكنك المتابعة وحفظ الطلب كـ "جديد" بدون خصم المخزون الآن. سيتم التحقق والخصم عند أول تحويل إلى "خرج للتوصيل".</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+        <button type="button" class="btn btn-primary" id="confirmOOSBtn">متابعة وحفظ</button>
+      </div>
+    </div>
+  </div>
+  </div>
+
+<script>
+
+document.addEventListener('DOMContentLoaded', function() {
+  const form = document.getElementById('replacementOrderForm');
+  const allowOOSInput = document.getElementById('allow_oos');
+  const oosList = document.getElementById('oosProductsList');
+  let oosModal = null;
+  try { oosModal = new bootstrap.Modal(document.getElementById('oosConfirmModal')); } catch (e) {}
+
+  function computeOOSNames() {
+    try {
+      
+      const req = new Map();
+      if (Array.isArray(newProducts)) {
+        newProducts.forEach(p => {
+          const pid = parseInt(p.id || p.product_id || 0);
+          const q = parseInt(p.quantity || 0) || 0;
+          if (!pid || q <= 0) return;
+          req.set(pid, (req.get(pid) || 0) + q);
+        });
+      }
+      if (req.size === 0) return [];
+      
+      const pmap = new Map();
+      (products || []).forEach(p => pmap.set(p.id, p));
+      const names = [];
+      req.forEach((q, pid) => {
+        const p = pmap.get(pid);
+        
+        if (p && p.is_bundle) {
+          return;
+        }
+        const available = p && (parseInt(p.stock || 0) || 0);
+        if (p && q > available) {
+          names.push(`${p.name} (المطلوب ${q} المتوفر ${available})`);
+        }
+      });
+      return names;
+    } catch (e) {
+      return [];
+    }
+  }
+
+  if (form) {
+    form.addEventListener('submit', function(e) {
+      try {
+        
+        if (typeof updateFinalSummary === 'function') {
+          updateFinalSummary();
+        }
+        if (allowOOSInput && allowOOSInput.value === '1') {
+          return; 
+        }
+        const names = computeOOSNames();
+        if (names.length > 0) {
+          e.preventDefault();
+          if (oosList) {
+            oosList.innerHTML = names.map(n => `<li>${n}</li>`).join('');
+          }
+          if (oosModal) {
+            oosModal.show();
+          } else {
+            
+            showConfirmDialog({ message: 'هناك منتجات غير متوفرة بالمخزون. المتابعة وحفظ الطلب كـ "جديد"؟', type: 'warning', confirmText: 'متابعة وحفظ' }).then(function(confirmed) {
+              if (confirmed) { allowOOSInput.value = '1'; form.submit(); }
+            });
+          }
+        }
+      } catch (err) {
+        
+      }
+    });
+
+    const confirmBtn = document.getElementById('confirmOOSBtn');
+    if (confirmBtn) {
+      confirmBtn.addEventListener('click', function() {
+        if (allowOOSInput) allowOOSInput.value = '1';
+        try { if (oosModal) oosModal.hide(); } catch (e) {}
+        
+        form.submit();
+      });
+    }
+  }
+});
+</script>
+<script>
+let currentStep = 1;
+let newProducts = [];
+let products = [];
+try {
+  products = JSON.parse(document.getElementById('productData').textContent);
+} catch (e) { products = []; }
+
+function nextStep(step) {
+  console.log('nextStep called with:', step);
+  if (step < 1 || step > 5) return;
+  
+  if (!validateCurrentStep()) return;
+  
+  document.getElementById(`step${currentStep}-content`).classList.remove('active');
+  document.getElementById(`step${currentStep}-indicator`).classList.remove('active');
+  document.getElementById(`step${currentStep}-label`).classList.remove('active');
+  
+  currentStep = step;
+  document.getElementById(`step${currentStep}-content`).classList.add('active');
+  document.getElementById(`step${currentStep}-indicator`).classList.add('active');
+  document.getElementById(`step${currentStep}-label`).classList.add('active');
+  
+  for (let i = 1; i < currentStep; i++) {
+    document.getElementById(`step${i}-indicator`).classList.add('completed');
+    document.getElementById(`step${i}-label`).classList.add('completed');
+  }
+  
+  if (currentStep === 5) {
+    updateAllCalculations();
+    updateFinalSummary();
+  }
+  
+  console.log('Current step updated to:', currentStep);
+}
+
+function previousStep(step) {
+  if (step < 1 || step > 5) return;
+  
+  document.getElementById(`step${currentStep}-content`).classList.remove('active');
+  document.getElementById(`step${currentStep}-indicator`).classList.remove('active');
+  document.getElementById(`step${currentStep}-label`).classList.remove('active');
+  
+  currentStep = step;
+  document.getElementById(`step${currentStep}-content`).classList.add('active');
+  document.getElementById(`step${currentStep}-indicator`).classList.add('active');
+  document.getElementById(`step${currentStep}-label`).classList.add('active');
+}
+
+// Navigate to step without validation (for draft restoration)
+function goToStep(step) {
+  if (step < 1 || step > 5) return;
+  
+  document.getElementById(`step${currentStep}-content`).classList.remove('active');
+  document.getElementById(`step${currentStep}-indicator`).classList.remove('active');
+  document.getElementById(`step${currentStep}-label`).classList.remove('active');
+  
+  currentStep = step;
+  document.getElementById(`step${currentStep}-content`).classList.add('active');
+  document.getElementById(`step${currentStep}-indicator`).classList.add('active');
+  document.getElementById(`step${currentStep}-label`).classList.add('active');
+  
+  // Mark previous steps as completed
+  for (let i = 1; i < currentStep; i++) {
+    document.getElementById(`step${i}-indicator`).classList.add('completed');
+    document.getElementById(`step${i}-label`).classList.add('completed');
+  }
+  
+  // Update summaries if going to review step
+  if (currentStep === 5) {
+    if (typeof updateAllCalculations === 'function') updateAllCalculations();
+    if (typeof updateFinalSummary === 'function') updateFinalSummary();
+  }
+}
+
+window.searchCustomer = function() {
+  console.log('searchCustomer called');
+  const phone = document.querySelector('input[name="search_phone"]').value.trim();
+  console.log('Phone number:', phone);
+  if (!phone) {
+    alert('يرجى إدخال رقم الهاتف');
+    return;
+  }
+  
+  console.log('Redirecting to:', `?customer_phone=${phone}`);
+  window.location.href = `?customer_phone=${phone}`;
+}
+
+function selectOrder(orderId, element) {
+  const url = new URL(window.location.href);
+  url.searchParams.set('selected_order', orderId);
+  url.searchParams.delete('selected_replacement_order');
+  window.location.href = url.toString();
+}
+
+function selectReplacementOrder(replacementOrderId, element) {
+  const url = new URL(window.location.href);
+  url.searchParams.set('selected_replacement_order', replacementOrderId);
+  url.searchParams.delete('selected_order');
+  window.location.href = url.toString();
+}
+
+function switchOrderTab(tab) {
+  const ordersContent = document.getElementById('tab-orders-content');
+  const replacementsContent = document.getElementById('tab-replacements-content');
+  const ordersTab = document.getElementById('tab-orders');
+  const replacementsTab = document.getElementById('tab-replacements');
+  if (tab === 'orders') {
+    ordersContent.style.display = '';
+    replacementsContent.style.display = 'none';
+    ordersTab.classList.add('active');
+    replacementsTab.classList.remove('active');
+  } else {
+    ordersContent.style.display = 'none';
+    replacementsContent.style.display = '';
+    ordersTab.classList.remove('active');
+    replacementsTab.classList.add('active');
+  }
+}
+
+function loadOrderProducts(orderId) {
+  console.log('Loading products for order:', orderId);
+  
+  document.getElementById('loading-products').style.display = 'block';
+  document.getElementById('products-container').style.display = 'none';
+  
+  fetch(`/api/orders/${orderId}/items`)
+    .then(response => response.json())
+    .then(data => {
+      console.log('Order items loaded:', data);
+      
+      const productsContainer = document.getElementById('products-container');
+      const loadingContainer = document.getElementById('loading-products');
+      const tbody = document.getElementById('products-tbody');
+      
+      loadingContainer.style.display = 'none';
+      
+      productsContainer.style.display = 'block';
+      
+      if (data.items && data.items.length > 0) {
+        tbody.innerHTML = data.items.map((item, index) => `
+          <tr class="product-item">
+            <td>
+              <input type="checkbox" name="selected_items" value="${item.id}" 
+                     class="product-checkbox" onchange="updateSelectedCount()">
+            </td>
+            <td>
+              <strong>${item.product_name || 'منتج محذوف'}</strong>
+              <br><small class="text-muted">الحالة الحالية: ${item.state || 'لم يتم التجربة بعد'}</small>
+            </td>
+            <td>
+              ${item.variants ? item.variants.map(variant => 
+                `<span class="badge bg-primary me-1">${variant.label}: ${variant.value}</span>`
+              ).join('') : '<span class="text-muted">لا توجد أنواع</span>'}
+            </td>
+            <td>${item.price} ج.م</td>
+            <td>
+              <select name="product_state_${item.id}" class="form-select form-select-sm" onchange="updateDamageStatus(${item.id}, this.value)">
+                <option value="لم يتم التجربة بعد" ${!item.state || item.state === 'لم يتم التجربة بعد' ? 'selected' : ''}>لم يتم التجربة بعد</option>
+                <option value="سليم" ${item.state === 'سليم' ? 'selected' : ''}>سليم</option>
+                <option value="تالف" ${item.state === 'تالف' ? 'selected' : ''}>تالف</option>
+              </select>
+            </td>
+            <td>
+              <input type="checkbox" name="is_damaged_${item.id}" 
+                     class="form-check-input damage-checkbox" 
+                     onchange="updateDamageCalculation(${item.id})">
+            </td>
+          </tr>
+        `).join('');
+      } else {
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">لا توجد منتجات في هذا الطلب</td></tr>';
+      }
+      
+      console.log('Products loaded successfully');
+    })
+    .catch(error => {
+      console.error('Error loading order items:', error);
+      
+      const loadingContainer = document.getElementById('loading-products');
+      loadingContainer.innerHTML = `
+        <div class="alert alert-danger">
+          <h6 class="mb-2">❌ خطأ في تحميل المنتجات</h6>
+          <p class="mb-0">حدث خطأ أثناء تحميل منتجات الطلب. يرجى المحاولة مرة أخرى.</p>
+        </div>
+      `;
+    });
+}
+
+function validateCurrentStep() {
+  switch (currentStep) {
+    case 1:
+  if (!document.querySelector('input[name="search_phone"]').value.trim()) {
+        alert('يرجى البحث عن العميل أولاً');
+        return false;
+      }
+      break;
+    case 2: {
+      const hasOrder = document.getElementById('original_order_id_input')?.value;
+      const hasReplacement = document.getElementById('original_replacement_order_id_input')?.value;
+      if (!hasOrder && !hasReplacement) {
+        alert('يرجى اختيار طلب أولاً');
+        return false;
+      }
+      break;
+    }
+    case 3:
+      const selectedCount = document.querySelectorAll('.product-checkbox:checked').length;
+      if (selectedCount === 0) {
+        alert('يرجى اختيار منتج واحد على الأقل');
+        return false;
+      }
+      break;
+  }
+  return true;
+}
+
+function toggleAllProducts() {
+  const selectAll = document.getElementById('selectAll');
+  const checkboxes = document.querySelectorAll('.product-checkbox');
+  
+  checkboxes.forEach(checkbox => {
+    checkbox.checked = selectAll.checked;
+  });
+  
+  updateSelectedCount();
+}
+
+function updateSelectedCount() {
+  const checkboxes = document.querySelectorAll('.product-checkbox:checked');
+  const count = checkboxes.length;
+  const step3Next = document.getElementById('step3-next');
+  
+  var selectedCountSpan = document.getElementById('selectedCount');
+  if (selectedCountSpan) selectedCountSpan.textContent = count;
+  if (step3Next) step3Next.disabled = count === 0;
+
+  const allRows = document.querySelectorAll('.product-item');
+  allRows.forEach(row => {
+    const checkbox = row.querySelector('.product-checkbox');
+    const stateSelect = row.querySelector('select[name^="product_state_"]');
+    const damageCheckbox = row.querySelector('.damage-checkbox');
+    if (!checkbox) return;
+    if (checkbox.checked) {
+      if (stateSelect) stateSelect.disabled = false;
+      if (damageCheckbox) damageCheckbox.disabled = false;
+      row.style.opacity = '1';
+    } else {
+      if (stateSelect) stateSelect.disabled = true;
+      if (damageCheckbox) damageCheckbox.disabled = true;
+      row.style.opacity = '0.6';
+    }
+  });
+  
+  updateProductsSummary();
+}
+
+function updateDamageStatus(itemId, state) {
+  const row = document.querySelector(`input[name="product_state_${itemId}"]`).closest('tr');
+  const damageCheckbox = row.querySelector('.damage-checkbox');
+  
+  if (state === 'تالف') {
+    damageCheckbox.checked = true;
+    damageCheckbox.disabled = false;
+  } else {
+    damageCheckbox.checked = false;
+    damageCheckbox.disabled = true;
+  }
+  
+  updateDamageCalculation(itemId);
+  updateProductsSummary();
+}
+
+function updateDamageCalculation(itemId) {
+  updateAllCalculations();
+  updateProductsSummary();
+}
+
+function addNewProduct() {
+  const select = $('#new_product_select');
+  const selectedId = select.val();
+  const name = select.find('option:selected').text();
+  const price = parseFloat(document.querySelector('input[name="new_product_price"]').value) || 0;
+  const quantity = parseInt(document.querySelector('input[name="new_product_quantity"]').value) || 1;
+  if (!selectedId || price <= 0) {
+    alert('يرجى اختيار المنتج وإدخال السعر');
+    return;
+  }
+  
+  let variantsArr = [];
+  let variantsHtml = '';
+  const sizeSelect = document.querySelector('select[name="new_product_size_variant"]');
+  const colorSelect = document.querySelector('select[name="new_product_color_variant"]');
+  const styleSelect = document.querySelector('select[name="new_product_style_variant"]');
+  let sizeVariantId = null, colorVariantId = null, styleVariantId = null;
+  if (sizeSelect && sizeSelect.value) {
+    const label = 'مقاس';
+    const text = sizeSelect.options[sizeSelect.selectedIndex].text;
+    variantsArr.push({label: label, value: text});
+    variantsHtml += `<span class='badge bg-primary me-1'>${label}: ${text}</span>`;
+    sizeVariantId = parseInt(sizeSelect.value);
+  }
+  if (colorSelect && colorSelect.value) {
+    const label = 'لون';
+    const text = colorSelect.options[colorSelect.selectedIndex].text;
+    variantsArr.push({label: label, value: text});
+    variantsHtml += `<span class='badge bg-primary me-1'>${label}: ${text}</span>`;
+    colorVariantId = parseInt(colorSelect.value);
+  }
+  if (styleSelect && styleSelect.value) {
+    const label = 'شكل';
+    const text = styleSelect.options[styleSelect.selectedIndex].text;
+    variantsArr.push({label: label, value: text});
+    variantsHtml += `<span class='badge bg-primary me-1'>${label}: ${text}</span>`;
+    styleVariantId = parseInt(styleSelect.value);
+  }
+  const product = {
+    id: parseInt(selectedId),
+    name: name,
+    price: price,
+    quantity: quantity,
+    total: price * quantity,
+    variants: variantsArr,
+    variantsHtml: variantsHtml,
+    size_variant_id: sizeVariantId,
+    color_variant_id: colorVariantId,
+    style_variant_id: styleVariantId
+  };
+  newProducts.push(product);
+  updateNewProductsTable();
+  clearNewProductForm();
+  updateAllCalculations();
+}
+
+function removeNewProduct(productId) {
+  newProducts = newProducts.filter(p => p.id !== productId);
+  updateNewProductsTable();
+  updateAllCalculations();
+}
+
+function updateNewProductsTable() {
+  const tbody = document.getElementById('newProductsTableBody');
+  const container = document.getElementById('newProductsList');
+  const addedCountSpan = document.getElementById('addedNewProductsCount');
+
+  if (addedCountSpan) {
+    addedCountSpan.textContent = newProducts.length;
+  }
+
+  if (newProducts.length === 0) {
+    container.style.display = 'none';
+    return;
+  }
+
+  container.style.display = 'block';
+  tbody.innerHTML = '';
+
+  newProducts.forEach(product => {
+    const row = document.createElement('tr');
+    row.innerHTML = `
+      <td>${product.name}</td>
+      <td>${product.price} ج.م</td>
+      <td>${product.quantity}</td>
+      <td>${product.total} ج.م</td>
+      <td>
+        <button type="button" class="btn btn-danger btn-sm" onclick="removeNewProduct(${product.id})">
+          <i class="fas fa-trash"></i>
+        </button>
+      </td>
+    `;
+    tbody.appendChild(row);
+  });
+}
+
+function clearNewProductForm() {
+  $('#new_product_select').val(null).trigger('change');
+  document.querySelector('input[name="new_product_price"]').value = '';
+  document.querySelector('input[name="new_product_quantity"]').value = '1';
+}
+
+function updateAllCalculations() {
+  let totalDamageLoss = 0;
+  let totalCustomerRefund = 0;
+  var deliveryFeesInput = document.querySelector('input[name="delivery_fees"]');
+  let deliveryFees = deliveryFeesInput ? parseFloat(deliveryFeesInput.value) || 0 : 0;
+  
+  document.querySelectorAll('.product-checkbox:checked').forEach(checkbox => {
+    const row = checkbox.closest('tr');
+    const isDamaged = row.querySelector('.damage-checkbox') ? row.querySelector('.damage-checkbox').checked : false;
+    const priceCell = row.querySelector('td:nth-child(4)');
+    const sellingPrice = priceCell ? parseFloat(priceCell.textContent.replace(' ج.م', '')) || 0 : 0;
+    const quantity = 1;
+    if (isDamaged) {
+      totalCustomerRefund += sellingPrice * quantity;
+    }
+  });
+  let newProductsTotal = 0;
+  newProducts.forEach(product => {
+    newProductsTotal += product.total;
+  });
+  
+  var totalDamageLossEl = document.getElementById('totalDamageLoss');
+  if (totalDamageLossEl) totalDamageLossEl.textContent = totalDamageLoss.toFixed(0);
+  var totalCustomerRefundEl = document.getElementById('totalCustomerRefund');
+  if (totalCustomerRefundEl) totalCustomerRefundEl.textContent = totalCustomerRefund.toFixed(0);
+  var deliveryFeesLossEl = document.getElementById('deliveryFeesLoss');
+  if (deliveryFeesLossEl) deliveryFeesLossEl.textContent = deliveryFees.toFixed(0);
+  var netLossEl = document.getElementById('netLoss');
+  if (netLossEl) netLossEl.textContent = (totalDamageLoss + deliveryFees).toFixed(0);
+}
+
+function updateFinalSummary() {
+  
+  const tbody = document.getElementById('finalProductsTableBody');
+  if (!tbody) return;
+  tbody.innerHTML = '';
+
+  let goodProducts = [];
+  let damagedProducts = [];
+  let returnedProducts = [];
+  let totalRefundAmount = 0;
+  document.querySelectorAll('.product-checkbox:checked').forEach(checkbox => {
+    const row = checkbox.closest('tr');
+    if (!row) return;
+    const nameEl = row.querySelector('td:nth-child(2) strong');
+    const productName = nameEl ? nameEl.textContent : '';
+    
+    let variantTd = row.querySelector('td:nth-child(3)');
+    let variantHtml = variantTd ? variantTd.innerHTML : '';
+    const stateSelect = row.querySelector('select[name^="product_state_"]');
+    const stateValue = stateSelect ? stateSelect.value : '';
+    const priceCell = row.querySelector('td:nth-child(4)');
+    const sellingPrice = priceCell ? parseFloat(priceCell.textContent.replace(' ج.م', '')) || 0 : 0;
+    if (stateValue === 'تالف') {
+      
+      totalRefundAmount += sellingPrice;
+      damagedProducts.push({ name: productName, variants: variantHtml, price: sellingPrice, quantity: 1, state: 'تالف' });
+    } else if (stateValue === 'مرتجع') {
+      
+      totalRefundAmount += sellingPrice;
+      returnedProducts.push({ name: productName, variants: variantHtml, price: sellingPrice, quantity: 1, state: 'مرتجع' });
+    } else if (stateValue === 'سليم') {
+      
+      goodProducts.push({ name: productName, variants: variantHtml, price: sellingPrice, quantity: 1, isOriginal: true });
+    }
+  });
+
+  let allProducts = [...goodProducts];
+  if (Array.isArray(newProducts)) {
+    newProducts.forEach(product => {
+      allProducts.push({
+        name: product.name,
+        variants: product.variantsHtml || '',
+        price: product.price,
+        quantity: product.quantity,
+        isOriginal: false
+      });
+    });
+  }
+
+  if (allProducts.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">لا توجد منتجات لإرسالها</td></tr>';
+  } else {
+    allProducts.forEach(product => {
+      const total = (product.price * product.quantity).toFixed(0);
+      const row = document.createElement('tr');
+      let priceCell = '';
+      let totalCell = '';
+      if (product.isOriginal) {
+        priceCell = '<span class="text-success">منتج استبدال سليم</span>';
+        totalCell = '<span class="text-success">--</span>';
+      } else {
+        priceCell = product.price + ' ج.م';
+        totalCell = total + ' ج.م';
+      }
+      row.innerHTML = `
+        <td>${product.name}</td>
+        <td>${product.variants || ''}</td>
+        <td>${product.quantity}</td>
+        <td>${priceCell}</td>
+        <td>${totalCell}</td>
+      `;
+      tbody.appendChild(row);
+    });
+  }
+
+  const damagedTbody = document.getElementById('damagedProductsTableBody');
+  if (damagedTbody) {
+    damagedTbody.innerHTML = '';
+    const allNonGoodProducts = [...damagedProducts, ...returnedProducts];
+    if (allNonGoodProducts.length === 0) {
+      damagedTbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">لا توجد منتجات تالفة أو مرتجعة</td></tr>';
+    } else {
+      allNonGoodProducts.forEach(prod => {
+        const row = document.createElement('tr');
+        const stateClass = prod.state === 'تالف' ? 'danger' : 'warning';
+        const stateLabel = prod.state === 'تالف' ? 'تالف' : 'مرتجع';
+        row.innerHTML = `
+          <td>${prod.name}</td>
+          <td>${prod.variants || ''}</td>
+          <td>${prod.quantity}</td>
+          <td>${(prod.price).toFixed(0)} ج.م</td>
+          <td><span class="badge bg-${stateClass}">${stateLabel}</span></td>
+        `;
+        damagedTbody.appendChild(row);
+      });
+    }
+  }
+
+  var refundInput = document.querySelector('input[name="customer_refund"]');
+  if (refundInput) {
+    refundInput.value = totalRefundAmount.toFixed(0);
+  }
+
+  let orderTotal = 0;
+  allProducts.forEach(product => {
+    if (!product.isOriginal) {
+      orderTotal += product.price * product.quantity;
+    }
+  });
+  
+  var deliveryFeesCustomerInput = document.querySelector('input[name="delivery_fees_customer"]');
+  let deliveryFeesCustomer = deliveryFeesCustomerInput ? parseFloat(deliveryFeesCustomerInput.value) || 0 : 0;
+  orderTotal += deliveryFeesCustomer;
+  var orderTotalInput = document.querySelector('input[name="order_total"]');
+  if (orderTotalInput) {
+    orderTotalInput.value = orderTotal.toFixed(0);
+  }
+
+  var amountPaidInput = document.querySelector('input[name="amount_paid"]');
+  let amountPaid = amountPaidInput ? parseFloat(amountPaidInput.value) || 0 : 0;
+  var orderRemainingInput = document.querySelector('input[name="order_remaining"]');
+  if (orderRemainingInput) {
+    orderRemainingInput.value = (orderTotal - amountPaid - (refundInput ? parseFloat(refundInput.value) || 0 : 0)).toFixed(0);
+  }
+
+  if (document.getElementById('final_products_data')) {
+    let productsToSend = [];
+    
+    document.querySelectorAll('.product-checkbox:checked').forEach(checkbox => {
+      const row = checkbox.closest('tr');
+      if (!row) return;
+      const stateSelect = row.querySelector('select[name^="product_state_"]');
+      const stateValue = stateSelect ? stateSelect.value : '';
+      if (stateValue !== 'سليم') return;
+      const nameEl = row.querySelector('td:nth-child(2) strong');
+      const productName = nameEl ? nameEl.textContent : '';
+      const priceCell = row.querySelector('td:nth-child(4)');
+      const sellingPrice = priceCell ? parseFloat(priceCell.textContent.replace(' ج.م', '')) || 0 : 0;
+      const rowEl = checkbox.closest('tr');
+      const pid = rowEl && rowEl.dataset ? parseInt(rowEl.dataset.productId || '0') || null : null;
+      const sizeId = rowEl && rowEl.dataset ? parseInt(rowEl.dataset.sizeVariantId || '0') || null : null;
+      const colorId = rowEl && rowEl.dataset ? parseInt(rowEl.dataset.colorVariantId || '0') || null : null;
+      const styleId = rowEl && rowEl.dataset ? parseInt(rowEl.dataset.styleVariantId || '0') || null : null;
+      productsToSend.push({
+        product_id: pid,
+        size_variant_id: sizeId,
+        color_variant_id: colorId,
+        style_variant_id: styleId,
+        product_name: productName,
+        price: sellingPrice,
+        quantity: 1,
+        state: 'سليم',
+        is_damaged: false,
+        is_returned: false
+      });
+    });
+    
+    document.querySelectorAll('.product-checkbox:checked').forEach(checkbox => {
+      const row = checkbox.closest('tr');
+      if (!row) return;
+      const stateSelect = row.querySelector('select[name^="product_state_"]');
+      const stateValue = stateSelect ? stateSelect.value : '';
+      if (stateValue !== 'تالف' && stateValue !== 'مرتجع') return;
+      const nameEl = row.querySelector('td:nth-child(2) strong');
+      const productName = nameEl ? nameEl.textContent : '';
+      const priceCell = row.querySelector('td:nth-child(4)');
+      const sellingPrice = priceCell ? parseFloat(priceCell.textContent.replace(' ج.م', '')) || 0 : 0;
+      const rowEl = checkbox.closest('tr');
+      const pid = rowEl && rowEl.dataset ? parseInt(rowEl.dataset.productId || '0') || null : null;
+      const sizeId = rowEl && rowEl.dataset ? parseInt(rowEl.dataset.sizeVariantId || '0') || null : null;
+      const colorId = rowEl && rowEl.dataset ? parseInt(rowEl.dataset.colorVariantId || '0') || null : null;
+      const styleId = rowEl && rowEl.dataset ? parseInt(rowEl.dataset.styleVariantId || '0') || null : null;
+      productsToSend.push({
+        product_id: pid,
+        size_variant_id: sizeId,
+        color_variant_id: colorId,
+        style_variant_id: styleId,
+        product_name: productName,
+        price: sellingPrice,
+        quantity: 1,
+        state: stateValue,
+        is_damaged: stateValue === 'تالف',
+        is_returned: stateValue === 'مرتجع'
+      });
+    });
+    
+    if (Array.isArray(newProducts)) {
+      newProducts.forEach(product => {
+        productsToSend.push({
+          product_id: product.id,
+          size_variant_id: product.size_variant_id || null,
+          color_variant_id: product.color_variant_id || null,
+          style_variant_id: product.style_variant_id || null,
+          product_name: product.name,
+          price: product.price,
+          quantity: product.quantity,
+          state: 'منتج جديد',
+          is_damaged: false,
+          is_returned: false
+        });
+      });
+    }
+    document.getElementById('final_products_data').value = JSON.stringify(productsToSend);
+  }
+}
+
+function toggleCustomerEditByCheckbox() {
+  var checkbox = document.getElementById('addNewCustomerData');
+  var view = document.getElementById('customerDataView');
+  var edit = document.getElementById('customerDataEdit');
+  var nameInput = document.querySelector('input[name="customer_name"]');
+  var phoneInput = document.querySelector('input[name="customer_phone"]');
+  var addressInput = document.querySelector('input[name="customer_address"]');
+  var updateCustomerDataInput = document.querySelector('input[name="update_customer_data"]');
+  if (checkbox && view && edit) {
+    if (checkbox.checked) {
+      view.classList.add('d-none');
+      edit.classList.remove('d-none');
+      if (nameInput) nameInput.disabled = false;
+      if (phoneInput) phoneInput.disabled = false;
+      if (addressInput) addressInput.disabled = false;
+      
+      if (updateCustomerDataInput) updateCustomerDataInput.value = '1';
+    } else {
+      view.classList.remove('d-none');
+      edit.classList.add('d-none');
+      if (nameInput) nameInput.disabled = true;
+      if (phoneInput) phoneInput.disabled = true;
+      if (addressInput) addressInput.disabled = true;
+      
+      if (updateCustomerDataInput) updateCustomerDataInput.value = '0';
+    }
+  }
+}
+
+function updateProductsSummary() {
+  let goodProducts = [];
+  let damagedProducts = [];
+  let returnedProducts = [];
+  let totalRefundAmount = 0;
+  
+  document.querySelectorAll('.product-checkbox:checked').forEach(checkbox => {
+    const row = checkbox.closest('tr');
+    if (!row) return;
+    const nameEl = row.querySelector('td:nth-child(2) strong');
+    const productName = nameEl ? nameEl.textContent : '';
+    const stateSelect = row.querySelector('select[name^="product_state_"]');
+    const stateValue = stateSelect ? stateSelect.value : '';
+    const priceCell = row.querySelector('td:nth-child(4)');
+    const sellingPrice = priceCell ? parseFloat(priceCell.textContent.replace(' ج.م', '')) || 0 : 0;
+    if (stateValue === 'تالف') {
+      damagedProducts.push({ name: productName, price: sellingPrice });
+      totalRefundAmount += sellingPrice;
+    } else if (stateValue === 'مرتجع') {
+      returnedProducts.push({ name: productName, price: sellingPrice });
+      totalRefundAmount += sellingPrice;
+    } else if (stateValue === 'سليم') {
+      goodProducts.push({ name: productName });
+    }
+  });
+  var goodProductsCount = document.getElementById('goodProductsCount');
+  if (goodProductsCount) goodProductsCount.textContent = goodProducts.length;
+  var damagedProductsCount = document.getElementById('damagedProductsCount');
+  if (damagedProductsCount) damagedProductsCount.textContent = damagedProducts.length + returnedProducts.length;
+  
+  const goodProductsList = document.getElementById('goodProductsList');
+  if (goodProductsList) {
+    if (goodProducts.length === 0) {
+      goodProductsList.innerHTML = '<p class="text-muted">لم يتم تحديد منتجات سليمة بعد</p>';
+    } else {
+      goodProductsList.innerHTML = goodProducts.map(product => 
+        `<div class="badge bg-success me-1 mb-1">${product.name}</div>`
+      ).join('');
+    }
+  }
+  
+  const damagedProductsList = document.getElementById('damagedProductsList');
+  if (damagedProductsList) {
+    const allNonGoodProducts = [
+      ...damagedProducts.map(p => ({...p, state: 'تالف'})),
+      ...returnedProducts.map(p => ({...p, state: 'مرتجع'}))
+    ];
+    if (allNonGoodProducts.length === 0) {
+      damagedProductsList.innerHTML = '<p class="text-muted">لم يتم تحديد منتجات تالفة أو مرتجعة بعد</p>';
+    } else {
+      damagedProductsList.innerHTML = allNonGoodProducts.map(product => {
+        const badgeClass = product.state === 'تالف' ? 'danger' : 'warning';
+        return `<div class="badge bg-${badgeClass} me-1 mb-1">${product.name} (${product.price} ج.م) - ${product.state}</div>`;
+      }).join('');
+    }
+  }
+  
+  var totalCustomerRefundEl = document.getElementById('totalCustomerRefund');
+  if (totalCustomerRefundEl) totalCustomerRefundEl.textContent = totalRefundAmount.toFixed(0);
+  
+}
+
+function confirmSubmit() {
+  const selectedCount = document.querySelectorAll('.product-checkbox:checked').length;
+  if (selectedCount === 0) {
+    showFlashMessage('يرجى اختيار منتج واحد على الأقل', 'warning');
+    return false;
+  }
+  
+  var customerId = document.querySelector('input[name="customer_id"]')?.value?.trim();
+  var addNew = document.getElementById('addNewCustomerData')?.checked;
+  if (!customerId) {
+    showFlashMessage('يرجى اختيار عميل', 'warning');
+    return false;
+  }
+  if (addNew) {
+    var nameInput = document.querySelector('input[name="customer_name"]');
+    var phoneInput = document.querySelector('input[name="customer_phone"]');
+    var addressInput = document.querySelector('input[name="customer_address"]');
+    if (!nameInput?.value.trim() || !phoneInput?.value.trim() || !addressInput?.value.trim()) {
+      showFlashMessage('يرجى إدخال بيانات العميل كاملة (الاسم والهاتف والعنوان)', 'warning');
+      return false;
+    }
+    
+    if (nameInput) nameInput.disabled = false;
+    if (phoneInput) phoneInput.disabled = false;
+    if (addressInput) addressInput.disabled = false;
+  }
+  
+  document.querySelectorAll('.product-checkbox:checked').forEach(checkbox => {
+    const select = checkbox.closest('tr').querySelector('select[name^="product_state_"]');
+    if (select) select.disabled = false;
+  });
+  
+  updateFinalSummary();
+  showConfirmDialog({ message: 'هل أنت متأكد من إنشاء طلب الاستبدال؟', type: 'question', confirmText: 'إنشاء' }).then(function(confirmed) {
+    if (confirmed) { document.querySelector('form').submit(); }
+  });
+  return false;
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  
+  $('#new_product_select').select2({
+    data: products.map(p => ({id: p.id, text: p.name, price: p.price || 0})),
+    placeholder: 'ابحث باسم المنتج',
+    allowClear: true,
+    dir: 'rtl',
+    width: '100%',
+    theme: 'bootstrap-5',
+    minimumInputLength: 0
+  });
+
+  $('#new_product_select').on('select2:select', function(e) {
+    const selectedId = $(this).val();
+    const product = products.find(p => p.id == selectedId);
+    if (product) {
+      
+      document.querySelector('input[name="new_product_price"]').value = product.price;
+
+      const variantContainer = document.getElementById('newProductVariants');
+      variantContainer.innerHTML = '';
+      if (product.has_size) {
+        const sizeVariants = product.variants.filter(v => v.group_name === 'مقاس');
+        variantContainer.innerHTML += renderVariantSelect('مقاس', sizeVariants, 'new_product_size_variant');
+      }
+      if (product.has_color) {
+        const colorVariants = product.variants.filter(v => v.group_name === 'لون');
+        variantContainer.innerHTML += renderVariantSelect('لون', colorVariants, 'new_product_color_variant');
+      }
+      if (product.has_style) {
+        const styleVariants = product.variants.filter(v => v.group_name === 'شكل');
+        variantContainer.innerHTML += renderVariantSelect('شكل', styleVariants, 'new_product_style_variant');
+      }
+
+      $(variantContainer).find('select').on('change', function() {
+        let selectedPrice = product.price;
+        $(variantContainer).find('select').each(function() {
+          const variantId = $(this).val();
+          if (variantId) {
+            const variant = product.variants.find(v => v.id == variantId);
+            if (variant && variant.price > 0) {
+              selectedPrice = Math.max(selectedPrice, variant.price);
+            }
+          }
+        });
+        document.querySelector('input[name="new_product_price"]').value = selectedPrice;
+      });
+    }
+  });
+
+  $('#new_product_select').on('select2:clear', function(e) {
+    document.querySelector('input[name="new_product_price"]').value = '';
+    document.getElementById('newProductVariants').innerHTML = '';
+  });
+
+  window.renderVariantSelect = function(label, variants, selectName) {
+    let html = `<div class=\"mb-2\"><label class=\"form-label fw-semibold\">${label}</label>`;
+    html += `<select class=\"form-select form-select-sm\" name=\"${selectName}\">`;
+    html += `<option value=\"\">اختر ${label}</option>`;
+    variants.forEach(v => {
+      html += `<option value=\"${v.id}\" data-price=\"${v.price}\">${v.variant_name}${v.price > 0 ? ' (' + v.price + ' ج.م)' : ''}</option>`;
+    });
+    html += `</select></div>`;
+    return html;
+  }
+  
+  var selectedOrderExists = document.querySelector('.product-item');
+  if (selectedOrderExists) {
+    showStep(3);
+  } else {
+    showStep(1);
+  }
+});
+
+function showStep(step) {
+  console.log('Showing step:', step);
+  
+  for (let i = 1; i <= 5; i++) {
+    const content = document.getElementById(`step${i}-content`);
+    const indicator = document.getElementById(`step${i}-indicator`);
+    const label = document.getElementById(`step${i}-label`);
+    
+    if (content) content.classList.remove('active');
+    if (indicator) indicator.classList.remove('active');
+    if (label) label.classList.remove('active');
+  }
+  
+  const targetContent = document.getElementById(`step${step}-content`);
+  const targetIndicator = document.getElementById(`step${step}-indicator`);
+  const targetLabel = document.getElementById(`step${step}-label`);
+  
+  if (targetContent) targetContent.classList.add('active');
+  if (targetIndicator) targetIndicator.classList.add('active');
+  if (targetLabel) targetLabel.classList.add('active');
+  
+  currentStep = step;
+  
+  for (let i = 1; i < step; i++) {
+    const indicator = document.getElementById(`step${i}-indicator`);
+    const label = document.getElementById(`step${i}-label`);
+    
+    if (indicator) indicator.classList.add('completed');
+    if (label) label.classList.add('completed');
+  }
+  
+  if (step === 5) {
+    updateFinalSummary();
+    
+    [
+      'delivery_fees_customer',
+      'amount_paid',
+      'delivery_fees_me',
+      'customer_refund',
+      'order_total',
+      'order_remaining'
+    ].forEach(function(name) {
+      var input = document.querySelector('input[name="' + name + '"]');
+      if (input) {
+        input.removeEventListener('input', updateFinalSummary); 
+        input.addEventListener('input', updateFinalSummary);
+      }
+    });
+  }
+}
+</script>
+<script>
+
+document.addEventListener('click', function(e) {
+  const card = e.target.closest('.product-card[data-order-id]');
+  if (card) {
+    const orderId = card.getAttribute('data-order-id');
+    if (orderId) {
+      selectOrder(orderId, card);
+    }
+  }
+});
+
+document.addEventListener('DOMContentLoaded', function() {
+  
+  const deliveryFeesCustomerInput = document.querySelector('input[name="delivery_fees_customer"]');
+  const amountPaidInput = document.querySelector('input[name="amount_paid"]');
+  if (deliveryFeesCustomerInput) {
+    deliveryFeesCustomerInput.addEventListener('input', updateFinalSummary);
+  }
+  if (amountPaidInput) {
+    amountPaidInput.addEventListener('input', updateFinalSummary);
+  }
+  
+  document.querySelectorAll('input[name="amount_paid"]').forEach(function(input) {
+    input.addEventListener('input', updateFinalSummary);
+  });
+
+  toggleCustomerEditByCheckbox();
+});
+
+// Draft functionality
+let currentDraftId = null;
+
+function saveDraft(step) {
+  const customerId = document.querySelector('input[name="customer_id"]').value;
+  if (!customerId) {
+    alert('يجب تحديد العميل أولاً');
+    return;
+  }
+  
+  // Collect draft data based on current step
+  const draftData = collectDraftData();
+  
+  const formData = new FormData();
+  formData.append('draft_id', currentDraftId || '');
+  formData.append('customer_id', customerId);
+  formData.append('draft_step', step);
+  formData.append('draft_data', JSON.stringify(draftData));
+  
+  // Show loading indicator
+  const saveButton = event.target;
+  const originalText = saveButton.innerHTML;
+  saveButton.disabled = true;
+  saveButton.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>جاري الحفظ...';
+  
+  fetch('{{ url_for("main.save_replacement_draft") }}', {
+    method: 'POST',
+    body: formData
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.success) {
+      currentDraftId = data.draft_id;
+      showFlashMessage('تم حفظ المسودة بنجاح! يمكنك العودة لاستكمالها لاحقاً.', 'success');
+      showConfirmDialog({ message: 'هل تريد العودة لقائمة طلبات الاستبدال؟', type: 'question', confirmText: 'نعم' }).then(function(r) {
+        if (r) { window.location.href = '{{ url_for("main.replacement_orders") }}'; }
+      });
+    } else {
+      showFlashMessage('حدث خطأ: ' + data.message, 'danger');
+    }
+  })
+  .catch(error => {
+    showFlashMessage('حدث خطأ أثناء حفظ المسودة', 'danger');
+    alert('حدث خطأ أثناء حفظ المسودة');
+  })
+  .finally(() => {
+    saveButton.disabled = false;
+    saveButton.innerHTML = originalText;
+  });
+}
+
+function collectDraftData() {
+  const data = {
+    orderId: document.querySelector('input[name="original_order_id"]')?.value || '',
+    customerId: document.querySelector('input[name="customer_id"]')?.value || '',
+    selectedItems: [],
+    productStates: {},
+    newProducts: newProducts || [],
+    deliveryFeesMe: document.querySelector('input[name="delivery_fees_me"]')?.value || 0,
+    deliveryFeesCustomer: document.querySelector('input[name="delivery_fees_customer"]')?.value || 0,
+    amountPaid: document.querySelector('input[name="amount_paid"]')?.value || 0,
+    notes: document.querySelector('input[name="notes"]')?.value || '',
+    customerName: document.querySelector('input[name="customer_name"]')?.value || '',
+    customerPhone: document.querySelector('input[name="customer_phone"]')?.value || '',
+    customerAddress: document.querySelector('input[name="customer_address"]')?.value || '',
+    updateCustomerData: document.querySelector('input[name="update_customer_data"]')?.value || '0',
+    updateCustomerDataChecked: document.getElementById('addNewCustomerData')?.checked || false
+  };
+  
+  // Collect selected items and their states
+  document.querySelectorAll('input[name="selected_items"]:checked').forEach(checkbox => {
+    data.selectedItems.push(checkbox.value);
+  });
+  
+  // Collect product states (including disabled ones for complete data)
+  document.querySelectorAll('select[name^="product_state_"]').forEach(select => {
+    const checkbox = select.closest('tr')?.querySelector('input[name="selected_items"]');
+    if (checkbox && checkbox.checked) {
+      data.productStates[select.name] = select.value;
+    }
+  });
+  
+  return data;
+}
+
+// Check if we're resuming a draft (data passed from server)
+{% if draft and draft_data %}
+document.addEventListener('DOMContentLoaded', function() {
+  currentDraftId = {{ draft.id }};
+  const draftData = {{ draft_data|tojson }};
+  const draftStep = '{{ draft.draft_step }}';
+  
+  console.log('Loading draft:', currentDraftId, 'Step:', draftStep, 'Data:', draftData);
+  
+  // Auto-select customer and order if available
+  {% if selected_order %}
+  // Customer is already loaded, proceed to step 2
+  setTimeout(() => {
+    goToStep(2);
+    
+    // Wait for step 2 to be fully rendered, then restore data
+    setTimeout(() => {
+      restoreDraftData(draftData, draftStep);
+    }, 800);
+  }, 500);
+  {% endif %}
+});
+{% endif %}
+
+function restoreDraftData(draftData, draftStep) {
+  console.log('=== Starting draft restoration ===');
+  console.log('Draft data:', draftData);
+  console.log('Target step:', draftStep);
+  
+  // Step 1: Restore selected items and their states FIRST
+  if (draftData.selectedItems && draftData.selectedItems.length > 0) {
+    console.log('Restoring', draftData.selectedItems.length, 'selected items');
+    draftData.selectedItems.forEach(itemValue => {
+      const checkbox = document.querySelector(`input[name="selected_items"][value="${itemValue}"]`);
+      if (checkbox) {
+        checkbox.checked = true;
+        toggleProductState(checkbox);
+        console.log('Checked item:', itemValue);
+      } else {
+        console.warn('Checkbox not found for item:', itemValue);
+      }
+    });
+  }
+  
+  // Step 2: Restore product states immediately after checkboxes
+  if (draftData.productStates) {
+    console.log('Restoring product states:', Object.keys(draftData.productStates).length, 'items');
+    setTimeout(() => {
+      Object.keys(draftData.productStates).forEach(selectName => {
+        const select = document.querySelector(`select[name="${selectName}"]`);
+        if (select) {
+          select.value = draftData.productStates[selectName];
+          console.log('Set', selectName, 'to', draftData.productStates[selectName]);
+        } else {
+          console.warn('Select not found:', selectName);
+        }
+      });
+    }, 200);
+  }
+  
+  // Step 3: Update selected count
+  setTimeout(() => {
+    if (typeof updateSelectedCount === 'function') {
+      updateSelectedCount();
+      console.log('Updated selected count');
+    }
+  }, 300);
+  
+  // Step 4: Restore new products
+  if (draftData.newProducts && draftData.newProducts.length > 0) {
+    console.log('Restoring', draftData.newProducts.length, 'new products');
+    setTimeout(() => {
+      newProducts = draftData.newProducts;
+      if (typeof updateNewProductsTable === 'function') {
+        updateNewProductsTable();
+        console.log('New products table updated');
+      }
+    }, 400);
+  }
+  
+  // Step 5: Restore delivery fees and payments
+  setTimeout(() => {
+    if (draftData.deliveryFeesMe) {
+      const field = document.querySelector('input[name="delivery_fees_me"]');
+      if (field) {
+        field.value = draftData.deliveryFeesMe;
+        console.log('Restored delivery fees (me):', draftData.deliveryFeesMe);
+      }
+    }
+    if (draftData.deliveryFeesCustomer) {
+      const field = document.querySelector('input[name="delivery_fees_customer"]');
+      if (field) {
+        field.value = draftData.deliveryFeesCustomer;
+        console.log('Restored delivery fees (customer):', draftData.deliveryFeesCustomer);
+      }
+    }
+    if (draftData.amountPaid) {
+      const field = document.querySelector('input[name="amount_paid"]');
+      if (field) {
+        field.value = draftData.amountPaid;
+        console.log('Restored amount paid:', draftData.amountPaid);
+      }
+    }
+    if (draftData.notes) {
+      const field = document.querySelector('input[name="notes"]');
+      if (field) {
+        field.value = draftData.notes;
+        console.log('Restored notes');
+      }
+    }
+  }, 500);
+  
+  // Step 6: Restore customer info fields
+  setTimeout(() => {
+    if (draftData.customerName) {
+      const field = document.querySelector('input[name="customer_name"]');
+      if (field) field.value = draftData.customerName;
+    }
+    if (draftData.customerPhone) {
+      const field = document.querySelector('input[name="customer_phone"]');
+      if (field) field.value = draftData.customerPhone;
+    }
+    if (draftData.customerAddress) {
+      const field = document.querySelector('input[name="customer_address"]');
+      if (field) field.value = draftData.customerAddress;
+    }
+    
+    // Restore update customer data checkbox
+    if (draftData.updateCustomerDataChecked !== undefined) {
+      const checkbox = document.getElementById('addNewCustomerData');
+      if (checkbox) {
+        checkbox.checked = draftData.updateCustomerDataChecked;
+        if (typeof toggleCustomerEditByCheckbox === 'function') {
+          toggleCustomerEditByCheckbox();
+        }
+        console.log('Restored customer data checkbox:', draftData.updateCustomerDataChecked);
+      }
+    }
+  }, 600);
+  
+  // Step 7: Update summaries for review step
+  setTimeout(() => {
+    if (typeof updateProductsSummary === 'function') {
+      updateProductsSummary();
+    }
+    if (typeof updateNewProductsSummary === 'function') {
+      updateNewProductsSummary();
+    }
+    if (typeof updateFinalSummary === 'function') {
+      updateFinalSummary();
+    }
+    console.log('Updated all summaries');
+  }, 700);
+  
+  // Step 8: Navigate to the saved step (LAST)
+  const stepMap = {
+    'product_condition': 3,
+    'new_products': 4,
+    'review': 5
+  };
+  const targetStep = stepMap[draftStep] || 3;
+  
+  setTimeout(() => {
+    console.log('Navigating to step:', targetStep);
+    // Use goToStep instead of nextStep to avoid validation
+    goToStep(targetStep);
+    console.log('=== Draft restoration complete ===');
+  }, 1000);
+}
+</script>
+  {% endblock %}

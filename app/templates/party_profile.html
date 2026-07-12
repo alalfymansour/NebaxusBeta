@@ -1,0 +1,272 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container py-4" dir="rtl">
+  
+  <div class="card card-box bg-white w-100 p-3 mb-3">
+    <div class="d-flex align-items-center justify-content-between gap-3 flex-wrap mb-4">
+      <div class="d-flex align-items-center gap-3">
+        <div class="rounded-circle d-flex align-items-center justify-content-center" style="width:64px;height:64px;background-color: rgba(215, 153, 33, 0.25); color:#D79921; font-weight:bold; font-size:24px;">
+          {{ party.name[0] }}
+        </div>
+        <div>
+          <h3 class="fw-bold m-0 mb-2" style="font-size:1.4rem;">{{ party.name }}</h3>
+          {% if party.balance > 0 %}
+            <span class="text-success fw-bold" style="font-size:1rem;">متبقي لنا عنده: {{ "%.2f"|format(party.balance) }} ج.م</span>
+          {% elif party.balance < 0 %}
+            <span class="text-danger fw-bold" style="font-size:1rem;">متبقي علينا له: {{ "%.2f"|format(party.balance|abs) }} ج.م</span>
+          {% else %}
+            <span class="text-secondary" style="font-size:0.95rem;">الحساب متوازن</span>
+          {% endif %}
+        </div>
+      </div>
+      <div class="d-flex gap-2 flex-wrap">
+        <a href="{{ url_for('main.edit_party', party_id=party.id) }}" class="btn btn-primary d-inline-flex align-items-center gap-1">
+          <i class="fas fa-user-edit"></i>
+          <span>تعديل</span>
+        </a>
+        {% if has_permission('can_delete_transactions') %}
+        <form id="delete-party-form" method="POST" action="{{ url_for('main.delete_party', party_id=party.id) }}" style="display:inline;" data-confirm="هل أنت متأكد أنك تريد حذف هذا المتعامل وكل معاملاته وسجلاته؟ هذا الإجراء لا يمكن التراجع عنه." data-confirm-text="حذف" data-confirm-type="danger">
+          <button type="submit" class="btn btn-danger d-flex align-items-center gap-1">
+            <i class="fas fa-trash"></i> <span>حذف</span>
+          </button>
+        </form>
+        {% endif %}
+      </div>
+    </div>
+    
+    <div class="d-flex flex-wrap gap-2 pt-3" style="border-top: 1px solid #e9ecef;">
+      {% if has_permission('can_add_transactions') %}
+      <a href="{{ url_for('main.add_transaction_page', party_id=party.id) }}" class="btn btn-success d-inline-flex align-items-center gap-2">
+        <i class="fas fa-plus-circle"></i>
+        <span>إضافة معاملة</span>
+      </a>
+      {% endif %}
+      {% if has_permission('can_edit_transactions') %}
+      <button type="button" class="btn btn-primary d-inline-flex align-items-center gap-2" onclick="openPaymentModal()">
+        <i class="fas fa-money-bill-wave"></i>
+        <span>تسجيل سداد</span>
+      </button>
+      {% endif %}
+    </div>
+  </div>
+
+  {% set all_items = [] %}
+  {% for transaction in transactions %}
+    {% set _ = all_items.append({'type':'transaction', 'date': transaction.transaction_date, 'transaction': transaction}) %}
+  {% endfor %}
+  {% if party.payment_logs %}
+    {% for log in party.payment_logs %}
+      {% set _ = all_items.append({'type':'payment', 'date': log.created_at, 'payment': log}) %}
+    {% endfor %}
+  {% endif %}
+  {% set sorted_items = all_items|sort(attribute='date', reverse=true) %}
+  <div class="card card-box bg-white w-100 p-3">
+    <h5 class="fw-bold mb-3">سجل معاملات المتعامل</h5>
+    <div>
+      {% if sorted_items %}
+        {% for item in sorted_items %}
+          {% if item.type == 'transaction' %}
+            {% set transaction = item.transaction %}
+            {% if transaction.transaction_type == 'receivable' %}
+            <div class="card mb-2 border-success" style="border-left: 4px solid #28a745;">
+              <div class="card-body py-2 px-3">
+                <div class="d-flex justify-content-between align-items-center">
+                  <div>
+                    <span class="badge bg-success text-white mb-1"><i class="fas fa-arrow-up me-1"></i>دين لنا</span>
+                    {% if transaction.category %}
+                    <div class="fw-bold">{{ transaction.category }}</div>
+                    {% endif %}
+                    <div class="{% if not transaction.category %}fw-bold{% endif %}">{{ transaction.description if transaction.description else 'معاملة مالية' }}</div>
+                    <small class="text-muted">{{ transaction.transaction_date.strftime('%Y-%m-%d %H:%M') }}</small>
+                    {% if transaction.created_by_employee %}
+                    <small class="text-muted"> • بواسطة: {{ transaction.created_by_employee.name }}</small>
+                    {% endif %}
+                  </div>
+                  <div class="text-end">
+                    <div class="text-success fw-bold">{{ "%.2f"|format(transaction.amount) }} ج.م</div>
+                    {% if transaction.paid_amount > 0 %}
+                    <small class="text-info">محصل: {{ "%.2f"|format(transaction.paid_amount) }} ج.م</small>
+                    {% endif %}
+                    {% set rb = transaction._running_balance %}
+                    <div><small class="{% if rb > 0 %}text-warning{% elif rb < 0 %}text-danger{% else %}text-success{% endif %}">{% if rb > 0 %}متبقي لنا: {{ "%.2f"|format(rb) }}{% elif rb < 0 %}متبقي علينا: {{ "%.2f"|format(rb|abs) }}{% else %}الحساب متوازن{% endif %} ج.م</small></div>
+                    {% if transaction.payments %}
+                    <div class="mt-2">
+                      <small class="text-muted">سجلات السداد:</small>
+                      <ul class="list-unstyled mb-0">
+                        {% for p in transaction.payments %}
+                        <li><small class="text-secondary">• {{ p.created_at.strftime('%Y-%m-%d %H:%M') }} — {{ "%.2f"|format(p.amount) }} ج.م{% if p.notes %} — {{ p.notes }}{% endif %}</small></li>
+                        {% endfor %}
+                      </ul>
+                    </div>
+                    {% endif %}
+                    {% if has_permission('can_delete_transactions') %}
+                    <form method="POST" action="{{ url_for('main.delete_transaction', transaction_id=transaction.id) }}" data-confirm="هل أنت متأكد من حذف هذه المعاملة؟" data-confirm-text="حذف" data-confirm-type="danger" class="d-inline mt-1">
+                      <button type="submit" class="btn btn-success btn-sm">
+                        <i class="fas fa-trash"></i>
+                      </button>
+                    </form>
+                    {% endif %}
+                  </div>
+                </div>
+              </div>
+            </div>
+            {% else %}
+            <div class="card mb-2 border-danger" style="border-left: 4px solid #dc3545;">
+              <div class="card-body py-2 px-3">
+                <div class="d-flex justify-content-between align-items-center">
+                  <div>
+                    <span class="badge bg-danger text-white mb-1"><i class="fas fa-arrow-down me-1"></i>دين علينا</span>
+                    {% if transaction.category %}
+                    <div class="fw-bold">{{ transaction.category }}</div>
+                    {% endif %}
+                    <div class="{% if not transaction.category %}fw-bold{% endif %}">{{ transaction.description if transaction.description else 'معاملة مالية' }}</div>
+                    <small class="text-muted">{{ transaction.transaction_date.strftime('%Y-%m-%d %H:%M') }}</small>
+                    {% if transaction.created_by_employee %}
+                    <small class="text-muted"> • بواسطة: {{ transaction.created_by_employee.name }}</small>
+                    {% endif %}
+                  </div>
+                  <div class="text-end">
+                    <div class="text-danger fw-bold">{{ "%.2f"|format(transaction.amount) }} ج.م</div>
+                    {% if transaction.paid_amount > 0 %}
+                    <small class="text-info">مدفوع: {{ "%.2f"|format(transaction.paid_amount) }} ج.م</small>
+                    {% endif %}
+                    {% set rb = transaction._running_balance %}
+                    <div><small class="{% if rb > 0 %}text-warning{% elif rb < 0 %}text-danger{% else %}text-success{% endif %}">{% if rb > 0 %}متبقي لنا: {{ "%.2f"|format(rb) }}{% elif rb < 0 %}متبقي علينا: {{ "%.2f"|format(rb|abs) }}{% else %}الحساب متوازن{% endif %} ج.م</small></div>
+                    {% if has_permission('can_delete_transactions') %}
+                    <form method="POST" action="{{ url_for('main.delete_transaction', transaction_id=transaction.id) }}" data-confirm="هل أنت متأكد من حذف هذه المعاملة؟" data-confirm-text="حذف" data-confirm-type="danger" class="d-inline mt-1">
+                      <button type="submit" class="btn btn-danger btn-sm">
+                        <i class="fas fa-trash"></i>
+                      </button>
+                    </form>
+                    {% endif %}
+                  </div>
+                </div>
+              </div>
+            </div>
+            {% endif %}
+          {% else %}
+            {% set log = item.payment %}
+            
+            <div class="card mb-2 border-info" style="border-left: 4px solid #17a2b8;">
+              <div class="card-body py-2 px-3">
+                <div class="d-flex justify-content-between align-items-center">
+                  <div>
+                    <span class="badge bg-info text-white mb-1"><i class="fas fa-money-bill-wave me-1"></i>سداد</span>
+                    <div class="fw-bold">{% if log.transaction %}سداد لمعاملة #{{ log.transaction.id }}{% else %}سداد{% endif %}</div>
+                    <small class="text-muted">{{ log.created_at.strftime('%Y-%m-%d %H:%M') }}</small>
+                    {% if log.notes %}<small class="text-muted"> • {{ log.notes }}</small>{% endif %}
+                    {% if log.created_by_employee %}<small class="text-muted"> • بواسطة: {{ log.created_by_employee.name }}</small>{% endif %}
+                  </div>
+                  <div class="text-end">
+                    <div class="text-success fw-bold">{{ "%.2f"|format(log.amount) }} ج.م</div>
+                    {% set rb = log._running_balance %}
+                    <small class="{% if rb > 0 %}text-warning{% elif rb < 0 %}text-danger{% else %}text-success{% endif %}">{% if rb > 0 %}متبقي لنا: {{ "%.2f"|format(rb) }}{% elif rb < 0 %}متبقي علينا: {{ "%.2f"|format(rb|abs) }}{% else %}الحساب متوازن{% endif %} ج.م</small>
+                    {% if has_permission('can_delete_transactions') %}
+                    <form method="POST" action="{{ url_for('main.delete_payment', payment_id=log.id) }}" data-confirm="هل أنت متأكد من حذف هذا السداد؟" data-confirm-text="حذف" data-confirm-type="danger" class="d-inline mt-1">
+                      <button type="submit" class="btn btn-danger btn-sm"><i class="fas fa-trash"></i></button>
+                    </form>
+                    {% endif %}
+                  </div>
+                </div>
+              </div>
+            </div>
+          {% endif %}
+        {% endfor %}
+      {% else %}
+      <div class="alert alert-light text-center text-muted">
+        لا توجد معاملات مالية لهذا المتعامل.
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="d-flex w-100 justify-content-end mt-3">
+    <a href="{{ url_for('main.transactions') }}" class="btn btn-secondary d-inline-flex align-items-center gap-1 px-4">
+      <i class="fas fa-arrow-left"></i> <span>رجوع</span>
+    </a>
+  </div>
+</div>
+
+<div class="stats-modal" id="paymentModal" tabindex="-1">
+  <div class="stats-modal-content">
+    <button type="button" class="close-btn" onclick="closePaymentModal()"><i class="fas fa-times"></i></button>
+    <h4 class="modal-title">
+      <i class="fas fa-money-bill-wave me-2"></i>تسجيل سداد
+    </h4>
+    <form method="POST" action="{{ url_for('main.pay_party_transaction', party_id=party.id) }}">
+      <div class="modal-body">
+        <div class="mb-3">
+          <label for="transaction_id" class="form-label fw-semibold">المعاملة:</label>
+          <select class="form-select" id="transaction_id" name="transaction_id" required>
+            <option value="">-- اختر المعاملة --</option>
+            {% for transaction in transactions %}
+              {% if transaction.remaining_amount > 0 %}
+                <option value="{{ transaction.id }}" data-remaining="{{ transaction.remaining_amount }}" data-type="{{ transaction.transaction_type }}">
+                  {% if transaction.transaction_type == 'receivable' %}
+                    دين لنا
+                  {% else %}
+                    دين علينا
+                  {% endif %}
+                  {% if transaction.category %} - {{ transaction.category }}{% endif %}
+                  — متبقي {{ "%.2f"|format(transaction.remaining_amount) }} ج.م
+                </option>
+              {% endif %}
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="mb-3">
+          <label for="payment_amount" class="form-label fw-semibold">المبلغ:</label>
+          <input type="number" class="form-control" id="payment_amount" name="payment_amount" step="0.01" min="0.01" required placeholder="أدخل المبلغ">
+        </div>
+
+        <div class="mb-3">
+          <label for="payment_notes" class="form-label fw-semibold">ملاحظات:</label>
+          <textarea class="form-control" id="payment_notes" name="payment_notes" rows="2"></textarea>
+        </div>
+      </div>
+      <div class="d-flex justify-content-end gap-2 mt-4">
+        <button type="button" class="btn btn-secondary px-4" onclick="closePaymentModal()">إلغاء</button>
+        <button type="submit" class="btn btn-primary px-4">تسجيل السداد</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const transactionSelect = document.getElementById('transaction_id');
+  const paymentAmountInput = document.getElementById('payment_amount');
+
+  transactionSelect.addEventListener('change', function() {
+    const selectedOption = this.options[this.selectedIndex];
+    const remaining = parseFloat(selectedOption.getAttribute('data-remaining') || 0);
+    
+    if (remaining > 0) {
+      paymentAmountInput.max = remaining;
+      paymentAmountInput.value = remaining;
+    } else {
+      paymentAmountInput.max = '';
+      paymentAmountInput.value = '';
+    }
+  });
+
+  window.openPaymentModal = function() {
+    const modal = document.getElementById('paymentModal');
+    modal.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+  };
+
+  window.closePaymentModal = function() {
+    const modal = document.getElementById('paymentModal');
+    modal.style.display = 'none';
+    document.body.style.overflow = '';
+  };
+
+  document.getElementById('paymentModal').addEventListener('click', function(e) {
+    if (e.target === this) closePaymentModal();
+  });
+});
+</script>
+{% endblock %}

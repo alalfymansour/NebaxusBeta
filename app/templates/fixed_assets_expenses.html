@@ -1,0 +1,234 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<style>
+  .modern-table {
+    border-radius: 1rem;
+    overflow: hidden;
+    background: #fff;
+    border: 1px solid #000;
+  }
+  .modern-table th {
+    background: #D79921 !important;
+    font-size: 1.1rem;
+    letter-spacing: 0.5px;
+    color: #333;
+    vertical-align: middle;
+    border-bottom: 1px solid #000 !important;
+  }
+  .modern-table td {
+    vertical-align: middle;
+    font-size: 1rem;
+    background: #fff;
+    border-bottom: 1px solid #000;
+  }
+  .modern-table tbody tr:hover td {
+    background: #fff3cd !important;
+    transition: background 0.2s;
+  }
+  
+  .expense-card {
+    border-radius: 1rem;
+    box-shadow: 0 0 15px rgba(0,0,0,0.08);
+    transition: all 0.3s ease;
+  }
+  .expense-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 0 20px rgba(0,0,0,0.12);
+  }
+  
+  .category-badge {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+  }
+  
+  .fixed-assets {
+    background-color: #d1ecf1 !important;
+    color: #0c5460 !important;
+  }
+</style>
+
+<div class="container py-4" dir="rtl">
+
+  <div class="text-center mb-4">
+    <h2 class="fw-bold">قائمة <span class="text-warning">الأصول الثابتة</span></h2>
+    <p class="text-muted">مصروفات الشهر الحالي</p>
+  </div>
+
+  <div class="row mb-4 align-items-end">
+    <div class="col-12">
+      <div class="d-flex justify-content-between align-items-end">
+        <form method="get" action="" class="d-flex gap-2 align-items-end" style="overflow-x: auto;">
+          <select name="year" class="form-select" style="width: 130px; flex-shrink: 0;" onchange="this.form.submit()">
+            <option value="">كل السنوات</option>
+            {% for y in range(2025, current_year + 1) %}
+              <option value="{{ y }}" {% if selected_year == y %}selected{% endif %}>{{ y }}</option>
+            {% endfor %}
+          </select>
+          <select name="month" class="form-select" style="width: 120px; flex-shrink: 0;" onchange="this.form.submit()">
+            <option value="">كل الشهور</option>
+            {% for m in range(1, 13) %}
+              <option value="{{ m }}" {% if selected_month == m %}selected{% endif %}>شهر {{ m }}</option>
+            {% endfor %}
+          </select>
+        </form>
+        <div class="d-flex gap-2 align-items-center">
+          <a href="{{ url_for('main.expenses') }}" class="btn btn-secondary d-inline-flex align-items-center">
+            <i class="fas fa-arrow-right me-1"></i> <span>رجوع</span>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {% if expenses %}
+  <div class="table-responsive">
+    <table class="table modern-table table-hover text-center align-middle">
+      <thead>
+        <tr>
+          <th>التاريخ</th>
+          <th>العنوان</th>
+          <th>المبلغ</th>
+          <th>طريقة الدفع</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for expense in expenses %}
+        <tr style="cursor: pointer;" onclick="viewExpense({{ expense.id }})">
+          <td>{{ expense.formatted_date }}</td>
+          <td>
+            <strong>{{ expense.title }}</strong>
+            {% if expense.description %}
+              <br><small class="text-muted">{{ expense.description[:50] }}{% if expense.description|length > 50 %}...{% endif %}</small>
+            {% endif %}
+          </td>
+          <td class="fw-bold">{{ expense.formatted_amount }}</td>
+          <td>{{ expense.payment_method or '-' }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="alert alert-light border text-center text-muted mt-4">
+    لا توجد أصول ثابتة مسجلة.
+  </div>
+  {% endif %}
+</div>
+
+<div class="stats-modal" id="expenseModal" tabindex="-1">
+  <div class="stats-modal-content">
+    <button type="button" class="close-btn" onclick="closeExpenseModal()"><i class="fas fa-times"></i></button>
+    <h4 class="modal-title" id="expenseModalTitle">تفاصيل الأصل</h4>
+    <div class="modal-body" id="expenseModalBody">
+      
+    </div>
+    <div class="d-flex justify-content-end gap-2 mt-4" id="expenseModalFooter">
+      
+    </div>
+  </div>
+</div>
+
+<script>
+function viewExpense(id) {
+  fetch(`/expenses/${id}`)
+    .then(response => response.text())
+    .then(html => {
+      document.getElementById('expenseModalTitle').textContent = 'تفاصيل الأصل';
+      document.getElementById('expenseModalBody').innerHTML = html;
+      
+      document.getElementById('expenseModalFooter').innerHTML = `
+        <button type="button" class="btn btn-secondary" onclick="closeExpenseModal()">إغلاق</button>
+        <button type="button" class="btn btn-danger" onclick="deleteExpense(${id})">
+          <i class="fas fa-trash me-1"></i> حذف
+        </button>
+      `;
+      
+      openExpenseModal();
+    });
+}
+
+function openExpenseModal() {
+  const modal = document.getElementById('expenseModal');
+  modal.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+}
+
+function closeExpenseModal() {
+  const modal = document.getElementById('expenseModal');
+  modal.style.display = 'none';
+  document.body.style.overflow = '';
+}
+
+document.getElementById('expenseModal').addEventListener('click', function(e) {
+  if (e.target === this) closeExpenseModal();
+});
+
+function deleteExpense(id) {
+  
+  showDeleteConfirmation(id);
+}
+
+function showDeleteConfirmation(id) {
+  document.getElementById('globalDeleteModalBody').textContent = 'هل أنت متأكد من حذف هذا المصروف؟ لا يمكن التراجع عن هذا الإجراء.';
+  
+  const confirmBtn = document.getElementById('globalConfirmDeleteBtn');
+  confirmBtn.onclick = () => {
+    closeGlobalDeleteModal();
+    performDelete(id);
+  };
+  
+  openGlobalDeleteModal();
+}
+
+function performDelete(id) {
+  fetch(`/expenses/${id}/delete`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    }
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.success) {
+      closeExpenseModal();
+      location.reload();
+    } else {
+      showBootstrapAlert(data.message || 'حدث خطأ أثناء حذف المصروف', 'danger');
+    }
+  })
+  .catch(error => {
+    console.error('Error:', error);
+    showBootstrapAlert('حدث خطأ أثناء حذف المصروف', 'danger');
+  });
+}
+
+function showBootstrapAlert(message, type) {
+  console.log('Showing alert:', message, type); 
+  
+  const existingAlerts = document.querySelectorAll('.bootstrap-alert');
+  existingAlerts.forEach(alert => alert.remove());
+  
+  const alertDiv = document.createElement('div');
+  alertDiv.className = `bootstrap-alert alert alert-${type} alert-dismissible fade show position-fixed`;
+  alertDiv.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px; max-width: 400px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); border: none; border-radius: 8px;';
+  alertDiv.innerHTML = `
+    <div class="d-flex align-items-center">
+      <div class="flex-grow-1">
+        <strong>${type === 'success' ? 'نجح!' : 'خطأ!'}</strong> ${message}
+      </div>
+      <button type="button" class="btn-close ms-2" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+  `;
+  
+  document.body.appendChild(alertDiv);
+  
+  setTimeout(() => {
+    if (alertDiv.parentNode) {
+      alertDiv.remove();
+    }
+  }, 5000);
+}
+
+</script>
+{% endblock %} 

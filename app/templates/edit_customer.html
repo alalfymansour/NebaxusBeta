@@ -1,0 +1,85 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<style>
+  /* Hide number input spinners for all browsers */
+  input[type=number]::-webkit-inner-spin-button,
+  input[type=number]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  input[type=number] {
+    -moz-appearance: textfield;
+  }
+</style>
+<div class="container py-4" dir="rtl">
+
+    <div class="text-center mb-4">
+        <h2 class="fw-bold">تعديل <span class="text-warning">بيانات العميل</span></h2>
+        <p class="text-muted">قم بتعديل البيانات المطلوبة ثم اضغط حفظ</p>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            <form method="POST" class="bg-white border rounded-4 shadow-sm p-4">
+                <div class="mb-3">
+                    <label for="name" class="form-label fw-semibold">الاسم</label>
+                    <input type="text" id="name" name="name" class="form-control" value="{{ customer.name }}" required>
+                </div>
+
+                <div class="mb-3">
+                    <label for="phone" class="form-label fw-semibold">رقم الهاتف</label>
+                    <input type="text" id="phone" name="phone" class="form-control" value="{{ customer.phone }}" required>
+                </div>
+
+                <div class="mb-3">
+                    <label for="governorate" class="form-label fw-semibold">المحافظة</label>
+                    <select id="governorate" name="governorate" class="form-select" required>
+                        <option value="">اختر المحافظة</option>
+                        <option value="القاهرة" {% if customer.governorate == 'القاهرة' %}selected{% endif %}>القاهرة</option>
+                        <option value="الجيزة" {% if customer.governorate == 'الجيزة' %}selected{% endif %}>الجيزة</option>
+                        <option value="الإسكندرية" {% if customer.governorate == 'الإسكندرية' %}selected{% endif %}>الإسكندرية</option>
+                        <option value="الدقهلية" {% if customer.governorate == 'الدقهلية' %}selected{% endif %}>الدقهلية</option>
+                        <option value="البحر الأحمر" {% if customer.governorate == 'البحر الأحمر' %}selected{% endif %}>البحر الأحمر</option>
+                        <option value="البحيرة" {% if customer.governorate == 'البحيرة' %}selected{% endif %}>البحيرة</option>
+                        <option value="الفيوم" {% if customer.governorate == 'الفيوم' %}selected{% endif %}>الفيوم</option>
+                        <option value="الغربية" {% if customer.governorate == 'الغربية' %}selected{% endif %}>الغربية</option>
+                        <option value="الإسماعيلية" {% if customer.governorate == 'الإسماعيلية' %}selected{% endif %}>الإسماعيلية</option>
+                        <option value="المنوفية" {% if customer.governorate == 'المنوفية' %}selected{% endif %}>المنوفية</option>
+                        <option value="المنيا" {% if customer.governorate == 'المنيا' %}selected{% endif %}>المنيا</option>
+                        <option value="القليوبية" {% if customer.governorate == 'القليوبية' %}selected{% endif %}>القليوبية</option>
+                        <option value="الوادي الجديد" {% if customer.governorate == 'الوادي الجديد' %}selected{% endif %}>الوادي الجديد</option>
+                        <option value="السويس" {% if customer.governorate == 'السويس' %}selected{% endif %}>السويس</option>
+                        <option value="أسوان" {% if customer.governorate == 'أسوان' %}selected{% endif %}>أسوان</option>
+                        <option value="أسيوط" {% if customer.governorate == 'أسيوط' %}selected{% endif %}>أسيوط</option>
+                        <option value="بني سويف" {% if customer.governorate == 'بني سويف' %}selected{% endif %}>بني سويف</option>
+                        <option value="بورسعيد" {% if customer.governorate == 'بورسعيد' %}selected{% endif %}>بورسعيد</option>
+                        <option value="دمياط" {% if customer.governorate == 'دمياط' %}selected{% endif %}>دمياط</option>
+                        <option value="الشرقية" {% if customer.governorate == 'الشرقية' %}selected{% endif %}>الشرقية</option>
+                        <option value="جنوب سيناء" {% if customer.governorate == 'جنوب سيناء' %}selected{% endif %}>جنوب سيناء</option>
+                        <option value="كفر الشيخ" {% if customer.governorate == 'كفر الشيخ' %}selected{% endif %}>كفر الشيخ</option>
+                        <option value="مطروح" {% if customer.governorate == 'مطروح' %}selected{% endif %}>مطروح</option>
+                        <option value="الأقصر" {% if customer.governorate == 'الأقصر' %}selected{% endif %}>الأقصر</option>
+                        <option value="قنا" {% if customer.governorate == 'قنا' %}selected{% endif %}>قنا</option>
+                        <option value="شمال سيناء" {% if customer.governorate == 'شمال سيناء' %}selected{% endif %}>شمال سيناء</option>
+                        <option value="سوهاج" {% if customer.governorate == 'سوهاج' %}selected{% endif %}>سوهاج</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label for="address_details" class="form-label fw-semibold">باقي العنوان</label>
+                    <input type="text" id="address_details" name="address_details" class="form-control" value="{{ customer.address_details or '' }}" required>
+                </div>
+
+                <div class="d-flex justify-content-between mt-4">
+                    <button type="submit" class="btn btn-success">
+                        <i class="fas fa-save"></i> حفظ التعديلات
+                    </button>
+                    <a href="{{ url_for('main.customer_profile', customer_id=customer.id) }}" class="btn btn-secondary d-inline-flex align-items-center gap-1 px-4">
+                        <i class="fas fa-arrow-left"></i> <span>رجوع</span>
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,90 @@
+{% extends 'base.html' %}
+{% block content %}
+<style>
+  .modern-table {
+    width: 100% !important;
+    border-radius: 1rem;
+    overflow: hidden;
+    background: #fff;
+    border: 1px solid #000;
+  }
+  .modern-table th {
+    background: #D79921 !important;
+    font-size: 1.1rem;
+    letter-spacing: 0.5px;
+    color: #333;
+    vertical-align: middle;
+    border-bottom: 1px solid #000 !important;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    padding: 0.5rem 0.5rem;
+  }
+  .modern-table td {
+    vertical-align: middle;
+    font-size: 1rem;
+    background: #fff;
+    border-bottom: 1px solid #000;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    padding: 0.4rem 0.5rem;
+  }
+  .modern-table tbody tr:hover td {
+    background: #fff3cd !important;
+    transition: background 0.2s;
+  }
+</style>
+<div class="container py-4" dir="rtl">
+  <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap">
+    <h4 class="fw-bold mb-0">سجلات الجرد</h4>
+    <a href="{{ url_for('main.stocktake_index') }}" class="btn btn-secondary d-inline-flex align-items-center">
+      <i class="fas fa-arrow-right me-1"></i> رجوع
+    </a>
+  </div>
+
+  <div class="table-responsive" style="margin-top: 20px;">
+    <table class="table modern-table table-hover text-center align-middle" style="width: 100%;">
+      <thead>
+        <tr>
+          <th style="width: 8%;">#</th>
+          <th style="width: 25%;">التاريخ</th>
+          <th style="width: 22%;">تم البدء بواسطة</th>
+          <th style="width: 15%;">الحالة</th>
+          <th style="width: 30%;">تم بواسطة</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for st in stocktakes %}
+        <tr style="cursor: pointer;" onclick="window.location.href='{{ url_for('main.stocktake_summary', id=st.id) }}'">
+          <td>{{ st.id }}</td>
+          <td>{{ st.created_at | localtime if st.created_at else '—' }}</td>
+          <td>{{ st.started_by.name if st.started_by else 'غير معروف' }}</td>
+          <td>
+            {% if st.status == 'in_progress' %}
+              <span class="badge bg-warning text-dark">قيد التنفيذ</span>
+            {% elif st.status == 'applied' %}
+              <span class="badge bg-success">مطبق</span>
+            {% elif st.status == 'discarded' %}
+              <span class="badge bg-danger">ملغى</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if st.status == 'applied' and st.applied_by %}
+              {{ st.applied_by.name }}
+            {% elif st.status == 'discarded' and st.discarded_by %}
+              {{ st.discarded_by.name }}
+            {% else %}
+              —
+            {% endif %}
+          </td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="5" class="text-center text-muted">لا توجد سجلات جرد.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

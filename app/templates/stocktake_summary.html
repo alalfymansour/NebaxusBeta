@@ -1,0 +1,214 @@
+{% extends 'base.html' %}
+{% block content %}
+<style>
+  .modern-table {
+    width: 100% !important;
+    border-radius: 1rem;
+    overflow: hidden;
+    background: #fff;
+    border: 1px solid #000;
+  }
+  .modern-table th {
+    background: #D79921 !important;
+    font-size: 1.1rem;
+    letter-spacing: 0.5px;
+    color: #333;
+    vertical-align: middle;
+    border-bottom: 1px solid #000 !important;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    padding: 0.5rem 0.5rem;
+  }
+  .modern-table td {
+    vertical-align: middle;
+    font-size: 1rem;
+    background: #fff;
+    border-bottom: 1px solid #000;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    padding: 0.4rem 0.5rem;
+  }
+  .modern-table tbody tr:hover td {
+    background: #fff3cd !important;
+    transition: background 0.2s;
+  }
+</style>
+<div class="container py-4" dir="rtl">
+  <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap">
+    <div>
+      <h4 class="fw-bold mb-0">ملخص جرد المخزون #{{ stocktake.id }}</h4>
+      <small class="text-muted">
+        تم البدء بواسطة: {{ stocktake.started_by.name if stocktake.started_by else 'غير معروف' }}
+        {% if stocktake.status == 'applied' %}
+          | تم التطبيق بواسطة: {{ stocktake.applied_by.name if stocktake.applied_by else 'غير معروف' }}
+          | {{ stocktake.applied_at | localtime if stocktake.applied_at else '' }}
+        {% elif stocktake.status == 'discarded' %}
+          | تم التخلص بواسطة: {{ stocktake.discarded_by.name if stocktake.discarded_by else 'غير معروف' }}
+          | {{ stocktake.discarded_at | localtime if stocktake.discarded_at else '' }}
+        {% endif %}
+      </small>
+    </div>
+    <div class="d-flex gap-2 mt-2 mt-md-0">
+      {% if stocktake.status == 'in_progress' %}
+      <button type="button" class="btn btn-success" id="apply-btn">
+        <i class="fas fa-check-circle me-1"></i> تطبيق على المخزون
+      </button>
+      <button type="button" class="btn btn-danger" id="discard-btn">
+        <i class="fas fa-times-circle me-1"></i> التخلص من الجرد
+      </button>
+      {% endif %}
+      {% if stocktake.status == 'applied' and stocktake.pdf_path %}
+      <a href="{{ url_for('main.stocktake_download', id=stocktake.id) }}" class="btn btn-warning">
+        <i class="fas fa-file-pdf me-1"></i> تحميل PDF
+      </a>
+      {% endif %}
+      <a href="{{ url_for('main.stocktake_index') }}" class="btn btn-secondary d-inline-flex align-items-center">
+        <i class="fas fa-arrow-right me-1"></i> رجوع
+      </a>
+    </div>
+  </div>
+
+  <div class="row mb-4 g-3">
+    <div class="col-4">
+      <div class="card text-center border-success shadow-sm">
+        <div class="card-body py-3">
+          <h6 class="text-success fw-bold mb-1">{{ surplus }}</h6>
+          <small class="text-muted">منتجات زائدة</small>
+        </div>
+      </div>
+    </div>
+    <div class="col-4">
+      <div class="card text-center border-danger shadow-sm">
+        <div class="card-body py-3">
+          <h6 class="text-danger fw-bold mb-1">{{ shortage }}</h6>
+          <small class="text-muted">منتجات ناقصة</small>
+        </div>
+      </div>
+    </div>
+    <div class="col-4">
+      <div class="card text-center border-secondary shadow-sm">
+        <div class="card-body py-3">
+          <h6 class="text-secondary fw-bold mb-1">{{ matched }}</h6>
+          <small class="text-muted">منتجات متطابقة</small>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="table-responsive">
+    <table class="table modern-table table-hover text-center align-middle" style="width: 100%;">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>اسم المنتج</th>
+          <th>المخزون قبل</th>
+          <th>المخزون بعد</th>
+          <th>الفرق</th>
+          <th>الحالة</th>
+          <th>ملاحظات</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in items %}
+        {% set diff = item.counted_stock - item.system_stock if item.counted_stock is not none and item.system_stock is not none else none %}
+        <tr class="{% if diff is not none and diff > 0 %}table-success{% elif diff is not none and diff < 0 %}table-danger{% endif %}">
+          <td>{{ loop.index }}</td>
+          <td>{{ item.product_name_snapshot or '—' }}</td>
+          <td>{{ item.system_stock or 0 }}</td>
+          <td>{{ item.counted_stock if item.counted_stock is not none else '—' }}</td>
+          <td>
+            {% if diff is not none %}
+              <span class="badge {% if diff > 0 %}bg-success{% elif diff < 0 %}bg-danger{% else %}bg-secondary{% endif %}">
+                {{ diff }}
+              </span>
+            {% else %}
+              <span class="text-muted">—</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if diff is not none and diff > 0 %}
+              <span class="badge bg-success">فائض</span>
+            {% elif diff is not none and diff < 0 %}
+              <span class="badge bg-danger">ناقص</span>
+            {% elif diff == 0 %}
+              <span class="badge bg-secondary">متطابق</span>
+            {% else %}
+              <span class="text-muted">—</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if item.was_skipped %}
+              <span class="badge bg-info text-dark">لم يتم عدها</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="7" class="text-center text-muted">لا توجد عناصر في هذا الجرد.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% if stocktake.status == 'in_progress' %}
+<form method="POST" action="{{ url_for('main.stocktake_apply', id=stocktake.id) }}" id="apply-form" style="display:none;"></form>
+<form method="POST" action="{{ url_for('main.stocktake_discard', id=stocktake.id) }}" id="discard-form" style="display:none;"></form>
+
+<div class="modal fade" id="applyConfirmModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">تأكيد تطبيق الجرد</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="إغلاق"></button>
+      </div>
+      <div class="modal-body">
+        <p>هل أنت متأكد أنك تريد تطبيق هذا الجرد على المخزون؟</p>
+        <p class="text-muted small mb-0">سيتم تحديث كميات المخزون في النظام لتطابق الأعداد الفعلية المدخلة.</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+        <button type="button" class="btn btn-success" id="confirm-apply-btn">تأكيد التطبيق</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="discardConfirmModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">تأكيد التخلص من الجرد</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="إغلاق"></button>
+      </div>
+      <div class="modal-body">
+        <p>هل أنت متأكد أنك تريد التخلص من الجرد رقم #{{ stocktake.id }} الذي بدأه {{ stocktake.started_by.name if stocktake.started_by else 'غير معروف' }}؟</p>
+        <p class="text-danger small mb-0">لن يتم تطبيق أي تغييرات على المخزون.</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+        <button type="button" class="btn btn-danger" id="confirm-discard-btn">تأكيد التخلص</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+document.getElementById('apply-btn').addEventListener('click', function() {
+  new bootstrap.Modal(document.getElementById('applyConfirmModal')).show();
+});
+document.getElementById('confirm-apply-btn').addEventListener('click', function() {
+  document.getElementById('apply-form').submit();
+});
+
+document.getElementById('discard-btn').addEventListener('click', function() {
+  new bootstrap.Modal(document.getElementById('discardConfirmModal')).show();
+});
+document.getElementById('confirm-discard-btn').addEventListener('click', function() {
+  document.getElementById('discard-form').submit();
+});
+</script>
+{% endif %}
+{% endblock %}

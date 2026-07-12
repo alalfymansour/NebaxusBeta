@@ -1,0 +1,272 @@
+{% extends 'base.html' %}
+{% block content %}
+<style>
+  .card-box {
+    border-radius: 0.375rem; /* Bootstrap rounded */
+    box-shadow: 0 0 15px rgba(0,0,0,0.08);
+    transition: all 0.3s ease;
+  }
+  .card-box:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 0 20px rgba(0,0,0,0.12);
+  }
+</style>
+<div class="container py-4" dir="rtl">
+  <div class="text-center mb-4">
+    <h2 class="fw-bold text-dark mb-1">
+      <span class="text-dark">سجل العميل:</span>
+      <span class="fw-bold text-warning">{{ customer.name }}</span>
+    </h2>
+    <div class="text-muted mb-2" style="font-size:1.1rem;">كل عمليات التواصل والملاحظات الخاصة بالعميل</div>
+  </div>
+  <div class="d-flex flex-wrap gap-2 justify-content-between mb-4">
+    <a href="{{ url_for('main.add_customer_log', customer_id=customer.id) }}" class="btn btn-success d-inline-flex align-items-center gap-1 px-4">
+      <i class="fas fa-plus"></i> <span>إضافة سجل جديد</span>
+    </a>
+    <a href="{{ url_for('main.customer_profile', customer_id=customer.id) }}" class="btn btn-secondary d-inline-flex align-items-center gap-1 px-4">
+      <i class="fas fa-arrow-left"></i> <span>رجوع</span>
+    </a>
+  </div>
+
+  {% if logs %}
+    {% set show_logs = true %}
+    {% for log in logs %}
+      {% if log.order and log.order.status == 'مشكلة' %}
+        {% set show_logs = false %}
+      {% endif %}
+    {% endfor %}
+    {% if show_logs %}
+      <div class="mb-4">
+        {% for log in logs %}
+        <div class="card card-box bg-white w-100 mb-3 px-3 py-2 position-relative d-flex flex-row align-items-center justify-content-between log-card" style="min-height: 56px;" dir="ltr">
+          
+          <div style="min-width: 110px;">
+            {% if log.type == 'تلقائي' %}
+              <span class="badge bg-success text-white">{{ log.type }}</span>
+            {% elif log.type == 'تحديث حول المشكلة' %}
+              <span class="badge bg-danger text-white">{{ log.type }}</span>
+            {% elif log.type == 'تنبيه بالمتابعة' %}
+              <span class="badge bg-warning text-dark">{{ log.type }}</span>
+            {% else %}
+              <span class="badge bg-info text-dark">{{ log.type }}</span>
+            {% endif %}
+          </div>
+          
+          <div class="flex-grow-1 text-start" style="padding-right:2rem;">
+            <span class="fw-bold text-dark" style="font-size:1.08rem;">{{ log.content }}</span>
+            <div class="small text-muted mt-1">
+              <i class="fas fa-user me-1"></i>
+              {% if log.employee %}
+                {{ log.employee.name }}
+              {% elif log.type == 'تلقائي' %}
+                تلقائي
+              {% else %}
+                غير محدد
+              {% endif %}
+            </div>
+          </div>
+          
+          <div class="d-flex align-items-center gap-2" style="min-width: 170px;">
+            <i class="fas fa-calendar-alt fa-lg text-secondary"></i>
+            {% if log.type == 'تنبيه بالمتابعة' and log.reminder_time %}
+              <span class="text-secondary fw-semibold" style="font-size: 1rem;">
+                بعد {{ log.reminder_duration }} {{ log.reminder_duration_type }}
+                <br>
+                <small class="text-muted">
+                  {{ log.reminder_time.strftime('%Y-%m-%d %I:%M') }}
+                  {{ 'ص' if log.reminder_time and log.reminder_time.strftime('%p') == 'AM' else 'م' if log.reminder_time else '' }}
+                </small>
+              </span>
+            {% else %}
+              <span class="text-secondary fw-semibold" style="font-size: 1rem;">
+                {{ log.timestamp.strftime('%Y-%m-%d') if log.timestamp else '' }}
+                {{ log.timestamp.strftime('%I') if log.timestamp else '' }}:{{ log.timestamp.strftime('%M') if log.timestamp else '' }}
+                {{ 'ص' if log.timestamp and log.timestamp.strftime('%p') == 'AM' else 'م' if log.timestamp else '' }}
+              </span>
+            {% endif %}
+            
+            <button type="button" class="btn btn-sm btn-link text-danger p-0 delete-log-btn" data-log-id="{{ log.id }}" title="حذف السجل" style="box-shadow:none;">
+              <i class="fas fa-trash"></i>
+            </button>
+          </div>
+        </div>
+        <form id="delete-log-form-{{ log.id }}" method="POST" action="{{ url_for('main.delete_customer_log', log_id=log.id) }}" style="display:none;"></form>
+        {% endfor %}
+      </div>
+    {% else %}
+    <div class="alert alert-light border text-center text-muted mt-4">لا يوجد عملاء حاليًا.</div>
+    {% endif %}
+    {% else %}
+    <div class="alert alert-light border text-center text-muted mt-4">لا يوجد سجلات لهذا العميل حاليًا.</div>
+    {% endif %}
+</div>
+
+<div class="modal fade" id="reminderModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header bg-warning text-dark">
+        <h5 class="modal-title">
+          <i class="fas fa-bell me-2"></i>
+          تنبيه بالمتابعة
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div id="reminderContent">
+          
+        </div>
+      </div>
+      
+    </div>
+  </div>
+</div>
+
+<script>
+
+const customerId = {{ customer.id }};
+
+function deleteLog(logId) {
+  document.getElementById('delete-log-form-' + logId).submit();
+}
+
+let logToDelete = null;
+
+if (!document.getElementById('deleteLogModal')) {
+  const modalHtml = `
+  <div class="modal fade" id="deleteLogModal" tabindex="-1" aria-labelledby="deleteLogModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="deleteLogModalLabel">تأكيد حذف السجل</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="إغلاق"></button>
+        </div>
+        <div class="modal-body">
+          هل أنت متأكد أنك تريد حذف هذا السجل؟ لا يمكن التراجع عن هذا الإجراء.
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+          <button type="button" class="btn btn-danger" id="confirmDeleteLogBtn">حذف</button>
+        </div>
+      </div>
+    </div>
+  </div>`;
+  document.body.insertAdjacentHTML('beforeend', modalHtml);
+}
+
+let deleteLogModal = null;
+window.addEventListener('DOMContentLoaded', function() {
+  
+  deleteLogModal = new bootstrap.Modal(document.getElementById('deleteLogModal'));
+  document.querySelectorAll('.delete-log-btn').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      logToDelete = this.getAttribute('data-log-id');
+      deleteLogModal.show();
+    });
+  });
+  document.getElementById('confirmDeleteLogBtn').onclick = function() {
+    if (logToDelete) {
+      deleteLog(logToDelete);
+      logToDelete = null;
+      deleteLogModal.hide();
+    }
+  };
+  
+});
+
+function checkReminders() {
+  fetch(`/api/customer/${customerId}/reminders`)
+    .then(response => response.json())
+    .then(data => {
+      if (data.reminders && data.reminders.length > 0) {
+        showReminders(data.reminders);
+      }
+    })
+    .catch(error => {
+      console.error('Error checking reminders:', error);
+    });
+}
+
+function showReminders(reminders) {
+  const reminderModal = new bootstrap.Modal(document.getElementById('reminderModal'));
+  const content = document.getElementById('reminderContent');
+  
+  let html = '<div class="reminder-list">';
+  reminders.forEach(reminder => {
+    const isDue = reminder.is_due;
+    const statusText = isDue ? 'حان' : 'لسه';
+    const statusColor = isDue ? 'text-danger' : 'text-success';
+    const statusIcon = isDue ? 'fas fa-exclamation-circle' : 'fas fa-clock';
+    
+    html += `
+      <div class="reminder-item border rounded p-3 mb-3 bg-light">
+        <div class="d-flex justify-content-between align-items-start">
+          <div class="flex-grow-1">
+            
+            <div class="d-flex align-items-center gap-2 mb-2">
+              <h6 class="fw-bold text-dark mb-0">${reminder.customer_name}</h6>
+              <small class="text-muted">${reminder.customer_phone || 'لا يوجد رقم'}</small>
+            </div>
+            
+            <p class="text-dark mb-2"><strong>سبب التنبيه:</strong> ${reminder.follow_up_reason}</p>
+            
+            <div class="d-flex align-items-center gap-3">
+              <small class="text-muted">
+                <i class="fas fa-calendar-alt me-1"></i>وقت التنبيه: ${reminder.reminder_time}
+              </small>
+              <small class="${statusColor}">
+                <i class="${statusIcon} me-1"></i>${statusText}
+              </small>
+            </div>
+          </div>
+          
+          <div class="d-flex flex-column gap-2">
+            <button type="button" class="btn btn-sm btn-outline-primary" onclick="viewCustomerProfile(${reminder.customer_id})" title="عرض ملف العميل">
+              <i class="fas fa-user"></i>
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="dismissReminder(${reminder.id})" title="إزالة من الإشعارات">
+              <i class="fas fa-times"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+  });
+  html += '</div>';
+  
+  content.innerHTML = html;
+  reminderModal.show();
+}
+
+function dismissReminder(reminderId) {
+  fetch(`/api/reminder/${reminderId}/dismiss`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    }
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.success) {
+      
+      checkReminders();
+    }
+  })
+  .catch(error => {
+    console.error('Error dismissing reminder:', error);
+  });
+}
+
+function viewCustomerProfile(customerId) {
+  
+  const reminderModal = document.getElementById('reminderModal');
+  if (reminderModal) {
+    const modal = bootstrap.Modal.getInstance(reminderModal);
+    if (modal) {
+      modal.hide();
+    }
+  }
+  
+  window.location.href = `/customer/${customerId}/profile`;
+}
+</script>
+{% endblock %}

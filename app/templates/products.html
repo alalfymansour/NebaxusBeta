@@ -1,0 +1,256 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<style>
+  /* Defaults: hide mobile-only elements on desktop */
+  .mobile-total-inline, .btn-add-mobile, .btn-damaged-mobile { display: none; }
+  :root { --products-action-height: 46px; }
+  .card-box {
+    border-radius: 1rem;
+    box-shadow: 0 0 15px rgba(0,0,0,0.08);
+    transition: all 0.3s ease;
+    min-height: 200px;
+  }
+  .card-box:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 0 20px rgba(0,0,0,0.12);
+  }
+  
+  /* إخفاء العناصر الفارغة */
+  .empty-content {
+    display: none;
+  }
+  
+  /* تحسين عرض البطاقات */
+  .product-card {
+    border: 1px solid #e9ecef;
+    background: white;
+    border-radius: 1rem;
+    padding: 1.5rem;
+    text-align: center;
+    transition: all 0.3s ease;
+    text-decoration: none;
+    color: inherit;
+  }
+  
+  .product-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 0 20px rgba(0,0,0,0.12);
+    text-decoration: none;
+    color: inherit;
+  }
+
+  /* Products actions alignment like customers */
+  .products-actions .btn { display: inline-flex; align-items: center; }
+
+  /* Desktop: keep search input and button on one line */
+  .search-form { display: flex; align-items: center; gap: 0.5rem; }
+  .search-form .form-control { flex: 1 1 auto; }
+
+  /* زر الطباعة (موبايل) */
+  .btn-print-mobile { display: none; }
+  /* Print buttons inherit the same look as other action buttons */
+
+  /* Mobile-only layout tweaks */
+  @media (max-width: 576px) {
+  /* Reduce card height on mobile */
+  .card-box { min-height: 0 !important; }
+    /* Unify control heights */
+    .search-form .form-control,
+    .search-form .btn { height: var(--products-action-height) !important; }
+    .products-actions .btn { height: var(--products-action-height) !important; }
+
+  /* Place search input + buttons in one row */
+  .search-form { display: flex; flex-wrap: nowrap; align-items: center; gap: 0.5rem; }
+  /* Make input take remaining space but allow shrinking */
+  .search-form .form-control { flex: 1 1 auto !important; min-width: 6.5rem; }
+
+    /* Show count inline next to heading on mobile */
+    .mobile-total-inline { display: inline !important; }
+
+    /* Make search button icon-only */
+    .search-form .btn span { display: none !important; }
+    .search-form .btn i { margin: 0 !important; }
+
+    /* Show mobile add button; hide desktop add */
+    .btn-add-mobile { display: inline-flex !important; height: var(--products-action-height); align-items: center; justify-content: center; padding: 0 0.9rem; }
+    .products-actions .btn-add-desktop { display: none !important; }
+  /* Show mobile damaged button; hide desktop damaged */
+  .btn-damaged-mobile { display: inline-flex !important; height: var(--products-action-height); align-items: center; justify-content: center; padding: 0 0.9rem; }
+  .products-actions .btn-damaged-desktop { display: none !important; }
+  /* Show mobile print button; hide desktop print */
+  .btn-print-mobile { display: inline-flex !important; height: var(--products-action-height); align-items: center; justify-content: center; padding: 0 0.9rem; }
+  .products-actions .btn-print-desktop { display: none !important; }
+  /* Show mobile deleted button */
+  .btn-deleted-mobile { display: inline-flex !important; height: var(--products-action-height); align-items: center; justify-content: center; padding: 0 0.9rem; }
+
+    /* Grid spacing to match customers/dashboard */
+    .products-grid { row-gap: 0.4rem !important; --bs-gutter-y: 0.4rem; --bs-gutter-x: 0.5rem; }
+    .products-grid > [class*="col-"] { padding-left: 0.25rem !important; padding-right: 0.25rem !important; }
+
+  /* Make product card horizontal and more compact */
+  .product-card { display: flex !important; flex-direction: row !important; align-items: center !important; justify-content: flex-start !important; gap: 8px !important; padding: 0.6rem 0.5rem !important; text-align: right !important; }
+    .product-card .avatar { margin: 0 !important; }
+  .product-card .avatar .rounded-circle { width: 48px !important; height: 48px !important; font-size: 20px !important; }
+    .product-card .product-info { display: flex !important; flex-direction: column !important; align-items: flex-start !important; gap: 4px !important; flex: 1 1 auto !important; min-width: 0; }
+  .product-card .product-info h5 { font-size: 0.95rem !important; margin: 0 !important; }
+    .product-card .product-info .badges { display: flex !important; gap: 6px !important; flex-wrap: wrap; }
+  .product-card .product-info .badges .badge { font-size: 0.8rem !important; padding: 0.3rem 0.45rem !important; }
+
+    /* Actions row spacing */
+    .products-actions { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; width: 100%; }
+  }
+
+  /* Desktop resets */
+  @media (min-width: 577px) { .btn-add-mobile, .btn-damaged-mobile, .btn-print-mobile { display: none !important; } }
+
+  /* Dark mode support for products page */
+</style>
+<div class="container py-4" dir="rtl">
+
+  <div class="text-center mb-4">
+    <h2 class="fw-bold">قائمة <span class="text-warning">المنتجات</span><span class="mobile-total-inline"> ({{ products|length if products else 0 }})</span></h2>
+    <p class="text-muted">كل المنتجات المتاحة حاليًا في النظام</p>
+  </div>
+
+  <div class="row mb-4">
+    <div class="col-md-3 col-sm-12 mb-2">
+      <div class="search-form">
+        <input type="text" class="form-control" id="instant-search-products"
+               placeholder="ابحث باسم المنتج" style="width: 160px;">
+        
+        <a href="{{ url_for('main.damaged_products') }}" class="btn btn-danger btn-damaged-mobile" aria-label="منتجات تالفة">
+          <i class="fas fa-exclamation-triangle"></i>
+        </a>
+        
+        <a href="{{ url_for('main.inventory_pdf') }}" class="btn btn-secondary btn-print-mobile" aria-label="طباعة كشف جرد">
+          <i class="fas fa-print"></i>
+        </a>
+        
+        
+        <a href="{{ url_for('main.add_product') }}" class="btn btn-success btn-add-mobile" aria-label="إضافة منتج">
+          <i class="fas fa-plus"></i>
+        </a>
+      </div>
+    </div>
+  <div class="col-md-9 col-sm-12 text-md-end text-center products-actions-col">
+      <div class="products-actions">
+        <a href="{{ url_for('main.damaged_products') }}" class="btn btn-danger d-inline-flex align-items-center me-2 btn-damaged-desktop">
+          <i class="fas fa-exclamation-triangle me-1"></i> <span>منتجات تالفة</span>
+        </a>
+        <a href="{{ url_for('main.inventory_pdf') }}" class="btn btn-secondary d-inline-flex align-items-center me-2 btn-print-desktop">
+          <i class="fas fa-print me-1"></i> <span>طباعة كشف جرد</span>
+        </a>
+        {% if has_permission('can_manage_stocktake') %}
+        <a href="{{ url_for('main.stocktake_index') }}" class="btn btn-warning d-inline-flex align-items-center me-2">
+          <i class="fas fa-clipboard-list me-1"></i> <span>جرد المخزون</span>
+        </a>
+        {% endif %}
+        {% if view == 'deleted' %}
+          <a href="{{ url_for('main.products', view='active', search=search_query) }}" class="btn btn-outline-secondary d-inline-flex align-items-center me-2">
+            <i class="fas fa-list me-1"></i> <span>المنتجات النشطة</span>
+          </a>
+        {% else %}
+          <a href="{{ url_for('main.products', view='deleted', search=search_query) }}" class="btn btn-secondary d-inline-flex align-items-center me-2">
+            <i class="fas fa-archive me-1"></i> <span>المنتجات المحذوفة</span>
+          </a>
+        {% endif %}
+        <a href="{{ url_for('main.add_product') }}" class="btn btn-success d-inline-flex align-items-center btn-add-desktop">
+          <i class="fas fa-plus me-1"></i> <span>إضافة منتج</span>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  {% if products and products|length > 0 %}
+  <div class="row g-4 products-grid">
+    {% for product in products %}
+    <div class="col-12 col-md-6 col-lg-3">
+      {% if view == 'deleted' %}
+      <div class="card card-box p-4 d-block bg-white h-100 d-flex flex-column justify-content-center align-items-center product-card" data-name="{{ product.name }}">
+      {% else %}
+  <a href="{{ url_for('main.edit_product', product_id=product.id) }}" class="card card-box text-decoration-none p-4 d-block bg-white h-100 d-flex flex-column justify-content-center align-items-center product-card" data-name="{{ product.name }}">
+      {% endif %}
+        
+        <div class="mb-3 avatar">
+          <div class="rounded-circle mx-auto" style="width: 80px; height: 80px; font-size: 32px; font-weight: bold; background-color: rgba(215, 153, 33, 0.25); color: #D79921; display: flex; align-items: center; justify-content: center;">
+            <i class="fas fa-box"></i>
+          </div>
+        </div>
+        <div class="product-info">
+          
+          <h5 class="fw-bold text-dark">
+            {{ product.name }}
+            {% if product.is_bundle %}<span class="badge bg-primary ms-1">Bundle</span>{% endif %}
+            {% if view == 'deleted' %}<span class="badge bg-secondary ms-1">محذوف</span>{% endif %}
+          </h5>
+          <div class="badges">
+            
+            <span class="badge bg-success px-2 py-1">
+              <i class="fas fa-money-bill-wave me-2"></i>
+              {% if product.is_bundle %}
+                {{ '%.2f'|format(product.bundle_total_price or 0) }} ج.م
+              {% else %}
+                {{ product.price }} ج.م
+              {% endif %}
+            </span>
+            
+            {% if not product.is_bundle %}
+            <span class="badge bg-info px-2 py-1">
+              <i class="fas fa-cubes me-2"></i>{{ product.stock }} قطعة
+            </span>
+            {% if (product.stock or 0) < 3 %}
+              <i class="fas fa-exclamation-circle text-danger ms-1" title="كمية منخفضة"></i>
+            {% endif %}
+            {% endif %}
+          </div>
+        </div>
+        {% if view == 'deleted' %}
+          
+          <div class="mt-3 d-flex gap-2">
+            {% if has_permission('can_restore_products') %}
+              <form method="POST" action="{{ url_for('main.restore_product', product_id=product.id) }}" data-confirm="هل تريد استرجاع هذا المنتج؟" data-confirm-text="استرجاع" data-confirm-type="question">
+                <input type="hidden" name="next" value="{{ url_for('main.products', view='deleted', search=search_query) }}">
+                <button type="submit" class="btn btn-outline-success btn-sm">
+                  <i class="fas fa-undo"></i> استرجاع
+                </button>
+              </form>
+            {% endif %}
+          </div>
+        {% endif %}
+
+      {% if view == 'deleted' %}
+      </div>
+      {% else %}
+      </a>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+    <div class="alert alert-light border text-center text-muted mt-4">
+      {% if view == 'deleted' %}
+        لا يوجد منتجات محذوفة حاليًا.
+      {% else %}
+        لا يوجد منتجات حاليًا.
+      {% endif %}
+    </div>
+  {% endif %}
+
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  var input = document.getElementById('instant-search-products');
+  if (!input) return;
+  var cards = document.querySelectorAll('.product-card');
+  input.addEventListener('input', function() {
+    var q = this.value.trim().toLowerCase();
+    cards.forEach(function(card) {
+      var name = (card.getAttribute('data-name') || '').toLowerCase();
+      card.closest('.col-12').style.display = name.indexOf(q) !== -1 ? '' : 'none';
+    });
+  });
+});
+</script>
+{% endblock %}

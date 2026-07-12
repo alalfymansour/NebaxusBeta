@@ -1,0 +1,200 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<style>
+  .mobile-total-inline, .btn-add-mobile { display: none; }
+  :root { --customers-action-height: 46px; }
+  .card-box { border-radius: 1rem; box-shadow: 0 0 15px rgba(0,0,0,0.08); transition: all 0.3s ease; }
+  .card-box:hover { transform: translateY(-5px); box-shadow: 0 0 20px rgba(0,0,0,0.12); }
+  .search-form { display: flex; align-items: stretch; gap: 0.5rem; flex-wrap: wrap; }
+  .search-form .btn { display: inline-flex; align-items: center; }
+  .customers-actions .btn { display: inline-flex; align-items: center; }
+  /* Status filter width */
+  .search-form select[name="status"] { flex: 0 0 105px; min-width: 95px; }
+  /* Phone field width aligned with orders_by_status (150px) */
+  .search-form .phone-search { flex: 0 0 150px; min-width: 150px; }
+  /* Other filters */
+  .search-form select[name="month"] { flex: 0 0 80px; min-width: 70px; }
+  .search-form select[name="year"] { flex: 0 0 90px; min-width: 80px; }
+  @media (max-width: 576px) {
+    .search-form .form-control, .search-form .btn, .search-form select { height: var(--customers-action-height) !important; }
+    .customers-actions .btn { height: var(--customers-action-height) !important; }
+    .mobile-total-inline { display: inline !important; }
+    .search-form .btn span { display: none !important; }
+    .search-form .btn i { margin: 0 !important; }
+    .btn-add-mobile { display: inline-flex !important; height: var(--customers-action-height); align-items: center; justify-content: center; padding: 0 0.9rem; }
+    .customers-actions .btn-count-desktop, .customers-actions .btn-add-desktop { display: none !important; }
+    .search-form .phone-search { flex: 1 1 auto; min-width: 0; }
+    .customers-grid { row-gap: 0.4rem !important; --bs-gutter-y: 0.4rem; --bs-gutter-x: 0.5rem; }
+    .customers-grid > [class*="col-"] { padding-left: 0.25rem; padding-right: 0.25rem; }
+    .customer-card { display: flex !important; flex-direction: row !important; align-items: center !important; justify-content: flex-start !important; gap: 12px !important; padding: 0.75rem 0.55rem !important; text-align: right !important; }
+    .customer-card .avatar { margin: 0 !important; }
+    .customer-card .avatar .rounded-circle { width: 56px !important; height: 56px !important; font-size: 22px !important; }
+    .customer-card .customer-info { display: flex !important; flex-direction: column !important; align-items: flex-start !important; gap: 2px !important; flex: 1 1 auto !important; min-width: 0; }
+    .customer-card .customer-info h5 { font-size: 1rem !important; margin: 0 0 2px 0 !important; }
+    .customer-card .customer-info p { margin: 0 !important; font-size: 0.9rem !important; white-space: nowrap !important; overflow: hidden !important; text-overflow: ellipsis !important; max-width: 100%; }
+  }
+  @media (min-width: 577px) {
+    .customers-actions { display: inline-block; width: auto; }
+    .btn-add-mobile { display: none !important; }
+    .customer-card { text-align: center !important; }
+    .customer-card .customer-info { align-items: center !important; }
+  }
+  
+  /* Dark mode support for followups page */
+</style>
+
+<div class="container py-4" dir="rtl">
+  <div class="text-center mb-4">
+    <h2 class="fw-bold">قائمة <span class="text-warning">المتابعة</span></h2>
+    <p class="text-muted">تتبع مشاكل العملاء وحالتها</p>
+  </div>
+
+  <div class="row mb-3">
+    <div class="col-md-9 col-sm-12 mb-2">
+      <form method="GET" class="search-form" id="followupsSearchForm">
+        <select name="status" class="form-select followups-filter" title="الحالة">
+          <option value="الكل" {{ 'selected' if selected_status=='الكل' else '' }}>الكل</option>
+          <option value="قائمة" {{ 'selected' if selected_status=='قائمة' else '' }}>قائمة</option>
+            <option value="تم الحل" {{ 'selected' if selected_status=='تم الحل' else '' }}>تم الحل</option>
+        </select>
+        <select name="month" class="form-select followups-filter" title="الشهر">
+          {% for m in range(1,13) %}
+            <option value="{{ m }}" {{ 'selected' if m==selected_month else '' }}>{{ m }}</option>
+          {% endfor %}
+        </select>
+        <select name="year" class="form-select followups-filter" title="السنة">
+          {% for y in range(2025, current_year + 1) %}
+            <option value="{{ y }}" {{ 'selected' if y==selected_year else '' }}>{{ y }}</option>
+          {% endfor %}
+        </select>
+        <input type="text" class="form-control" id="instant-search-followups" placeholder="ابحث بالاسم أو الهاتف" style="width: 160px;">
+        <a href="{{ url_for('main.add_followup') }}" class="btn btn-success btn-add-mobile" aria-label="إضافة متابعة">
+          <i class="fas fa-plus"></i>
+        </a>
+      </form>
+    </div>
+    <div class="col-md-3 col-sm-12 text-md-end text-center">
+      <div class="customers-actions">
+        <a href="{{ url_for('main.add_followup') }}" class="btn btn-success d-inline-flex align-items-center btn-add-desktop">
+          <i class="fas fa-plus me-1"></i> <span>إضافة متابعة</span>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  {% if followups %}
+  <div class="row g-4 customers-grid">
+    {% for f in followups %}
+    <div class="col-12 col-md-6 col-lg-3">
+      <div class="card card-box p-4 bg-white h-100 d-flex flex-column justify-content-center align-items-center customer-card clickable" role="button" tabindex="0" data-href="{{ url_for('main.customer_profile', customer_id=f.customer.id) }}?from=followups" data-name="{{ f.customer.name }}" data-phone="{{ f.customer.phone }}">
+        <div class="mb-3 avatar position-relative w-100 d-flex flex-column align-items-center">
+          <div class="rounded-circle mx-auto" style="width: 80px; height: 80px; font-size: 32px; font-weight: bold; background-color: rgba(215, 153, 33, 0.25); color: #D79921; display: flex; align-items: center; justify-content: center;">
+            {{ f.customer.name[0] }}
+          </div>
+          <div class="mt-2">
+            <span class="badge {{ 'bg-warning text-dark' if f.status=='قائمة' else 'bg-success' }}">{{ f.status }}</span>
+          </div>
+        </div>
+        <div class="customer-info">
+          <h5 class="fw-bold text-dark">{{ f.customer.name }}</h5>
+          <p class="text-muted"><i class="fas fa-phone-alt me-2"></i>{{ f.customer.phone }}</p>
+          <p class="text-muted small"><i class="fas fa-map-marker-alt me-2"></i>{{ (f.customer.governorate or '-') ~ ' - ' ~ (f.customer.address_details or '-') }}</p>
+          <div class="mt-2 w-100">
+            <div class="small text-muted">{{ f.problem }}</div>
+            {% if f.last_contact_at %}
+              <div class="small text-muted mt-1">آخر تواصل: {{ f.last_contact_at.strftime('%Y-%m-%d %H:%M') }}</div>
+            {% endif %}
+            {% if f.next_contact_due and f.status!='تم الحل' %}
+              <div class="small text-muted mt-1">موعد التواصل القادم: {{ f.next_contact_due.strftime('%Y-%m-%d %H:%M') }}</div>
+            {% endif %}
+            <div class="d-flex justify-content-center gap-2 flex-wrap mt-3 followup-actions">
+              <form method="POST" class="followup-toggle-form m-0 p-0">
+                {% if f.status!='تم الحل' %}
+                  <button type="submit" formaction="{{ url_for('main.toggle_followup_status', followup_id=f.id) }}?status={{ selected_status }}&month={{ selected_month }}&year={{ selected_year }}&phone={{ phone_search }}" class="btn btn-sm btn-outline-success d-inline-flex align-items-center gap-1 px-2" title="تحديد تم الحل" aria-label="تحديد تم الحل">
+                    <i class="fas fa-check"></i><span>تم الحل</span>
+                  </button>
+                {% else %}
+                  <button type="submit" formaction="{{ url_for('main.toggle_followup_status', followup_id=f.id) }}?status={{ selected_status }}&month={{ selected_month }}&year={{ selected_year }}&phone={{ phone_search }}" class="btn btn-sm btn-outline-warning d-inline-flex align-items-center gap-1 px-2" title="إرجاع لقائمة" aria-label="إرجاع لقائمة">
+                    <i class="fas fa-undo"></i><span>قائمة</span>
+                  </button>
+                {% endif %}
+              </form>
+              <form method="POST" class="followup-toggle-form m-0 p-0">
+                <button type="submit" formaction="{{ url_for('main.followup_contact', followup_id=f.id) }}?status={{ selected_status }}&month={{ selected_month }}&year={{ selected_year }}&phone={{ phone_search }}" class="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1 px-2" title="تم التواصل" aria-label="تم التواصل">
+                  <i class="fas fa-phone"></i><span>تم التواصل</span>
+                </button>
+              </form>
+              <form method="POST" class="followup-toggle-form m-0 p-0" data-confirm="حذف هذه المتابعة؟" data-confirm-text="حذف" data-confirm-type="danger">
+                <button type="submit" formaction="{{ url_for('main.delete_followup', followup_id=f.id) }}?status={{ selected_status }}&month={{ selected_month }}&year={{ selected_year }}&phone={{ phone_search }}" class="btn btn-sm btn-outline-danger d-inline-flex align-items-center gap-1 px-2" title="حذف" aria-label="حذف المتابعة">
+                  <i class="fas fa-trash"></i><span>حذف</span>
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+    <div class="alert alert-light border text-center text-muted mt-4">
+      <i class="fas fa-list-check fa-2x mb-3 text-muted"></i>
+      <h5 class="text-muted">لا توجد عناصر مطابقة</h5>
+      <p class="text-muted mb-0">عدّل الفلاتر أو أضف متابعة جديدة</p>
+    </div>
+  {% endif %}
+</div>
+
+<style>
+  .card-box { border-radius: 1rem; box-shadow: 0 0 15px rgba(0,0,0,0.08); transition: all 0.3s ease; }
+  .card-box:hover { transform: translateY(-5px); box-shadow: 0 0 20px rgba(0,0,0,0.12); }
+  .customers-grid { row-gap: 1rem; }
+  .customer-card { text-align: center; }
+  .customer-card .customer-info { align-items: center; }
+  @media (max-width: 576px) {
+    .customers-grid { row-gap: 0.4rem !important; --bs-gutter-y: 0.4rem; --bs-gutter-x: 0.5rem; }
+    .customers-grid > [class*="col-"] { padding-left: 0.25rem; padding-right: 0.25rem; }
+    .customer-card { display: flex; flex-direction: row; align-items: center; gap: 12px; padding: 0.75rem 0.55rem; text-align: right; }
+    .customer-card .avatar { margin: 0; }
+    .customer-card .avatar .rounded-circle { width: 56px; height: 56px; font-size: 22px; }
+    .customer-card .customer-info { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; flex: 1 1 auto; min-width: 0; }
+    .customer-card .customer-info h5 { font-size: 1rem; margin: 0 0 2px 0; }
+    .customer-card .customer-info p { margin: 0; font-size: 0.9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+  }
+</style>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  var searchInput = document.getElementById('instant-search-followups');
+  if (searchInput) {
+    var cards = document.querySelectorAll('.customer-card.clickable');
+    searchInput.addEventListener('input', function() {
+      var q = this.value.trim().toLowerCase();
+      cards.forEach(function(card) {
+        var name = (card.getAttribute('data-name') || '').toLowerCase();
+        var phone = (card.getAttribute('data-phone') || '').toLowerCase();
+        card.closest('.col-12').style.display = (name.indexOf(q) !== -1 || phone.indexOf(q) !== -1) ? '' : 'none';
+      });
+    });
+  }
+
+  const form = document.getElementById('followupsSearchForm');
+  document.querySelectorAll('.followups-filter').forEach(function(el){
+    el.addEventListener('change', function(){ if (form) form.submit(); });
+  });
+  document.querySelectorAll('.customer-card.clickable').forEach(function(card){
+    card.addEventListener('click', function(e){
+      const href = card.getAttribute('data-href');
+      if (!href) return;
+      if (e.target.closest('.followup-toggle-form')) return;
+      window.location.href = href;
+    });
+  });
+  document.querySelectorAll('.followup-toggle-form').forEach(function(form){
+    ['click','mousedown','touchstart'].forEach(function(ev){
+      form.addEventListener(ev, function(e){ e.stopPropagation(); }, {capture:true});
+    });
+  });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,174 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+  .modern-table {
+    border-radius: 1rem;
+    overflow: hidden;
+    background: #fff;
+    border: 1px solid #000;
+  }
+  .modern-table th {
+    background: #D79921 !important;
+    font-size: 1.05rem;
+    letter-spacing: 0.4px;
+    color: #333;
+    vertical-align: middle;
+    border-bottom: 1px solid #000 !important;
+  }
+  .modern-table td {
+    vertical-align: middle;
+    font-size: 0.97rem;
+    background: #fff;
+    border-bottom: 1px solid #000;
+  }
+  .modern-table tbody tr:hover td {
+    background: #fff3cd !important;
+    transition: background 0.2s;
+  }
+  .table-responsive::-webkit-scrollbar { height: 8px; background: #eee; }
+  .table-responsive::-webkit-scrollbar-thumb { background: #000; border-radius: 8px; }
+  .table-responsive { scrollbar-width: thin; scrollbar-color: #000 #eee; }
+  .status-badge {
+    display: inline-block;
+    padding: 0.3em 0.9em;
+    border-radius: 0.5rem;
+    font-size: 0.88rem;
+    font-weight: 600;
+    background: #D79921;
+    color: #333;
+    border: 1px solid #c9a800;
+  }
+  .edit-badge {
+    display: inline-block;
+    padding: 0.3em 0.9em;
+    border-radius: 0.5rem;
+    font-size: 0.88rem;
+    font-weight: 600;
+    background: #e8f4fd;
+    color: #0d6efd;
+    border: 1px solid #9ec5fe;
+  }
+  .review-badge {
+    display: inline-block;
+    padding: 0.3em 0.9em;
+    border-radius: 0.5rem;
+    font-size: 0.88rem;
+    font-weight: 600;
+    background: #eaf7ee;
+    color: #146c43;
+    border: 1px solid #a3cfbb;
+  }
+  .info-card {
+    background: linear-gradient(135deg, #fff9e6 0%, #fffdf5 100%);
+    border: 1px solid #D79921;
+    border-radius: 1rem;
+  }
+  .row-edit td { background: #f0f7ff !important; }
+  .row-edit:hover td { background: #dbeafe !important; }
+  .row-review td { background: #f3fbf6 !important; }
+  .row-review:hover td { background: #def2e5 !important; }
+</style>
+
+<div class="container py-4" dir="rtl">
+  <div class="text-center mb-4">
+    <h2 class="fw-bold">تاريخ حالات <span class="text-warning">الطلب رقم {{ order.id }}</span></h2>
+    <p class="text-muted">السلسلة الزمنية لجميع تغييرات الحالة والتعديلات</p>
+  </div>
+
+  <!-- بيانات الطلب -->
+  <div class="info-card p-3 mb-4">
+    <div class="row g-2 text-center">
+      <div class="col-6 col-md-3">
+        <div class="text-muted small">العميل</div>
+        <div class="fw-bold">{{ order.customer_name }}</div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="text-muted small">الهاتف</div>
+        <div class="fw-bold">{{ order.customer_phone }}</div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="text-muted small">الحالة الحالية</div>
+        <div><span class="status-badge">{{ order.status }}</span></div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="text-muted small">تاريخ الإنشاء</div>
+        <div class="fw-bold">{{ order.date.strftime('%Y-%m-%d %H:%M') if order.date else 'غير محدد' }}</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- مفتاح الألوان -->
+  <div class="d-flex gap-3 justify-content-center mb-3 flex-wrap">
+    <span><span class="status-badge"><i class="fas fa-exchange-alt me-1"></i>تغيير حالة</span></span>
+    <span><span class="edit-badge"><i class="fas fa-edit me-1"></i>تعديل طلب</span></span>
+    <span><span class="review-badge"><i class="fas fa-clipboard-check me-1"></i>مراجعة</span></span>
+  </div>
+
+  <!-- الجدول -->
+  {% if events %}
+  <div class="table-responsive">
+    <table class="table modern-table table-hover text-center align-middle mb-0">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>النوع</th>
+          <th>التفاصيل</th>
+          <th>التاريخ والوقت</th>
+          <th>تم بواسطة</th>
+          <th>ملاحظات</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for ev in events %}
+        <tr class="{% if ev.event_type == 'edit' %}row-edit{% elif ev.event_type == 'review' %}row-review{% endif %}">
+          <td class="text-muted">{{ loop.index }}</td>
+          <td>
+            {% if ev.event_type == 'status' %}
+              <span class="status-badge"><i class="fas fa-exchange-alt me-1"></i>تغيير حالة</span>
+            {% elif ev.event_type == 'review' %}
+              <span class="review-badge"><i class="fas fa-clipboard-check me-1"></i>مراجعة</span>
+            {% else %}
+              <span class="edit-badge"><i class="fas fa-edit me-1"></i>تعديل</span>
+            {% endif %}
+          </td>
+          <td class="text-start px-3">
+            {% if ev.event_type == 'status' %}
+              <span class="fw-semibold">→ {{ ev.description }}</span>
+            {% else %}
+              {{ ev.description }}
+            {% endif %}
+          </td>
+          <td>{{ ev.timestamp.strftime('%Y-%m-%d %H:%M:%S') if ev.timestamp else 'غير محدد' }}</td>
+          <td>
+            {% if ev.employee %}
+              <span class="fw-semibold"><i class="fas fa-user me-1 text-warning"></i>{{ ev.employee.name }}</span>
+            {% else %}
+              <span class="text-muted">—</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if ev.notes %}
+              {{ ev.notes }}
+            {% else %}
+              <span class="text-muted">—</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="alert alert-light border text-center text-muted mt-4 rounded-3 shadow-sm">
+    لا يوجد تاريخ لهذا الطلب.
+  </div>
+  {% endif %}
+
+  <div class="text-center mt-4">
+    <a href="{{ url_for('main.edit_order', order_id=order.id) }}" class="btn btn-secondary">
+      <i class="fas fa-arrow-left me-1"></i> رجوع للطلب
+    </a>
+  </div>
+</div>
+{% endblock %}

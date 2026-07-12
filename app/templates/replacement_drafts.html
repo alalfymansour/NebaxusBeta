@@ -1,0 +1,241 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<style>
+  /* إزالة جميع المسافات الجانبية */
+  .container-fluid {
+    max-width: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+  
+  .row, .col-12 {
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+  
+  /* الجدول يأخذ العرض الكامل */
+  .table-responsive {
+    width: 98vw !important;
+    margin-left: calc(-49vw + 50%) !important;
+    margin-right: calc(-49vw + 50%) !important;
+    overflow-x: auto;
+  }
+  
+  .modern-table {
+    width: 100% !important;
+    border-radius: 1rem;
+    overflow: hidden;
+    background: #fff;
+    border: 1px solid #000;
+  }
+  .modern-table th {
+    background: #D79921 !important;
+    font-size: 1.1rem;
+    letter-spacing: 0.5px;
+    color: #000;
+    vertical-align: middle;
+    border-bottom: 1px solid #000 !important;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    padding: 0.5rem 0.5rem;
+  }
+  .modern-table td {
+    vertical-align: middle;
+    font-size: 1rem;
+    background: #fff;
+    border-bottom: 1px solid #000;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    padding: 0.5rem 0.5rem;
+  }
+  .modern-table tbody tr {
+    transition: background-color 0.2s ease, transform 0.1s ease;
+    background-color: #F3F4F6 !important;
+  }
+  .modern-table tbody tr:hover {
+    background-color: rgba(251, 191, 36, 0.2) !important;
+    cursor: pointer;
+  }
+  .modern-table tbody tr.row-selected td {
+    background-color: rgba(251, 191, 36, 0.3) !important;
+  }
+  
+  .draft-badge {
+    font-size: 0.85rem;
+    padding: 0.35rem 0.75rem;
+  }
+  
+  /* Dark mode support */
+  
+  @media (max-width: 768px) {
+    .modern-table th, .modern-table td {
+      font-size: 0.85rem;
+      padding: 0.4rem 0.3rem;
+    }
+  }
+</style>
+
+<div class="container-fluid py-4" dir="rtl">
+  <div class="text-center mb-4">
+    <h2 class="fw-bold">
+      <span class="text-warning">مسودات</span> طلبات الاستبدال
+    </h2>
+    <p class="text-muted">جميع المسودات المحفوظة</p>
+  </div>
+  
+  <div class="row mb-4 align-items-end">
+    <div class="col-12">
+      <div class="d-flex justify-content-between align-items-end">
+        <div>
+          <button type="button" class="btn btn-secondary" style="cursor: default; font-size: 1rem; font-weight: bold;" disabled>
+            {{ draft_orders|length }}
+          </button>
+        </div>
+        <div class="d-flex gap-2">
+          <a href="{{ url_for('main.replacement_orders') }}" class="btn btn-secondary d-inline-flex align-items-center gap-2">
+            <i class="fas fa-arrow-left"></i> <span>رجوع</span>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  {% if draft_orders and draft_orders|length > 0 %}
+  <div class="table-responsive" style="width: 100%; margin-top: 20px;">
+    <table class="table modern-table table-hover text-center align-middle" style="width: 100%;">
+      <thead>
+        <tr>
+          <th style="width: 5%;">#</th>
+          <th style="width: 10%;">رقم المسودة</th>
+          <th style="width: 15%;">العميل</th>
+          <th style="width: 12%;">رقم الهاتف</th>
+          <th style="width: 15%;">آخر خطوة</th>
+          <th style="width: 15%;">تاريخ الحفظ</th>
+          <th style="width: 8%;">الإجراءات</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for draft in draft_orders %}
+        <tr class="draft-row" style="cursor: pointer;" data-draft-id="{{ draft.id }}">
+          <td class="text-center">{{ loop.index }}</td>
+          <td>
+            <span class="badge bg-secondary draft-badge me-1">مسودة</span>
+            <strong>#{{ draft.id }}</strong>
+          </td>
+          <td>
+            {% if draft.customer %}
+              <strong>{{ draft.customer.name }}</strong>
+            {% else %}
+              <span class="text-muted">غير محدد</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if draft.customer %}
+              {{ draft.customer.phone }}
+            {% else %}
+              <span class="text-muted">--</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if draft.draft_step == 'product_condition' %}
+              <span class="badge bg-info" style="font-size: 0.9rem; padding: 0.4rem 0.8rem;">تحديد حالة المنتجات</span>
+            {% elif draft.draft_step == 'new_products' %}
+              <span class="badge bg-success" style="font-size: 0.9rem; padding: 0.4rem 0.8rem;">إضافة منتجات جديدة</span>
+            {% elif draft.draft_step == 'review' %}
+              <span class="badge bg-primary" style="font-size: 0.9rem; padding: 0.4rem 0.8rem;">المراجعة</span>
+            {% else %}
+              <span class="badge bg-secondary" style="font-size: 0.9rem; padding: 0.4rem 0.8rem;">غير محدد</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if draft.date %}
+              {{ draft.date.strftime('%Y-%m-%d') }}<br>
+              <small class="text-muted">{{ draft.date.strftime('%H:%M') }}</small>
+            {% else %}
+              <span class="text-muted">--</span>
+            {% endif %}
+          </td>
+          <td onclick="event.stopPropagation();">
+            <button type="button" class="btn btn-danger btn-sm" 
+                    onclick="deleteDraft({{ draft.id }})" title="حذف المسودة">
+              <i class="fas fa-trash"></i>
+            </button>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="alert alert-light border text-center text-muted mt-4" style="max-width: 600px; margin: 4rem auto;">
+    <i class="fas fa-info-circle fa-3x mb-3 text-warning"></i>
+    <h4>لا توجد مسودات محفوظة</h4>
+    <p class="mb-0">يمكنك حفظ مسودات أثناء إنشاء طلبات الاستبدال للعودة إليها لاحقاً</p>
+  </div>
+  {% endif %}
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  // Make rows clickable
+  const rows = document.querySelectorAll("tbody tr.draft-row");
+  rows.forEach((row) => {
+    row.addEventListener("click", (e) => {
+      // Ignore if clicked on button or its children
+      if (e.target.closest('button')) {
+        return;
+      }
+      
+      // Highlight selected row
+      document.querySelectorAll('tbody tr.row-selected').forEach(r => r.classList.remove('row-selected'));
+      row.classList.add('row-selected');
+      
+      // Navigate to draft
+      const draftId = row.getAttribute('data-draft-id');
+      if (draftId) {
+        window.location.href = `{{ url_for('main.add_replacement_order') }}?draft_id=${draftId}`;
+      }
+    });
+  });
+  
+  // Double click opens immediately
+  rows.forEach((row) => {
+    row.addEventListener("dblclick", (e) => {
+      if (e.target.closest('button')) {
+        return;
+      }
+      const draftId = row.getAttribute('data-draft-id');
+      if (draftId) {
+        window.location.href = `{{ url_for('main.add_replacement_order') }}?draft_id=${draftId}`;
+      }
+    });
+  });
+});
+
+// Draft delete function
+function deleteDraft(draftId) {
+  showConfirmDialog({ message: 'هل أنت متأكد من حذف هذه المسودة؟', type: 'danger', confirmText: 'حذف' }).then(function(confirmed) {
+    if (!confirmed) return;
+    fetch(`/replacement-order/draft/${draftId}/delete`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' }
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        showFlashMessage('تم حذف المسودة بنجاح', 'success');
+        location.reload();
+      } else {
+        showFlashMessage('حدث خطأ: ' + data.message, 'danger');
+      }
+    })
+    .catch(error => {
+      console.error('Error:', error);
+      showFlashMessage('حدث خطأ أثناء حذف المسودة', 'danger');
+    });
+  });
+}
+</script>
+{% endblock %}

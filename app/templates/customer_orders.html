@@ -1,0 +1,289 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<style>
+  .modern-table {
+    border-radius: 1rem;
+    overflow: hidden;
+    background: #fff;
+    border: 1px solid #000;
+  }
+  .modern-table th {
+    background: #D79921 !important;
+    font-size: 1.1rem;
+    letter-spacing: 0.5px;
+    color: #333;
+    vertical-align: middle;
+    border-bottom: 1px solid #000 !important;
+  }
+  .modern-table td {
+    vertical-align: middle;
+    font-size: 1rem;
+    background: #fff;
+    border-bottom: 1px solid #000;
+  }
+  .modern-table tbody tr:hover td {
+    background: #fff3cd !important;
+    transition: background 0.2s;
+  }
+  
+  /* توحيد radius الحواف للحقول */
+  .status-select, .tracking-input, .replacement-status-select, .replacement-tracking-input {
+    border-radius: 0.5rem !important;
+    border: 1px solid #ced4da;
+  }
+  
+  .status-select:focus, .tracking-input:focus, .replacement-status-select:focus, .replacement-tracking-input:focus {
+    border-color: #86b7fe;
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+  }
+</style>
+<div class="container py-4" dir="rtl">
+  <div class="text-center mb-4">
+    <h2 class="fw-bold">طلبات <span class="text-warning">{{ customer.name }}</span></h2>
+    <p class="text-muted">كل الطلبات الخاصة بالعميل</p>
+  </div>
+
+  <form method="GET" class="row g-2 mb-4">
+    <div class="col-12">
+      <div class="d-flex justify-content-between align-items-end">
+        <div class="d-flex gap-2 align-items-end" style="overflow-x: auto;">
+          <select name="status" class="form-select" style="width: 140px; flex-shrink: 0;" onchange="this.form.submit()">
+            <option value="">عرض الكل</option>
+            <option value="جديد" {% if selected_status == 'جديد' %}selected{% endif %}>جديد</option>
+            <option value="خرج للتوصيل" {% if selected_status == 'خرج للتوصيل' %}selected{% endif %}>خرج للتوصيل</option>
+            <option value="وصل" {% if selected_status == 'وصل' %}selected{% endif %}>وصل</option>
+            <option value="رفض الاستلام" {% if selected_status == 'رفض الاستلام' %}selected{% endif %}>رفض الاستلام</option>
+            <option value="استبدال" {% if selected_status == 'استبدال' %}selected{% endif %}>استبدال</option>
+            <option value="تم الاستبدال" {% if selected_status == 'تم الاستبدال' %}selected{% endif %}>تم الاستبدال</option>
+          </select>
+          <select name="year" class="form-select" style="width: 120px; flex-shrink: 0;" onchange="this.form.submit()">
+            <option value="">كل السنوات</option>
+            {% for y in range(2025, current_year + 1) %}
+              <option value="{{ y }}" {% if selected_year == y %}selected{% endif %}>{{ y }}</option>
+            {% endfor %}
+          </select>
+          <select name="month" class="form-select" style="width: 120px; flex-shrink: 0;" onchange="this.form.submit()">
+            <option value="">كل الشهور</option>
+            {% for m in range(1, 13) %}
+              <option value="{{ m }}" {% if selected_month == m %}selected{% endif %}>شهر {{ m }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <a href="{{ url_for('main.customer_profile', customer_id=customer.id) }}" class="btn btn-secondary d-inline-flex align-items-center gap-1 px-4" style="flex-shrink: 0;">
+          <i class="fas fa-arrow-left"></i> <span>رجوع</span>
+        </a>
+      </div>
+    </div>
+  </form>
+
+  {% if orders %}
+  <div class="table-responsive">
+    <table class="table modern-table table-hover text-center align-middle">
+      <thead>
+        <tr>
+            <th>الاسم</th>
+            <th>رقم الهاتف</th>
+            <th>المحافظة</th>
+            <th>باقي العنوان</th>
+            <th>المنتجات</th>
+            <th>المتبقي</th>
+            <th>الحالة</th>
+            <th>الرقم التتبعي</th>
+        </tr>
+      </thead>
+      <tbody>
+            {% for order in orders %}
+      <tr class="order-row" style="cursor: pointer;" data-edit-url="{{ url_for('main.edit_replacement_order', order_id=order.id, next=request.full_path) if order.is_replacement_order else url_for('main.edit_order', order_id=order.id, next=request.full_path) }}">
+                <td>
+                  {{ order.customer_name }}
+                  {% set missing_items = order.items | rejectattr('product') | list %}
+                  {% if missing_items | length > 0 %}
+                    <span class="badge bg-danger ms-2">منتج مفقود</span>
+                  {% endif %}
+                </td>
+            <td>{{ order.customer_phone }}</td>
+            <td>{{ order.customer_governorate }}</td>
+            <td>{{ order.customer_address_details }}</td>
+            <td>
+              {% for item in order.items %}
+                {% if not order.is_replacement_order or item.state not in ['تالف', 'مرتجع'] %}
+                {% if item.product %}
+                  <div class="mb-1">
+                    <strong>{{ item.product.name }}</strong>
+                    {% if item.product.is_deleted %}
+                      <span class="badge bg-danger ms-1">محذوف</span>
+                    {% endif %}
+                    {% if item.product.is_bundle %}
+                      <span class="badge bg-primary ms-1">Bundle</span>
+                    {% endif %}
+                    {% if item.product_id in returned_by_order.get(order.id, {}) %}
+                      <span class="badge bg-danger ms-1">مرتجع</span>
+                    {% endif %}
+                    {% if order.is_replacement_order %}
+                      <span class="badge bg-secondary ms-1">استبدال</span>
+                    {% endif %}
+                    {% if item.product.is_bundle and item.product.bundle_items %}
+                      <div class="ms-3 mt-1 text-muted small">
+                        {% for bundle_item in item.product.bundle_items %}
+                          <div>├ {{ bundle_item.product.name if bundle_item.product else 'منتج محذوف' }}</div>
+                        {% endfor %}
+                      </div>
+                    {% else %}
+                      {% for label, variant in item.selected_variants.items() %}
+                          <span class="badge bg-primary me-1">{{ label }}: {{ variant.variant_name }}</span>
+                      {% endfor %}
+                      {% if not item.selected_variants %}
+                          <span class="text-muted">بدون نوع</span>
+                      {% endif %}
+                    {% endif %}
+                    <br><span class="text-muted">الكمية: {{ item.quantity }} × {{ item.price|round(2) }} ج.م</span>
+                  </div>
+                {% else %}
+                  <span class="text-danger">منتج مفقود</span>
+                {% endif %}
+                {% if not loop.last %}<hr class="my-1">{% endif %}
+                {% endif %}
+              {% endfor %}
+            </td>
+            <td>
+              {% if order.is_replacement_order %}
+                {% set remaining_calc = (order.total_amount or 0) - (order.amount_paid or 0) - (order.customer_refund_amount or 0) %}
+                {{ remaining_calc|round(2) }} ج.م
+              {% else %}
+                {{ order.remaining_amount|round(2) }} ج.م
+              {% endif %}
+            </td>
+            <td class="status-cell">
+                {% if order.is_replacement_order %}
+                  <select class="form-select form-select-sm replacement-status-select" data-order-id="{{ order.id }}">
+                      {% for s in all_statuses %}
+                          {% if s in order.valid_next_statuses %}
+                          <option value="{{ s }}" {% if order.status == s %}selected{% endif %}>{{ s }}</option>
+                          {% endif %}
+                      {% endfor %}
+                  </select>
+                {% else %}
+                  <select class="form-select form-select-sm status-select" data-order-id="{{ order.id }}">
+                      {% for s in all_statuses %}
+                          {% if s in order.valid_next_statuses %}
+                          <option value="{{ s }}" {% if order.status == s %}selected{% endif %}>{{ s }}</option>
+                          {% endif %}
+                      {% endfor %}
+                  </select>
+                {% endif %}
+            </td>
+            <td>
+                {% if order.is_replacement_order %}
+                  <input type="text" 
+                         class="form-control form-control-sm text-center replacement-tracking-input" 
+                         value="{{ order.tracking_number|default('', true) }}" 
+                         data-order-id="{{ order.id }}"
+                         placeholder="أدخل الرقم...">
+                {% else %}
+                  <input type="text" 
+                         class="form-control form-control-sm text-center tracking-input" 
+                         value="{{ order.tracking_number|default('', true) }}" 
+                         data-order-id="{{ order.id }}"
+                         placeholder="أدخل الرقم...">
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+    <div class="alert alert-light border text-center text-muted mt-4">
+      لا توجد طلبات بهذه الحالة.
+    </div>
+  {% endif %}
+</div>
+<script>
+  
+  document.querySelectorAll('.replacement-tracking-input, .replacement-status-select, .tracking-input, .status-select').forEach(el => {
+    el.addEventListener('click', e => e.stopPropagation());
+  });
+
+  document.querySelectorAll('.replacement-status-select').forEach(select => {
+    
+    select.addEventListener('focus', (e) => {
+      const sel = e.currentTarget;
+      const currentStatus = sel.value;
+      const rejectOption = sel.querySelector('option[value="رفض الاستلام"]');
+      
+      if (currentStatus === 'خرج للتوصيل' || currentStatus === 'رفض الاستلام') {
+        if (!rejectOption) {
+          const afterDelivery = sel.querySelector('option[value="وصل"]');
+          if (afterDelivery) {
+            const newOption = document.createElement('option');
+            newOption.value = 'رفض الاستلام';
+            newOption.textContent = 'رفض الاستلام';
+            afterDelivery.insertAdjacentElement('afterend', newOption);
+          }
+        }
+      } else {
+        if (rejectOption) rejectOption.remove();
+      }
+    });
+    
+    select.addEventListener('change', async (e) => {
+      const sel = e.currentTarget;
+      const orderId = sel.getAttribute('data-order-id');
+      const newStatus = sel.value;
+      try {
+        const res = await fetch(`/replacement-orders/${orderId}/update-status`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: newStatus })
+        });
+        if (!res.ok) throw new Error('HTTP error');
+        sel.closest('td').style.backgroundColor = '#d4edda';
+        setTimeout(() => sel.closest('td').style.backgroundColor = 'transparent', 800);
+      } catch (err) {
+        sel.closest('td').style.backgroundColor = '#f8d7da';
+        setTimeout(() => sel.closest('td').style.backgroundColor = 'transparent', 800);
+      }
+    });
+  });
+
+  document.querySelectorAll('.replacement-tracking-input').forEach(inp => {
+    inp.addEventListener('keypress', async (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        const input = e.currentTarget;
+        const orderId = input.getAttribute('data-order-id');
+        const value = input.value.trim();
+        const statusSelect = input.closest('tr')?.querySelector('.replacement-status-select');
+        try {
+          const res = await fetch(`/replacement-orders/${orderId}/update-tracking`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ tracking_number: value })
+          });
+          const data = await res.json();
+          if (!res.ok || !data.success) throw new Error('HTTP error');
+          input.closest('td').style.backgroundColor = '#d4edda';
+          setTimeout(() => input.closest('td').style.backgroundColor = 'transparent', 800);
+          input.blur();
+          if (data.new_status && statusSelect) {
+            statusSelect.value = data.new_status;
+            statusSelect.closest('td').style.backgroundColor = '#d4edda';
+            setTimeout(() => statusSelect.closest('td').style.backgroundColor = 'transparent', 800);
+          }
+        } catch (err) {
+          input.closest('td').style.backgroundColor = '#f8d7da';
+          setTimeout(() => input.closest('td').style.backgroundColor = 'transparent', 800);
+        }
+      }
+    });
+  });
+
+  document.querySelectorAll('tr.order-row').forEach(row => {
+    row.addEventListener('click', () => {
+      const url = row.getAttribute('data-edit-url');
+      if (url) window.location.href = url;
+    });
+  });
+</script>
+{% endblock %}

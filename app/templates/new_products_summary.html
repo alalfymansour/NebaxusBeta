@@ -1,0 +1,67 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<style>
+  .modern-table {
+    border-radius: 1rem;
+    overflow: hidden;
+    background: #fff;
+    border: 1px solid #000;
+  }
+  .modern-table th {
+    background: #D79921 !important;
+    font-size: 1.1rem;
+    letter-spacing: 0.5px;
+    color: #333;
+    vertical-align: middle;
+    border-bottom: 1px solid #000 !important;
+  }
+  .modern-table td {
+    vertical-align: middle;
+    font-size: 1rem;
+    background: #fff;
+    border-bottom: 1px solid #000;
+  }
+  .modern-table tbody tr:hover td {
+    background: #fff3cd !important;
+    transition: background 0.2s;
+  }
+</style>
+<div class="container-fluid py-4" dir="rtl">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+      <h3 class="fw-bold">تفاصيل منتجات الطلبات - حالة جديد</h3>
+      <div class="text-muted">الشهر: {% if selected_month %}{{ selected_month }}{% else %}كل الشهور{% endif %} — السنة: {% if selected_year %}{{ selected_year }}{% else %}كل السنوات{% endif %}</div>
+    </div>
+    <div>
+      <a href="{{ url_for('main.orders_by_status', status='جديد', year=selected_year, month=selected_month) }}" class="btn btn-secondary">
+        <i class="fas fa-arrow-left"></i> رجوع لطلبات جديد
+      </a>
+    </div>
+  </div>
+
+  <div class="table-responsive" style="width: 100%; margin-top: 10px;">
+    <div id="new-products-summary-loading" style="display:none; padding: 8px;"><div class="sk sk-card" style="height:30px; max-width:200px; margin:0 auto;"></div></div>
+    <div id="new-products-summary-error" class="text-danger" style="display:none; padding: 8px;"></div>
+    <div class="modern-table table-responsive">
+      <table class="table table-striped mb-0 text-center align-middle" style="width: 100%;">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>اسم المنتج</th>
+            <th>الكمية المطلوبة</th>
+            <th>المخزون</th>
+          </tr>
+        </thead>
+        <tbody id="new-products-summary-tbody">
+          <tr><td colspan="4">جاري التحميل...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<script src="{{ url_for('static', filename='js/new_orders_products_summary.js') }}"></script>
+
+{% endblock %}

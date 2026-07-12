@@ -1,0 +1,342 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container-fluid p-0" dir="rtl">
+  
+  {% if invoices or debts %}
+  <div>
+    {% set all_transactions = [] %}
+    
+    {% for invoice in invoices %}
+      {% set _ = all_transactions.append({
+        'type': 'invoice',
+        'date': invoice.date,
+        'invoice_number': invoice.invoice_number,
+        'amount': invoice.total_amount,
+        'paid': invoice.paid_amount,
+        'remaining': (invoice.total_amount or 0) - (invoice.paid_amount or 0)
+      }) %}
+    {% endfor %}
+    
+    {% for debt in debts %}
+      {% set _ = all_transactions.append({
+        'type': 'debt',
+        'date': debt.date,
+        'amount': debt.amount,
+        'notes': debt.notes,
+        'paid': debt.paid_amount,
+        'remaining': (debt.amount or 0) - (debt.paid_amount or 0)
+      }) %}
+    {% endfor %}
+    
+    {% set sorted_transactions = all_transactions|sort(attribute='date', reverse=true) %}
+    
+    {% for transaction in sorted_transactions %}
+      {% if transaction.type == 'invoice' %}
+        
+        <div class="card mb-2 border-warning" style="border-left: 4px solid #ffc107;">
+          <div class="card-body py-2 px-3">
+            <div class="d-flex justify-content-between align-items-center">
+              <div>
+                <span class="badge bg-warning text-dark mb-1">مديونية</span>
+                <div class="fw-bold">فاتورة رقم {{ transaction.invoice_number }}</div>
+                <small class="text-muted">{{ transaction.date.strftime('%Y-%m-%d') }}</small>
+              </div>
+              <div class="text-end">
+                <div class="text-danger fw-bold">{{ "%.2f"|format(transaction.amount) }} ج.م</div>
+                {% if transaction.paid > 0 %}
+                <small class="text-success">مدفوع: {{ "%.2f"|format(transaction.paid) }} ج.م</small>
+                {% endif %}
+                {% if transaction.remaining > 0 %}
+                <div><small class="text-warning">متبقي: {{ "%.2f"|format(transaction.remaining) }} ج.م</small></div>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+        </div>
+      {% elif transaction.type == 'debt' %}
+        
+        <div class="card mb-2 border-danger" style="border-left: 4px solid #dc3545;">
+          <div class="card-body py-2 px-3">
+            <div class="d-flex justify-content-between align-items-center">
+              <div>
+                <span class="badge bg-danger text-white mb-1">مديونية</span>
+                <div class="fw-bold">{{ transaction.notes if transaction.notes else 'مديونية يدوية' }}</div>
+                <small class="text-muted">{{ transaction.date.strftime('%Y-%m-%d') }}</small>
+              </div>
+              <div class="text-end">
+                <div class="text-danger fw-bold">{{ "%.2f"|format(transaction.amount) }} ج.م</div>
+                {% if transaction.paid > 0 %}
+                <small class="text-success">مدفوع: {{ "%.2f"|format(transaction.paid) }} ج.م</small>
+                {% endif %}
+                {% if transaction.remaining > 0 %}
+                <div><small class="text-warning">متبقي: {{ "%.2f"|format(transaction.remaining) }} ج.م</small></div>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+        </div>
+      {% endif %}
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="alert alert-light text-center text-muted">
+    لا توجد معاملات مالية لهذا المورد.
+  </div>
+  {% endif %}
+</div>
+
+{% endblock %}
+            <div class="mb-3">
+              <div class="d-flex justify-content-between align-items-center mb-2">
+                <div class="fw-semibold">الفواتير المستحقة</div>
+                <button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#invoicePickerModal">
+                  <i class="fas fa-search"></i>
+                  اختيار الفواتير
+                </button>
+              </div>
+              <div class="border rounded p-2" style="max-height: 260px; overflow-y: auto;">
+                {% for invoice in invoices %}
+                  {% set remaining = (invoice.total_amount or 0) - (invoice.paid_amount or 0) %}
+                  {% if remaining > 0 %}
+                  <div class="d-flex align-items-center gap-2 py-1">
+                    <input class="form-check-input" type="checkbox" id="inv_{{ invoice.id }}" value="{{ invoice.id }}" name="invoice_ids[]">
+                    <label class="form-check-label flex-grow-1" for="inv_{{ invoice.id }}">
+                      فاتورة {{ invoice.invoice_number }} — متبقي {{ "%.2f"|format(remaining) }}
+                    </label>
+                    <input type="number" class="form-control" style="max-width: 140px;" step="0.01" min="0.01" max="{{ remaining }}" placeholder="المبلغ" name="invoice_amounts[]" disabled>
+                  </div>
+                  {% endif %}
+                {% endfor %}
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="toggleManualDebt">
+                <label class="form-check-label" for="toggleManualDebt">مديونية يدويّة</label>
+              </div>
+            </div>
+
+            <div id="manualDebtSection" class="mb-3 d-none">
+              <label for="debt_id" class="form-label fw-semibold">المديونية اليدوية:</label>
+              <select class="form-select" id="debt_id" name="debt_id">
+                <option value="">-- اختر المديونية اليدوية --</option>
+                {% for debt in debts %}
+                  {% set remaining = (debt.amount or 0) - (debt.paid_amount or 0) %}
+                  {% if remaining > 0 %}
+                    <option value="{{ debt.id }}" data-remaining="{{ remaining }}">
+                      {{ "%.2f"|format(debt.amount) }} — متبقي {{ "%.2f"|format(remaining) }}
+                    </option>
+                  {% endif %}
+                {% endfor %}
+              </select>
+              <div class="mt-2">
+                <label for="payment_amount" class="form-label fw-semibold">المبلغ:</label>
+                <input type="number" step="0.01" class="form-control" id="payment_amount" name="payment_amount" min="0.01">
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+            <button type="submit" class="btn btn-success">
+              <i class="fas fa-check me-1"></i>تأكيد الدفع
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="addDebtModal" tabindex="-1" aria-labelledby="addDebtModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="addDebtModalLabel">
+            <i class="fas fa-plus-circle me-2"></i>إضافة مديونية جديدة
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="إغلاق"></button>
+        </div>
+        <form method="POST" action="{{ url_for('main.add_supplier_debt', supplier_id=supplier.id) }}">
+          <div class="modal-body">
+            <div class="mb-3">
+              <label for="debt_amount" class="form-label fw-semibold">قيمة المديونية:</label>
+              <input type="number" step="0.01" class="form-control" id="debt_amount" name="debt_amount" min="0.01" required placeholder="أدخل قيمة المديونية">
+            </div>
+            <div class="mb-3">
+              <label for="debt_notes" class="form-label fw-semibold">ملاحظات (اختياري):</label>
+              <textarea class="form-control" id="debt_notes" name="notes" rows="3" placeholder="أضف ملاحظات إضافية"></textarea>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+            <button type="submit" class="btn btn-warning">
+              <i class="fas fa-check me-1"></i>تأكيد الإضافة
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="invoicePickerModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title"><i class="fas fa-file-invoice me-2"></i>اختيار الفواتير</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="إغلاق"></button>
+        </div>
+        <div class="modal-body">
+          <select id="invoiceMultiSelect" class="form-select" multiple>
+            {% for invoice in invoices %}
+              {% set remaining = (invoice.total_amount or 0) - (invoice.paid_amount or 0) %}
+              {% if remaining > 0 %}
+                <option value="{{ invoice.id }}" data-remaining="{{ remaining }}">
+                  فاتورة {{ invoice.invoice_number }} — متبقي {{ "%.2f"|format(remaining) }}
+                </option>
+              {% endif %}
+            {% endfor %}
+          </select>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+          <button type="button" class="btn btn-primary" id="applyInvoiceSelection" data-bs-dismiss="modal">تأكيد</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const toggleManualDebt = document.getElementById('toggleManualDebt');
+  const manualDebtSection = document.getElementById('manualDebtSection');
+  const debtSelect = document.getElementById('debt_id');
+  const paymentAmount = document.getElementById('payment_amount');
+
+  document.querySelectorAll("input[name='invoice_ids[]']").forEach((checkbox) => {
+    const amountInput = checkbox.parentElement.querySelector("input[name='invoice_amounts[]']");
+    checkbox.addEventListener('change', function() {
+      amountInput.disabled = !this.checked;
+      if (!this.checked) {
+        amountInput.value = '';
+      } else {
+        const maxAttr = amountInput.getAttribute('max');
+        if (maxAttr) amountInput.value = maxAttr;
+      }
+    });
+  });
+
+  toggleManualDebt.addEventListener('change', function() {
+    manualDebtSection.classList.toggle('d-none', !this.checked);
+    
+    document.querySelectorAll("input[name='invoice_ids[]']").forEach((cb) => {
+      const amountInput = cb.parentElement.querySelector("input[name='invoice_amounts[]']");
+      cb.disabled = this.checked;
+      amountInput.disabled = this.checked || !cb.checked;
+      if (this.checked) {
+        cb.checked = false;
+        amountInput.value = '';
+      }
+    });
+  });
+
+  function updateMaxFromSelect(select) {
+    const selectedOption = select.options[select.selectedIndex];
+    const maxAmount = selectedOption ? selectedOption.getAttribute('data-remaining') : null;
+    if (maxAmount && paymentAmount) {
+      paymentAmount.max = maxAmount;
+      paymentAmount.value = maxAmount;
+    } else if (paymentAmount) {
+      paymentAmount.max = '';
+      paymentAmount.value = '';
+    }
+  }
+
+  if (debtSelect) {
+    debtSelect.addEventListener('change', function() {
+      updateMaxFromSelect(debtSelect);
+    });
+  }
+
+  if (window.jQuery) {
+    try {
+      $('#invoiceMultiSelect').select2({
+        dropdownParent: $('#invoicePickerModal'),
+        width: '100%',
+        theme: 'bootstrap-5',
+        placeholder: 'ابحث عن فاتورة',
+        allowClear: true,
+        dir: 'rtl'
+      });
+    } catch (e) {}
+  }
+
+  const applyBtn = document.getElementById('applyInvoiceSelection');
+  if (applyBtn) {
+    applyBtn.addEventListener('click', function() {
+      const selected = Array.from(document.querySelectorAll('#invoiceMultiSelect option:checked')).map(o => ({
+        id: o.value,
+        remaining: parseFloat(o.getAttribute('data-remaining') || '0')
+      }));
+      
+      selected.forEach(sel => {
+        const cb = document.getElementById('inv_' + sel.id);
+        if (cb) {
+          cb.checked = true;
+          const amountInput = cb.parentElement.querySelector("input[name='invoice_amounts[]']");
+          if (amountInput) {
+            amountInput.disabled = false;
+            amountInput.max = sel.remaining;
+            amountInput.value = sel.remaining.toFixed(0);
+          }
+        }
+      });
+    });
+  }
+});
+</script>
+
+<style>
+  .modern-table {
+    border-radius: 1rem;
+    overflow: hidden;
+    background: #fff;
+    border: 1px solid #000;
+  }
+  .modern-table th {
+    background: #D79921 !important;
+    font-size: 1.1rem;
+    letter-spacing: 0.5px;
+    color: #333;
+    vertical-align: middle;
+    border-bottom: 1px solid #000 !important;
+  }
+  .modern-table td {
+    vertical-align: middle;
+    font-size: 1rem;
+    background: #fff;
+    border-bottom: 1px solid #000;
+  }
+  .modern-table tbody tr:hover td {
+    background: #fff3cd !important;
+    transition: background 0.2s;
+  }
+  .custom-yellow {
+    color: #D79921 !important;
+  }
+  .custom-yellow-bg {
+    background-color: #D79921 !important;
+  }
+  .card-box {
+    border-radius: 1rem;
+    box-shadow: 0 0 15px rgba(0,0,0,0.08);
+    transition: all 0.3s ease;
+  }
+  .card-box:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 0 20px rgba(0,0,0,0.12);
+  }
+  .table-success {
+    background-color: rgba(40, 167, 69, 0.1) !important;
+  }
+</style>

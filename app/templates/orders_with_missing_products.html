@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container py-4" dir="rtl">
+  <div class="text-center mb-4">
+    <h2 class="fw-bold">الطلبات التي تحتوي على منتجات مفقودة/محذوفة</h2>
+    <p class="text-muted">يمكنك تعديل المنتج أو استرجاعه ثم تعديل الطلب من هنا.</p>
+  </div>
+
+  {% if orders %}
+    <div class="list-group">
+      {% for order in orders %}
+        <a href="{{ url_for('main.edit_order', order_id=order.id) }}" class="list-group-item list-group-item-action">
+          طلب رقم {{ order.id }} - {{ order.customer_name }} - {{ order.customer_phone }}
+        </a>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="alert alert-light border text-center text-muted mt-4">
+      لا توجد طلبات بها منتجات مفقودة.
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

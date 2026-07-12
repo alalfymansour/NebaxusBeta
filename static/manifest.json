@@ -1,0 +1,59 @@
+{
+  "name": "NebaxusBeta",
+  "short_name": "NebaxusBeta",
+  "description": "نظام إدارة المتجر - نسخة تجريبية",
+  "start_url": "/?source=pwa",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": ["standalone", "fullscreen", "minimal-ui"],
+  "background_color": "#f9f5d7",
+  "theme_color": "#d79921",
+  "orientation": "portrait",
+  "prefer_related_applications": false,
+  "launch_handler": {
+    "client_mode": ["navigate-existing", "auto"]
+  },
+  "icons": [
+    {
+      "src": "/static/img/logo.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/static/img/logo.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "العملاء",
+      "short_name": "العملاء",
+      "description": "إدارة العملاء",
+      "url": "/customers",
+      "icons": [
+        {
+          "src": "/static/img/logo.svg",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "الطلبات",
+      "short_name": "الطلبات",
+      "description": "إدارة الطلبات",
+      "url": "/orders",
+      "icons": [
+        {
+          "src": "/static/img/logo.svg",
+          "sizes": "192x192"
+        }
+      ]
+    }
+  ],
+  "categories": ["business", "productivity"],
+  "lang": "ar",
+  "dir": "rtl"
+}

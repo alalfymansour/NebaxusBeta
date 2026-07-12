@@ -1,0 +1,412 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container py-4" dir="rtl">
+  
+  <div class="card card-box bg-white w-100 p-3 mb-3">
+    <div class="d-flex align-items-center justify-content-between gap-3 flex-wrap mb-4">
+      <div class="d-flex align-items-center gap-3">
+        <div class="rounded-circle d-flex align-items-center justify-content-center" style="width:64px;height:64px;background-color: rgba(215, 153, 33, 0.25); color:#D79921; font-weight:bold; font-size:24px;">
+          {{ supplier.name[0] }}
+        </div>
+        <div>
+          <h3 class="fw-bold m-0 mb-2" style="font-size:1.4rem;">{{ supplier.name }}</h3>
+          <span class="text-dark" style="font-size:0.95rem;">المديونية الحالية: {{ "%.2f"|format(supplier.actual_total_debt) }} ج.م</span>
+        </div>
+      </div>
+      <div class="d-flex gap-2 flex-wrap">
+        <a href="{{ url_for('main.edit_supplier', supplier_id=supplier.id) }}" class="btn btn-primary d-inline-flex align-items-center gap-1">
+          <i class="fas fa-user-edit"></i>
+          <span>تعديل</span>
+        </a>
+        <form id="delete-supplier-form" method="POST" action="{{ url_for('main.delete_supplier', supplier_id=supplier.id) }}" style="display:inline;">
+          <button type="submit" class="btn btn-danger d-flex align-items-center gap-1" data-confirm="هل أنت متأكد أنك تريد حذف هذا المورد؟">
+            <i class="fas fa-trash"></i> <span>حذف</span>
+          </button>
+        </form>
+      </div>
+    </div>
+    
+    <div class="d-flex flex-wrap gap-2 pt-3" style="border-top: 1px solid #e9ecef;">
+      <button type="button" class="btn btn-success d-inline-flex align-items-center gap-2" onclick="openPaymentModal()">
+        <i class="fas fa-money-bill-wave"></i>
+        <span>دفع مديونية</span>
+      </button>
+      <button type="button" class="btn btn-warning d-inline-flex align-items-center gap-2" onclick="openAddDebtModal()">
+        <i class="fas fa-plus-circle"></i>
+        <span>إضافة مديونية</span>
+      </button>
+      <a href="{{ url_for('main.supplier_invoices', supplier_id=supplier.id) }}" class="btn btn-primary d-inline-flex align-items-center gap-2">
+        <i class="fas fa-file-invoice"></i>
+        <span>عرض الفواتير</span>
+      </a>
+    </div>
+  </div>
+
+  <div class="card card-box bg-white w-100 p-3">
+    <h5 class="fw-bold mb-3">سجل حسابات المورد</h5>
+    <div>
+      
+      {% if supplier.invoices or supplier.debts or supplier.payment_logs %}
+        {% set all_transactions = [] %}
+        
+        {% for invoice in supplier.invoices %}
+          {% set _ = all_transactions.append({
+            'type': 'invoice',
+            'date': invoice.date,
+            'invoice_number': invoice.invoice_number,
+            'amount': invoice.total_amount,
+            'paid': invoice.paid_amount,
+            'remaining': (invoice.total_amount or 0) - (invoice.paid_amount or 0)
+          }) %}
+        {% endfor %}
+        
+        {% for debt in supplier.debts %}
+          {% set _ = all_transactions.append({
+            'type': 'debt',
+            'date': debt.date,
+            'amount': debt.amount,
+            'notes': debt.notes,
+            'paid': debt.paid_amount,
+            'remaining': (debt.amount or 0) - (debt.paid_amount or 0)
+          }) %}
+        {% endfor %}
+        
+        {% for log in supplier.payment_logs %}
+          {% set _ = all_transactions.append({
+            'type': 'payment',
+            'date': log.date,
+            'notes': log.notes,
+            'paid_amount': log.paid_amount
+          }) %}
+        {% endfor %}
+        
+        {% set sorted_transactions = all_transactions|sort(attribute='date', reverse=true) %}
+        
+        {% for transaction in sorted_transactions %}
+          {% if transaction.type == 'invoice' %}
+            
+            <div class="card mb-2 border-warning" style="border-left: 4px solid #ffc107;">
+              <div class="card-body py-2 px-3">
+                <div class="d-flex justify-content-between align-items-center">
+                  <div>
+                    <span class="badge bg-warning text-dark mb-1">فاتورة</span>
+                    <div class="fw-bold">فاتورة رقم {{ transaction.invoice_number }}</div>
+                    <small class="text-muted">{{ transaction.date.strftime('%Y-%m-%d') }}</small>
+                  </div>
+                  <div class="text-end">
+                    <div class="text-danger fw-bold">{{ "%.2f"|format(transaction.amount) }} ج.م</div>
+                    {% if transaction.paid > 0 %}
+                    <small class="text-success">مدفوع: {{ "%.2f"|format(transaction.paid) }} ج.م</small>
+                    {% endif %}
+                    {% if transaction.remaining > 0 %}
+                    <div><small class="text-warning">متبقي: {{ "%.2f"|format(transaction.remaining) }} ج.م</small></div>
+                    {% endif %}
+                  </div>
+                </div>
+              </div>
+            </div>
+          {% elif transaction.type == 'debt' %}
+            
+            <div class="card mb-2 border-danger" style="border-left: 4px solid #dc3545;">
+              <div class="card-body py-2 px-3">
+                <div class="d-flex justify-content-between align-items-center">
+                  <div>
+                    <span class="badge bg-danger text-white mb-1">مديونية</span>
+                    <div class="fw-bold">{{ transaction.notes if transaction.notes else 'مديونية يدوية' }}</div>
+                    <small class="text-muted">{{ transaction.date.strftime('%Y-%m-%d') }}</small>
+                  </div>
+                  <div class="text-end">
+                    <div class="text-danger fw-bold">{{ "%.2f"|format(transaction.amount) }} ج.م</div>
+                    {% if transaction.paid > 0 %}
+                    <small class="text-success">مدفوع: {{ "%.2f"|format(transaction.paid) }} ج.م</small>
+                    {% endif %}
+                    {% if transaction.remaining > 0 %}
+                    <div><small class="text-warning">متبقي: {{ "%.2f"|format(transaction.remaining) }} ج.م</small></div>
+                    {% endif %}
+                  </div>
+                </div>
+              </div>
+            </div>
+          {% elif transaction.type == 'payment' %}
+            
+            <div class="card mb-2 border-info" style="border-left: 4px solid #17a2b8;">
+              <div class="card-body py-2 px-3">
+                <div class="d-flex justify-content-between align-items-center">
+                  <div>
+                    <span class="badge bg-info text-white mb-1">سداد</span>
+                    <div class="fw-bold">{{ transaction.notes if transaction.notes else 'سداد' }}</div>
+                    <small class="text-muted">{{ transaction.date.strftime('%Y-%m-%d') }}</small>
+                  </div>
+                  <div class="text-end">
+                    <div class="text-success fw-bold">{{ "%.2f"|format(transaction.paid_amount) }} ج.م</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          {% endif %}
+        {% endfor %}
+      {% else %}
+      <div class="alert alert-light text-center text-muted">
+        لا توجد معاملات مالية لهذا المورد.
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="d-flex w-100 justify-content-end mt-3">
+    <a href="{{ url_for('main.suppliers') }}" class="btn btn-secondary d-inline-flex align-items-center gap-1 px-4">
+      <i class="fas fa-arrow-left"></i> <span>رجوع</span>
+    </a>
+  </div>
+</div>
+
+<div class="stats-modal" id="paymentModal" tabindex="-1">
+  <div class="stats-modal-content">
+    <button type="button" class="close-btn" onclick="closePaymentModal()"><i class="fas fa-times"></i></button>
+    <h4 class="modal-title">
+      <i class="fas fa-money-bill-wave me-2"></i>دفع مديونية
+    </h4>
+    <form method="POST" action="{{ url_for('main.pay_supplier_debt', supplier_id=supplier.id) }}">
+      <div class="modal-body">
+        <div class="mb-3">
+          <div class="fw-semibold mb-2">المستحقات والمديونيات</div>
+          <div class="border rounded p-2" style="max-height: 300px; overflow-y: auto;">
+            <!-- الفواتير المستحقة -->
+            {% for invoice in supplier.invoices %}
+              {% set remaining = (invoice.total_amount or 0) - (invoice.paid_amount or 0) %}
+              {% if remaining > 0 %}
+              <div class="d-flex align-items-center gap-2 py-2" style="border-bottom: 1px solid #e9ecef;">
+                <input class="form-check-input debt-item-checkbox" type="checkbox" id="inv_{{ invoice.id }}" value="{{ invoice.id }}" name="debt_items[]" data-type="invoice" data-created-date="{{ invoice.date.isoformat() if invoice.date else '' }}">
+                <label class="form-check-label flex-grow-1" for="inv_{{ invoice.id }}">
+                  <span class="badge bg-primary">فاتورة</span> {{ invoice.invoice_number }} — متبقي <strong>{{ "%.2f"|format(remaining) }}</strong> ج.م
+                </label>
+              </div>
+              {% endif %}
+            {% endfor %}
+
+            <!-- المديونيات اليدوية -->
+            {% for debt in supplier.debts %}
+              {% set remaining = (debt.amount or 0) - (debt.paid_amount or 0) %}
+              {% if remaining > 0 %}
+              <div class="d-flex align-items-center gap-2 py-2" style="border-bottom: 1px solid #e9ecef;">
+                <input class="form-check-input debt-item-checkbox" type="checkbox" id="debt_{{ debt.id }}" value="{{ debt.id }}" name="debt_items[]" data-type="debt" data-created-date="{{ debt.created_at.isoformat() if debt.created_at else '' }}">
+                <label class="form-check-label flex-grow-1" for="debt_{{ debt.id }}">
+                  <span class="badge bg-warning">مديونية</span> {{ debt.notes or 'مديونية يدويّة' }} — متبقي <strong>{{ "%.2f"|format(remaining) }}</strong> ج.م
+                </label>
+              </div>
+              {% endif %}
+            {% endfor %}
+
+            {% if (supplier.invoices|list|length == 0 or supplier.invoices|list|first == none) and (supplier.debts|list|length == 0 or supplier.debts|list|first == none) %}
+            <div class="text-center text-muted py-3">
+              <small>لا توجد مستحقات أو مديونيات</small>
+            </div>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- قسم إدخال المبلغ -->
+        <div id="paymentAmountSection" class="mb-3 d-none">
+          <div class="alert alert-info py-2">
+            <small id="selectedItemsInfo"></small>
+          </div>
+          <label for="total_payment_amount" class="form-label fw-semibold">المبلغ الإجمالي المراد دفعه:</label>
+          <input type="number" step="0.01" class="form-control" id="total_payment_amount" name="total_payment_amount" min="0.01" placeholder="أدخل المبلغ الإجمالي">
+        </div>
+
+        <div id="hiddenItemTypes"></div>
+
+        <div class="mb-3">
+          <label for="payment_notes" class="form-label fw-semibold">ملاحظات السداد (اختياري):</label>
+          <textarea class="form-control" id="payment_notes" name="payment_notes" rows="2" placeholder="أضف ملاحظة عن هذا السداد"></textarea>
+        </div>
+      </div>
+      <div class="d-flex justify-content-end gap-2 mt-4">
+        <button type="button" class="btn btn-secondary px-4" onclick="closePaymentModal()">إلغاء</button>
+        <button type="submit" class="btn btn-success px-4" id="submitPaymentBtn">
+          <i class="fas fa-check me-1"></i>تأكيد الدفع
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="stats-modal" id="addDebtModal" tabindex="-1">
+  <div class="stats-modal-content">
+    <button type="button" class="close-btn" onclick="closeAddDebtModal()"><i class="fas fa-times"></i></button>
+    <h4 class="modal-title">
+      <i class="fas fa-plus-circle me-2"></i>إضافة مديونية جديدة
+    </h4>
+    <form method="POST" action="{{ url_for('main.add_supplier_debt', supplier_id=supplier.id) }}">
+      <div class="modal-body">
+        <div class="mb-3">
+          <label for="debt_amount" class="form-label fw-semibold">قيمة المديونية:</label>
+          <input type="number" step="0.01" class="form-control" id="debt_amount" name="debt_amount" min="0.01" required placeholder="أدخل قيمة المديونية">
+        </div>
+        <div class="mb-3">
+          <label for="debt_notes" class="form-label fw-semibold">ملاحظات (اختياري):</label>
+          <textarea class="form-control" id="debt_notes" name="notes" rows="3" placeholder="أضف ملاحظات إضافية"></textarea>
+        </div>
+      </div>
+      <div class="d-flex justify-content-end gap-2 mt-4">
+        <button type="button" class="btn btn-secondary px-4" onclick="closeAddDebtModal()">إلغاء</button>
+        <button type="submit" class="btn btn-warning px-4">
+          <i class="fas fa-check me-1"></i>تأكيد الإضافة
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const debtItemCheckboxes = document.querySelectorAll('.debt-item-checkbox');
+  const paymentAmountSection = document.getElementById('paymentAmountSection');
+  const totalPaymentAmount = document.getElementById('total_payment_amount');
+  const selectedItemsInfo = document.getElementById('selectedItemsInfo');
+  const submButton = document.getElementById('submitPaymentBtn');
+  const paymentForm = submButton.closest('form');
+  const hiddenItemTypesDiv = document.getElementById('hiddenItemTypes');
+
+  // Function to update UI based on selected items
+  function updateItemSelection() {
+    const selectedCheckboxes = Array.from(debtItemCheckboxes).filter(cb => cb.checked);
+    
+    if (selectedCheckboxes.length > 0) {
+      // Show payment amount section
+      paymentAmountSection.classList.remove('d-none');
+      
+      // Calculate total remaining
+      let totalRemaining = 0;
+      const itemDetails = [];
+      
+      // Sort selected items by creation date (oldest first)
+      const sortedItems = selectedCheckboxes.sort((a, b) => {
+        const dateA = new Date(a.dataset.createdDate);
+        const dateB = new Date(b.dataset.createdDate);
+        return dateA - dateB;
+      });
+      
+      sortedItems.forEach(checkbox => {
+        const label = document.querySelector(`label[for="${checkbox.id}"]`);
+        const badgeText = label.querySelector('.badge').textContent.trim();
+        const remaining = label.textContent.match(/متبقي\s+([0-9.]+)/);
+        
+        if (remaining) {
+          const amount = parseFloat(remaining[1]);
+          totalRemaining += amount;
+          itemDetails.push({
+            type: checkbox.dataset.type,
+            badgeText: badgeText,
+            label: label.textContent.split('—')[0].trim(),
+            amount: amount
+          });
+        }
+      });
+      
+      // Build info message
+      let infoHtml = `<strong>${selectedCheckboxes.length} بند مختار</strong> — إجمالي المتبقي: <strong>${totalRemaining.toFixed(2)}</strong> ج.م`;
+      selectedItemsInfo.innerHTML = infoHtml;
+      
+      // Set max for input
+      totalPaymentAmount.max = totalRemaining;
+      totalPaymentAmount.placeholder = `أقصى حد: ${totalRemaining.toFixed(2)} ج.م`;
+    } else {
+      // Hide payment amount section
+      paymentAmountSection.classList.add('d-none');
+      totalPaymentAmount.value = '';
+      selectedItemsInfo.innerHTML = '';
+    }
+  }
+
+  // Add event listeners to all debt item checkboxes
+  debtItemCheckboxes.forEach(checkbox => {
+    checkbox.addEventListener('change', function() {
+      updateItemSelection();
+    });
+  });
+
+  // Form submission handler
+  if (paymentForm) {
+    paymentForm.addEventListener('submit', function(e) {
+      const selectedItems = Array.from(debtItemCheckboxes).filter(cb => cb.checked);
+      
+      if (selectedItems.length === 0) {
+        e.preventDefault();
+        alert('برجاء اختيار واحد أو أكثر من المستحقات');
+        return false;
+      }
+      
+      if (!totalPaymentAmount.value) {
+        e.preventDefault();
+        alert('برجاء إدخال المبلغ المراد دفعه');
+        return false;
+      }
+      
+      const amount = parseFloat(totalPaymentAmount.value);
+      if (amount <= 0) {
+        e.preventDefault();
+        alert('برجاء إدخال مبلغ صحيح');
+        return false;
+      }
+      
+      // Add hidden fields with item types
+      hiddenItemTypesDiv.innerHTML = '';
+      selectedItems.forEach((checkbox, index) => {
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = `debt_item_types[]`;
+        input.value = checkbox.dataset.type;
+        hiddenItemTypesDiv.appendChild(input);
+      });
+    });
+  }
+
+  window.openPaymentModal = function() {
+    const modal = document.getElementById('paymentModal');
+    modal.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+  };
+
+  window.closePaymentModal = function() {
+    const modal = document.getElementById('paymentModal');
+    modal.style.display = 'none';
+    document.body.style.overflow = '';
+  };
+
+  window.openAddDebtModal = function() {
+    const modal = document.getElementById('addDebtModal');
+    modal.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+  };
+
+  window.closeAddDebtModal = function() {
+    const modal = document.getElementById('addDebtModal');
+    modal.style.display = 'none';
+    document.body.style.overflow = '';
+  };
+
+  document.getElementById('paymentModal').addEventListener('click', function(e) {
+    if (e.target === this) closePaymentModal();
+  });
+
+  document.getElementById('addDebtModal').addEventListener('click', function(e) {
+    if (e.target === this) closeAddDebtModal();
+  });
+});
+</script>
+
+<style>
+  .card-box {
+    border-radius: 1rem !important;
+    box-shadow: 0 0 15px rgba(0,0,0,0.08);
+  }
+
+  /* Mobile tweaks */
+  @media (max-width: 576px) {
+    .supplier-bottom-actions { justify-content: space-between !important; }
+    .supplier-bottom-actions .btn { padding: 0.5rem 0.9rem !important; }
+  }
+</style>
+{% endblock %}
