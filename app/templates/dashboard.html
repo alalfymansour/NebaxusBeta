@@ -1,720 +1,130 @@
 {% extends 'base.html' %}
-
 {% block content %}
 <style>
-  .modern-table {
-    border-radius: 1rem;
-    overflow: hidden;
-    background: var(--card-light);
-    border: 1px solid var(--border-light);
-  }
-  .modern-table th {
-    background: var(--brand-gold) !important;
-    font-size: 1.1rem;
-    letter-spacing: 0.5px;
-    color: #282828 !important;
-    vertical-align: middle;
-    border-bottom: 1px solid var(--border-light) !important;
-  }
-  .modern-table td {
-    vertical-align: middle;
-    font-size: 1rem;
-    background: var(--card-light);
-    border-bottom: 1px solid var(--border-light);
-    color: var(--text-light);
-  }
-  .modern-table tbody tr:hover td {
-    background: var(--accent-hover) !important;
-    transition: background 0.2s;
-  }
-  .custom-yellow {
-    color: var(--brand-gold) !important;
-  }
-  .custom-yellow-bg {
-    background-color: var(--brand-gold) !important;
-  }
-  .card-box {
-    border-radius: 1rem;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.05);
-    transition: all 0.3s ease;
-    position: relative;
-    overflow: hidden;
-    background-color: var(--card-light);
-    border: 1px solid var(--border-light);
-  }
-  .card-box:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 8px 25px rgba(0,0,0,0.08);
-  }
-  /* Soft hover radial light effect */
-  .card-box::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    background: radial-gradient(
-      circle at var(--mx, 50%) var(--my, 50%),
-      rgba(215, 153, 33, 0.2) 0%,
-      rgba(215, 153, 33, 0.1) 35%,
-      rgba(215, 153, 33, 0.0) 70%
-    );
-    opacity: 0;
-    transform: scale(1.15);
-    transition: opacity 0.25s ease, transform 0.35s ease;
-    pointer-events: none;
-    will-change: opacity, transform;
-  }
-  .card-box:hover::before {
-    opacity: 1;
-    transform: scale(1);
-  }
-  .logo-container {
-    text-align: center;
-    margin-bottom: 2rem;
-  }
-  .logo-container img {
-    max-width: 90px;
-    height: auto;
-  }
-  
-  .icon-card {
-    border-radius: 50%;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-    transition: all 0.3s ease;
-    background: var(--card-light);
-    width: 60px;
-    height: 60px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border: 1px solid var(--border-light);
-  }
-  .icon-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 6px 18px rgba(0,0,0,0.1);
-    border-color: var(--brand-gold);
-  }
-  
-  /* Floating notifications panel */
-  .floating-notifications {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.5);
-    z-index: 9999;
-    display: none;
-    backdrop-filter: blur(5px);
-    opacity: 0;
-    transition: opacity 0.3s ease;
-  }
-  
-  .notifications-container {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: 90%;
-    max-width: 600px;
-    max-height: 80vh;
-    background: var(--card-light);
-    border-radius: 1rem;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-    overflow: hidden;
-    border: 1px solid var(--border-light);
-  }
-  
-  .notifications-header {
-    background: var(--brand-gold);
-    color: #282828;
-    padding: 1rem 1.5rem;
-    border-bottom: 1px solid var(--border-light);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
-  
-  .notifications-body {
-    max-height: 60vh;
-    overflow-y: auto;
-    padding: 1rem;
-  }
-  
-  .notification-item {
-    border: 1px solid var(--border-light);
-    border-radius: 0.5rem;
-    padding: 1rem;
-    margin-bottom: 1rem;
-    background: var(--accent-hover);
-    transition: all 0.3s ease;
-  }
-  
-  .notification-item:hover {
-    background: var(--card-light);
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-  }
-  
-  .notification-item:last-child {
-    margin-bottom: 0;
-  }
-  
-  .notification-actions {
-    display: flex;
-    gap: 0.5rem;
-    margin-top: 0.5rem;
-  }
-  
-  .notification-actions .btn {
-    font-size: 0.8rem;
-    padding: 0.25rem 0.5rem;
-  }
-  
-  .low-stock-badge {
-    width: 1.3rem;
-    height: 1.3rem;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0 !important;
-    font-size: 0.8rem;
-    line-height: 1;
-  }
-  
-  .title-with-badge { position: relative; display: inline-block; }
-  .low-stock-badge-abs { position: absolute; right: 100%; margin-right: 0.4rem; top: 50%; transform: translateY(-50%); }
-  
-  .expense-card {
-    border-radius: 1rem;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.05);
-    transition: all 0.3s ease;
-    background-color: var(--card-light);
-    border: 1px solid var(--border-light);
-  }
-  .expense-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 18px rgba(0,0,0,0.08);
-  }
-
-  /* Modal Styles */
-  .stats-modal {
-    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-    background: rgba(0,0,0,0.5); z-index: 9999; display: none;
-    align-items: center; justify-content: center; backdrop-filter: blur(5px);
-    animation: fadeIn 0.2s ease;
-  }
-  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-  .stats-modal-content {
-    background: var(--card-light); width: 95%; max-width: 600px; padding: 2rem;
-    border-radius: 1.5rem; position: relative; box-shadow: 0 10px 30px rgba(0,0,0,0.15);
-    border-top: 5px solid var(--brand-gold); max-height: 90vh; display: flex; flex-direction: column;
-    direction: rtl;
-    border-left: 1px solid var(--border-light);
-    border-right: 1px solid var(--border-light);
-    border-bottom: 1px solid var(--border-light);
-  }
-  .stats-modal .close-btn {
-    position: absolute; left: 1rem; top: 1rem; border: none;
-    background: var(--accent-hover); font-size: 1.2rem; color: var(--text-light);
-    width: 40px; height: 40px; border-radius: 50%; display: flex;
-    align-items: center; justify-content: center; cursor: pointer; transition: all 0.3s ease;
-    z-index: 10;
-  }
-  .stats-modal .close-btn:hover { background: var(--brand-gold); color: #282828; transform: rotate(90deg); }
-  .stats-modal .modal-title {
-    font-weight: 700; font-size: 1.5rem; color: var(--text-light);
-    margin-bottom: 1rem; padding-bottom: 0.75rem; border-bottom: 3px solid var(--brand-gold);
-  }
-  .stats-modal .modal-body {
-    overflow-y: auto; padding-right: 0.5rem; flex-grow: 1;
-  }
-  .stats-modal .modal-body::-webkit-scrollbar { width: 8px; }
-  .stats-modal .modal-body::-webkit-scrollbar-track { background: transparent; }
-  .stats-modal .modal-body::-webkit-scrollbar-thumb { background: var(--brand-gold); border-radius: 10px; }
-  .stats-modal .modal-body::-webkit-scrollbar-thumb:hover { background: #b8860b; }
-
-  /* Icon Unification & Alignment with Logo style */
-  .dashboard-cards i {
-    width: 2.5rem;
-    height: 2.5rem;
-    stroke-width: 1.8;
-    margin-bottom: 0.75rem;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-  }
-  /* Dark mode overrides for dashboard specific elements */
-
-  /* Mobile tweaks for dashboard cards */
-  @media (max-width: 576px) {
-    .dashboard-cards > [class*="col-"],
-    .dashboard-cards > .col-md-3 {
-      flex: 0 0 100% !important;
-      max-width: 100% !important;
-    }
-    .dashboard-cards .card-box {
-      border-radius: 1rem !important;
-      padding: 0.75rem 0.55rem !important;
-    }
-    .dashboard-cards i { font-size: 1.4rem !important; }
-    .dashboard-cards h5 { font-size: 1rem !important; margin-top: 0.3rem !important; }
-    .dashboard-cards { row-gap: 0.4rem !important; }
-    .dashboard-cards > [class*="col-"] { padding-left: 0.25rem !important; padding-right: 0.25rem !important; }
-    .dashboard-cards .mb-3 { margin-bottom: 0.5rem !important; }
-    .logo-container .icon-card {
-      width: 52px !important;
-      height: 52px !important;
-    }
-    .logo-container .icon-card i {
-      font-size: 1.3rem !important;
-    }
-  }
+.stat-card {
+  border-radius: 1rem;
+  box-shadow: 0 0 15px rgba(0,0,0,0.08);
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+  background: #fff;
+  padding: 1.4rem 0.8rem;
+  text-align: center;
+}
+.stat-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 0 20px rgba(0,0,0,0.12);
+}
+.stat-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    circle at var(--mx, 50%) var(--my, 50%),
+    rgba(215, 153, 33, 0.28) 0%,
+    rgba(215, 153, 33, 0.18) 35%,
+    rgba(215, 153, 33, 0.00) 70%
+  );
+  opacity: 0;
+  transform: scale(1.15);
+  transition: opacity 0.25s ease, transform 0.35s ease;
+  pointer-events: none;
+  will-change: opacity, transform;
+}
+.stat-card:hover::before { opacity: 1; transform: scale(1); }
+.stat-card i {
+  color: #d79921;
+  width: 1.6rem;
+  height: 1.6rem;
+  margin-bottom: 0.3rem;
+  position: relative;
+  z-index: 1;
+}
+.stat-card .num {
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: #1d2021;
+  position: relative;
+  z-index: 1;
+}
+.stat-card .label {
+  font-size: 0.82rem;
+  color: #7c6f64;
+  margin-top: 0.1rem;
+  position: relative;
+  z-index: 1;
+}
+.target-bar {
+  height: 5px;
+  background: #f0e6d3;
+  border-radius: 3px;
+  margin: 0.5rem 0 0.2rem;
+  overflow: hidden;
+  position: relative;
+  z-index: 1;
+}
+.target-bar-fill {
+  height: 100%;
+  background: #d79921;
+  border-radius: 3px;
+  transition: width 0.5s ease;
+}
 </style>
-<div class="logo-container position-relative">
-  <img src="/static/img/logo.svg" alt="شعار NebaxusBeta" class="app-logo">
-    <div class="position-absolute top-0 start-0" style="z-index: 1000;">
-        <div class="icon-card">
-            <button onclick="showAllReminders()" class="btn btn-link p-0 border-0" style="color: #D79921;">
-                <i class="fas fa-bell" style="font-size: 1.5rem;"></i>
-                <span id="reminderCountSmall" class="badge bg-danger position-absolute top-0 start-100 translate-middle" style="display: none; font-size: 0.7rem;">0</span>
-            </button>
-        </div>
-    </div>
-    {% if session.employee_name %}
-    <div class="position-absolute top-0 end-0" style="z-index: 1000;">
-        <div class="icon-card">
-            <a href="{{ url_for('main.my_account') }}" class="btn btn-link p-0 border-0" style="color: #D79921;">
-                <i class="fas fa-user" style="font-size: 1.5rem;"></i>
-            </a>
-        </div>
-    </div>
-    {% endif %}
-</div>
 
-<div class="row text-center mb-5 dashboard-cards">
-    {% if has_permission('can_view_customers') %}
-    <div class="col-md-3 mb-3">
-      <a href="{{ url_for('main.customers') }}" class="card card-box text-decoration-none p-4 d-block bg-white h-100 d-flex flex-column justify-content-center align-items-center">
-        <i class="fas fa-users fa-2x custom-yellow"></i>
-        <h5 class="fw-bold">بيانات العملاء</h5>
-      </a>
-    </div>
-    {% endif %}
-    {% if has_permission('can_view_products') %}
-    <div class="col-md-3 mb-3">
-        <a href="{{ url_for('main.products') }}" class="card card-box text-decoration-none p-4 d-block bg-white h-100 d-flex flex-column justify-content-center align-items-center">
-            <i class="fas fa-boxes fa-2x custom-yellow"></i>
-            <h5 class="fw-bold">
-              <span class="title-with-badge">
-                المنتجات
-                {% if low_stock_count and low_stock_count > 0 %}
-                  <span class="badge bg-danger rounded-circle low-stock-badge low-stock-badge-abs" title="منتجات منخفضة الكمية">{{ low_stock_count }}</span>
-                {% endif %}
-              </span>
-            </h5>
-        </a>
-    </div>
-    {% endif %}
-    {% if has_permission('can_view_orders') %}
-    <div class="col-md-3 mb-3">
-      <a href="{{ url_for('main.orders') }}" class="card card-box text-decoration-none p-4 d-block bg-white h-100 d-flex flex-column justify-content-center align-items-center">
-        <i class="fas fa-receipt fa-2x custom-yellow"></i>
-        <h5 class="fw-bold">
-          <span class="title-with-badge">
-            الطلبات
-            {% if overdue_new_orders_count and overdue_new_orders_count > 0 %}
-              <span class="badge bg-danger rounded-circle low-stock-badge low-stock-badge-abs" title="طلبات جديدة متأخرة">{{ overdue_new_orders_count }}</span>
-            {% endif %}
-          </span>
-        </h5>
-      </a>
-    </div>
-    {% endif %}
-    {% if has_permission('can_view_replacements') %}
-    <div class="col-md-3 mb-3">
-      <a href="{{ url_for('main.replacement_orders') }}" class="card card-box text-decoration-none p-4 d-block bg-white h-100 d-flex flex-column justify-content-center align-items-center">
-        <i class="fas fa-exchange-alt fa-2x custom-yellow"></i>
-        <h5 class="fw-bold">
-          <span class="title-with-badge">
-            طلبات الاستبدال
-            {% if overdue_new_repl_count and overdue_new_repl_count > 0 %}
-              <span class="badge bg-danger rounded-circle low-stock-badge low-stock-badge-abs" title="طلبات استبدال جديدة متأخرة">{{ overdue_new_repl_count }}</span>
-            {% endif %}
-          </span>
-        </h5>
-      </a>
-    </div>
-    {% endif %}
-    {% if has_permission('can_view_fees') %}
-    <div class="col-md-3 mb-3">
-      <a href="{{ url_for('main.governorate_fees') }}" class="card card-box text-decoration-none p-4 d-block bg-white h-100 d-flex flex-column justify-content-center align-items-center">
-        <i class="fas fa-money-bill-wave fa-2x custom-yellow"></i>
-        <h5 class="fw-bold">رسوم المحافظات</h5>
-      </a>
-    </div>
-    {% endif %}
-    {% if has_permission('can_view_employees') %}
-    <div class="col-md-3 mb-3">
-      <a href="{{ url_for('main.employees') }}" class="card card-box text-decoration-none p-4 d-block bg-white h-100 d-flex flex-column justify-content-center align-items-center">
-        <i class="fas fa-users-cog fa-2x custom-yellow"></i>
-        <h5 class="fw-bold">
-          <span class="title-with-badge">
-            الموظفين
-            {% if pending_attendance_count and pending_attendance_count > 0 %}
-            <span class="badge bg-danger rounded-circle low-stock-badge low-stock-badge-abs" title="موظفون لم يسجلوا حضورهم">{{ pending_attendance_count }}</span>
-            {% endif %}
-          </span>
-        </h5>
-      </a>
-    </div>
-    {% endif %}
-    {% if has_permission('can_view_statistics') %}
-    <div class="col-md-3 mb-3">
-      <a href="{{ url_for('main.statistics') }}" class="card card-box text-decoration-none p-4 d-block bg-white h-100 d-flex flex-column justify-content-center align-items-center">
-        <i class="fas fa-chart-bar fa-2x custom-yellow"></i>
-        <h5 class="fw-bold">الإحصائيات</h5>
-      </a>
-    </div>
-    {% endif %}
-    {% if has_permission('can_view_suppliers') %}
-    <div class="col-md-3 mb-3">
-      <a href="{{ url_for('main.suppliers') }}" class="card card-box text-decoration-none p-4 d-block bg-white h-100 d-flex flex-column justify-content-center align-items-center">
-        <i class="fas fa-handshake fa-2x custom-yellow"></i>
-        <h5 class="fw-bold">الموردين</h5>
-      </a>
-    </div>
-    {% endif %}
-    {% if has_permission('can_view_invoices') %}
-    <div class="col-md-3 mb-3">
-      <a href="{{ url_for('main.invoices') }}" class="card card-box text-decoration-none p-4 d-block bg-white h-100 d-flex flex-column justify-content-center align-items-center">
-        <i class="fas fa-file-invoice fa-2x custom-yellow"></i>
-        <h5 class="fw-bold">الفواتير</h5>
-      </a>
-    </div>
-    {% endif %}
-    {% if has_permission('can_view_expenses') %}
-    <div class="col-md-3 mb-3">
-      <a href="{{ url_for('main.expenses') }}" class="card card-box text-decoration-none p-4 d-block bg-white h-100 d-flex flex-column justify-content-center align-items-center">
-        <i class="fas fa-calculator fa-2x custom-yellow"></i>
-        <h5 class="fw-bold">المصروفات</h5>
-      </a>
-    </div>
-    {% endif %}
-  {% if has_permission('can_view_followups') %}
-  <div class="col-md-3 mb-3">
-    <a href="{{ url_for('main.followups') }}" class="card card-box text-decoration-none p-4 d-block bg-white h-100 d-flex flex-column justify-content-center align-items-center">
-      <i class="fas fa-list-check fa-2x custom-yellow"></i>
-      <h5 class="fw-bold">
-        <span class="title-with-badge">
-          قائمة المتابعة
-          {% if pending_followups_count and pending_followups_count > 0 %}
-            <span class="badge bg-danger rounded-circle low-stock-badge low-stock-badge-abs" title="متابعات قائمة">{{ pending_followups_count }}</span>
-          {% endif %}
-        </span>
-      </h5>
-    </a>
+<div style="max-width:960px;margin:0 auto;padding:1.5rem 0;">
+  <div style="margin-bottom:1.2rem;">
+    <div style="font-size:1.3rem;font-weight:700;color:#1d2021;">مرحباً، {{ session.get('employee_name', '') }}</div>
   </div>
-  {% endif %}
-  {% if has_permission('can_view_transactions') %}
-  <div class="col-md-3 mb-3">
-    <a href="{{ url_for('main.transactions') }}" class="card card-box text-decoration-none p-4 d-block bg-white h-100 d-flex flex-column justify-content-center align-items-center">
-      <i class="fas fa-credit-card fa-2x custom-yellow"></i>
-      <h5 class="fw-bold">معاملات</h5>
-    </a>
-  </div>
-  {% endif %}
-</div>
-
-<div class="floating-notifications" id="floatingNotifications">
-  <div class="notifications-container">
-    <div class="notifications-header">
-      <h5 class="mb-0">
-        <i class="fas fa-bell me-2"></i>
-        تنبيهات المتابعة
-      </h5>
-      <button type="button" class="btn-close" onclick="closeNotifications()"></button>
-    </div>
-    <div class="notifications-body" id="notificationsContent">
-      
-    </div>
-  </div>
-</div>
-
-<div class="stats-modal" id="reminderModal" tabindex="-1">
-  <div class="stats-modal-content">
-    <button type="button" class="close-btn" onclick="closeReminderModal()"><i class="fas fa-times"></i></button>
-    <h4 class="modal-title">
-      <i class="fas fa-bell me-2"></i>
-      تنبيهات المتابعة
-    </h4>
-    <div class="modal-body" id="reminderContent">
-      
-    </div>
-  </div>
-</div>
-
-<script>
-
-document.addEventListener('DOMContentLoaded', function() {
-  
-  document.querySelectorAll('.card-box').forEach((card) => {
-    
-    const updateMousePos = (e) => {
-      const rect = card.getBoundingClientRect();
-      const x = ((e.clientX - rect.left) / rect.width) * 100;
-      const y = ((e.clientY - rect.top) / rect.height) * 100;
-      card.style.setProperty('--mx', x.toFixed(0) + '%');
-      card.style.setProperty('--my', y.toFixed(0) + '%');
-    };
-
-    card.addEventListener('mousemove', updateMousePos, { passive: true });
-    card.addEventListener('mouseenter', updateMousePos, { passive: true });
-    card.addEventListener('mouseleave', () => {
-      
-      card.style.setProperty('--mx', '50%');
-      card.style.setProperty('--my', '50%');
-    }, { passive: true });
-  });
-
-  clearOldNotifications();
-  
-  checkAllReminders();
-  
-  const reminderModal = document.getElementById('reminderModal');
-  if (reminderModal) {
-    reminderModal.addEventListener('click', function (e) {
-      if (e.target === reminderModal) closeReminderModal();
-    });
-  }
-});
-
-function clearOldNotifications() {
-  try {
-    const shownNotifications = JSON.parse(localStorage.getItem('shownReminderNotifications') || '[]');
-    
-    localStorage.removeItem('shownReminderNotifications');
-    console.log('Cleared old reminder notifications');
-  } catch (error) {
-    console.error('Error clearing old notifications:', error);
-  }
-}
-
-setInterval(checkAllReminders, 60000);
-
-function checkAllReminders() {
-  fetch('/api/reminders/all')
-    .then(response => response.json())
-    .then(data => {
-      const reminderCountSmall = document.getElementById('reminderCountSmall');
-      
-      if (data.reminders && data.reminders.length > 0) {
-        
-        const dueReminders = data.reminders.filter(reminder => reminder.is_due);
-        
-        console.log(`DEBUG: Total reminders: ${data.reminders.length}, Due reminders: ${dueReminders.length}`);
-        
-        if (dueReminders.length > 0) {
-          
-          if (reminderCountSmall) {
-            reminderCountSmall.textContent = dueReminders.length;
-            reminderCountSmall.style.display = 'block';
-          }
-          
-          dueReminders.forEach(reminder => {
-            
-            const notificationId = `reminder_${reminder.id}`;
-            const shownNotifications = JSON.parse(localStorage.getItem('shownReminderNotifications') || '[]');
-            
-            if (!shownNotifications.includes(notificationId)) {
-              
-              shownNotifications.push(notificationId);
-              localStorage.setItem('shownReminderNotifications', JSON.stringify(shownNotifications));
-              
-              showNotification(
-                'تنبيه بالمتابعة',
-                `حان موعد متابعة العميل: ${reminder.customer_name}`,
-                reminder.customer_id
-              );
-              
-              playNotificationSound();
-            }
-          });
-        } else {
-          
-          if (reminderCountSmall) {
-            reminderCountSmall.style.display = 'none';
-          }
-        }
-      } else {
-        
-        if (reminderCountSmall) {
-          reminderCountSmall.style.display = 'none';
-        }
-      }
-    })
-    .catch(error => {
-      console.error('Error checking reminders:', error);
-    });
-}
-
-function showAllReminders() {
-  console.log('DEBUG: Fetching reminders...');
-  fetch('/api/reminders/all')
-    .then(response => response.json())
-    .then(data => {
-      console.log('DEBUG: Reminders data:', data);
-      if (data.reminders && data.reminders.length > 0) {
-        console.log('DEBUG: Showing reminders modal');
-        showReminders(data.reminders);
-      } else {
-        console.log('DEBUG: Showing no reminders modal');
-        showNoRemindersModal();
-      }
-    })
-    .catch(error => {
-      console.error('Error fetching reminders:', error);
-    });
-}
-
-function showNoRemindersModal() {
-  const reminderModal = document.getElementById('reminderModal');
-  const content = document.getElementById('reminderContent');
-  
-  content.innerHTML = `
-    <div class="text-center py-4">
-      <i class="fas fa-bell-slash fa-3x text-muted mb-3"></i>
-      <h5 class="text-muted">لا توجد تنبيهات حالياً</h5>
-      <p class="text-muted">جميع التنبيهات محدثة ومتابعة</p>
-    </div>
-  `;
-  
-  reminderModal.style.display = 'flex';
-  document.body.style.overflow = 'hidden';
-}
-
-function showReminders(reminders) {
-  const reminderModal = document.getElementById('reminderModal');
-  const content = document.getElementById('reminderContent');
-  
-  let html = '<div class="reminder-list">';
-  reminders.forEach(reminder => {
-    const isDue = reminder.is_due;
-    const statusText = isDue ? 'حان' : 'لسه';
-    const statusColor = isDue ? 'text-danger' : 'text-success';
-    const statusIcon = isDue ? 'fas fa-exclamation-circle' : 'fas fa-clock';
-    
-    html += `
-      <div class="reminder-item border rounded p-3 mb-3 bg-light" data-reminder-id="${reminder.id}">
-        <div class="d-flex justify-content-between align-items-start">
-          <div class="flex-grow-1">
-            
-            <div class="d-flex align-items-center gap-2 mb-2">
-              <h6 class="fw-bold text-dark mb-0">${reminder.customer_name}</h6>
-              <small class="text-muted">${reminder.customer_phone || 'لا يوجد رقم'}</small>
-            </div>
-            
-            <p class="text-dark mb-2"><strong>سبب التنبيه:</strong> ${reminder.follow_up_reason}</p>
-            
-            <div class="d-flex align-items-center gap-3">
-              <small class="text-muted">
-                <i class="fas fa-clock me-1"></i>بعد ${reminder.reminder_duration} ${reminder.reminder_duration_type}
-                <br>
-                <small class="text-muted">
-                  <i class="fas fa-calendar-alt me-1"></i>${reminder.reminder_time}
-                </small>
-              </small>
-              <small class="${statusColor}">
-                <i class="${statusIcon} me-1"></i>${statusText}
-              </small>
-            </div>
-          </div>
-          
-          <div class="d-flex flex-column gap-2">
-            <button type="button" class="btn btn-sm btn-outline-primary" onclick="viewCustomerProfile(${reminder.customer_id})" title="عرض ملف العميل">
-              <i class="fas fa-user"></i>
-            </button>
-            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="dismissReminder(${reminder.id})" title="إزالة من الإشعارات">
-              <i class="fas fa-times"></i>
-            </button>
-          </div>
-        </div>
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:0.8rem;margin-bottom:1.5rem;">
+    <div class="stat-card">
+      <i class="ph-bold ph-target"></i>
+      <div class="num">{{ orders_this_month }}/{{ monthly_target }}</div>
+      <div class="label">الهدف الشهري للطلبات</div>
+      <div class="target-bar">
+        <div class="target-bar-fill" style="width:{{ (orders_this_month / monthly_target * 100) | round }}%"></div>
       </div>
-    `;
+    </div>
+    <div class="stat-card">
+      <i class="ph-bold ph-package"></i>
+      <div class="num">{{ out_stock_count }}</div>
+      <div class="label">منتجات خارج المخزون في طلبات جديدة</div>
+    </div>
+    <div class="stat-card">
+      <i class="ph-bold ph-calendar"></i>
+      <div class="num">{{ today_orders }}</div>
+      <div class="label">طلبات اليوم</div>
+    </div>
+    <div class="stat-card">
+      <i class="ph-bold ph-truck"></i>
+      <div class="num">{{ out_for_delivery }}</div>
+      <div class="label">خرج للتوصيل اليوم</div>
+    </div>
+    <div class="stat-card">
+      <i class="ph-bold ph-currency-dollar"></i>
+      <div class="num">{{ delivery_fees_total | int }}</div>
+      <div class="label">إجمالي رسوم التوصيل</div>
+    </div>
+    <div class="stat-card">
+      <i class="ph-bold ph-user-plus"></i>
+      <div class="num">{{ new_customers_today }}</div>
+      <div class="label">عملاء جدد اليوم</div>
+    </div>
+  </div>
+
+</div>
+<script>
+document.querySelectorAll('.stat-card').forEach(function(card) {
+  function updatePos(e) {
+    var rect = card.getBoundingClientRect();
+    card.style.setProperty('--mx', ((e.clientX - rect.left) / rect.width * 100).toFixed(0) + '%');
+    card.style.setProperty('--my', ((e.clientY - rect.top) / rect.height * 100).toFixed(0) + '%');
+  }
+  card.addEventListener('mousemove', updatePos, { passive: true });
+  card.addEventListener('mouseenter', updatePos, { passive: true });
+  card.addEventListener('mouseleave', function() {
+    card.style.setProperty('--mx', '50%');
+    card.style.setProperty('--my', '50%');
   });
-  html += '</div>';
-  
-  content.innerHTML = html;
-  reminderModal.style.display = 'flex';
-  document.body.style.overflow = 'hidden';
-}
-
-function dismissReminder(reminderId) {
-  fetch(`/api/reminder/${reminderId}/dismiss`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    }
-  })
-  .then(response => response.json())
-  .then(data => {
-    if (data.success) {
-      
-      const notificationId = `reminder_${reminderId}`;
-      const shownNotifications = JSON.parse(localStorage.getItem('shownReminderNotifications') || '[]');
-      const updatedNotifications = shownNotifications.filter(id => id !== notificationId);
-      localStorage.setItem('shownReminderNotifications', JSON.stringify(updatedNotifications));
-      
-      const reminderElement = document.querySelector(`[data-reminder-id="${reminderId}"]`);
-      if (reminderElement) {
-        reminderElement.remove();
-        
-        const remainingReminders = document.querySelectorAll('.reminder-item');
-        if (remainingReminders.length === 0) {
-          closeReminderModal();
-        }
-      }
-      
-      checkAllReminders();
-    }
-  })
-  .catch(error => {
-    console.error('Error dismissing reminder:', error);
-  });
-}
-
-function viewCustomerProfile(customerId) {
-  
-  const reminderModal = document.getElementById('reminderModal');
-  if (reminderModal) {
-    const modal = bootstrap.Modal.getInstance(reminderModal);
-    if (modal) {
-      modal.hide();
-    }
-  }
-  
-  window.location.href = `/customer/${customerId}/profile`;
-}
-
-function closeReminderModal() {
-  const reminderModal = document.getElementById('reminderModal');
-  if (reminderModal) {
-    reminderModal.style.display = 'none';
-    document.body.style.overflow = '';
-  }
-}
-
-function playNotificationSound() {
-  try {
-    
-    const audio = new Audio('/static/sounds/notification.mp3');
-    audio.volume = 0.5; 
-    audio.play().catch(error => {
-      console.log('Could not play notification sound:', error);
-    });
-  } catch (error) {
-    console.log('Error playing notification sound:', error);
-  }
-}
-
+});
 </script>
-
-{% endblock %} 
+{% endblock %}

@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <defs>
+    <clipPath id="wave-clip">
+      <rect x="0" y="0" width="1024" height="1024"/>
+    </clipPath>
+    <path id="w1" d="M216 428 C248 428 248 348 312 348 C376 348 376 428 440 428 C504 428 504 348 568 348 C632 348 632 428 696 428 C760 428 760 348 824 348 C888 348 888 428 920 428"/>
+    <path id="w2" d="M216 548 C248 548 248 468 312 468 C376 468 376 548 440 548 C504 548 504 468 568 468 C632 468 632 548 696 548 C760 548 760 468 824 468 C888 468 888 548 920 548"/>
+    <path id="w3" d="M216 668 C248 668 248 588 312 588 C376 588 376 668 440 668 C504 668 504 588 568 588 C632 588 632 668 696 668 C760 668 760 588 824 588 C888 588 888 668 920 668"/>
+  </defs>
+  <style>
+    @keyframes flow {
+      from { transform: translateX(0); }
+      to { transform: translateX(-704px); }
+    }
+    .wg {
+      animation: flow 2s linear infinite;
+      transform-origin: 0 0;
+    }
+    .w1 { animation-delay: 0s; }
+    .w2 { animation-delay: -0.15s; }
+    .w3 { animation-delay: -0.30s; }
+  </style>
+  <g fill="none" stroke="#D79921" stroke-width="34"
+     stroke-linecap="round" stroke-linejoin="round"
+     transform="translate(-56, 4)"
+     clip-path="url(#wave-clip)">
+    <g class="wg w1">
+      <use href="#w1"/>
+      <use href="#w1" x="704"/>
+    </g>
+    <g class="wg w2">
+      <use href="#w2"/>
+      <use href="#w2" x="704"/>
+    </g>
+    <g class="wg w3">
+      <use href="#w3"/>
+      <use href="#w3" x="704"/>
+    </g>
+  </g>
+</svg>

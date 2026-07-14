@@ -54,17 +54,7 @@
     </form>
     {% set return_to = request.args.get('return_to', '') %}
     {% if return_to and return_to.startswith('/') %}
-      <a href="{{ return_to }}" class="btn btn-secondary d-inline-flex align-items-center gap-1 px-4">
-        <i class="fas fa-arrow-left"></i> <span>رجوع</span>
-      </a>
-    {% elif request.args.get('from') == 'followups' %}
-      <a href="{{ url_for('main.followups') }}" class="btn btn-secondary d-inline-flex align-items-center gap-1 px-4">
-        <i class="fas fa-arrow-left"></i> <span>رجوع</span>
-      </a>
-    {% else %}
-      <a href="{{ url_for('main.customers') }}" class="btn btn-secondary d-inline-flex align-items-center gap-1 px-4">
-        <i class="fas fa-arrow-left"></i> <span>رجوع</span>
-      </a>
+
     {% endif %}
   </div>
 </div>

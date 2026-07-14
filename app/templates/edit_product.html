@@ -195,9 +195,7 @@
       <button type="button" class="btn btn-info d-flex align-items-center gap-1" onclick="showProductOrders({{ product.id }})">
         <i class="fas fa-receipt"></i> عرض الطلبات
       </button>
-      <a href="{{ url_for('main.products') }}" class="btn btn-secondary d-inline-flex align-items-center gap-1 px-4">
-        <i class="fas fa-arrow-left"></i> <span>رجوع</span>
-      </a>
+
     </div>
   </form>
   
@@ -213,7 +211,7 @@
     <h5 class="modal-title">الطلبات التي تحتوي على: <span id="ordersProductName" class="fw-bold"></span></h5>
     <div class="modal-body" id="ordersModalBody">
       <div class="modern-table table-responsive">
-        <table class="table table-striped mb-0 text-center align-middle">
+        <table class="modern-table mb-0">
           <thead>
             <tr>
               <th>العميل</th>

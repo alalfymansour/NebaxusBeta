@@ -4,7 +4,7 @@ import os
 from datetime import datetime
 
 import pytz
-from flask import Flask
+from flask import Flask, g, request, session
 from flask_login import LoginManager
 from flask_migrate import Migrate
 from flask_sqlalchemy import SQLAlchemy
@@ -32,6 +32,7 @@ def create_app(config_name: str | None = None) -> Flask:
     _run_startup_data_fixes(app)
     _seed_admin_user(app)
     _register_context_processors(app)
+    _register_hooks(app)
     _register_blueprints(app)
     return app
 
@@ -282,6 +283,9 @@ def _run_auto_upgrade(app: Flask) -> bool:
         return False
 
 
+
+
+
 def _register_context_processors(app: Flask) -> None:
     """Register Jinja2 context processors for template globals."""
 
@@ -331,6 +335,52 @@ def _register_context_processors(app: Flask) -> None:
             # Existing rows may contain naive UTC timestamps from historical inserts.
             value = utc.localize(value)
         return value.astimezone(local_tz)
+
+    @app.context_processor
+    def inject_breadcrumbs():
+        return {'breadcrumbs': session.get('_nav', [])}
+
+
+def _register_hooks(app: Flask) -> None:
+    @app.before_request
+    def track_nav_history():
+        if request.method != 'GET':
+            return
+        if 'employee_id' not in session:
+            return
+        endpoint = request.endpoint
+        if not endpoint:
+            return
+        skip = ('main.login', 'main.logout', 'main.splash', 'main.splash_only',
+                'main.trigger_backup', 'main.trial_stats')
+        if endpoint in skip:
+            return
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return
+        if request.is_json:
+            return
+
+        from .breadcrumbs import page_label
+        label, icon = page_label(endpoint, **request.view_args or {})
+        if not label:
+            return
+
+        history = session.get('_nav', [])
+        path = request.path
+
+        # لو المسار موجود مسبقاً — نشيل كل اللي بعده (زي browser back)
+        for i, (_, p, _) in enumerate(history):
+            if p == path:
+                history = history[:i + 1]
+                session['_nav'] = history
+                return
+
+        history.append((label, path, icon))
+        if len(history) > 10:
+            history = history[-10:]
+
+        session['_nav'] = history
+
 
 
 def _register_blueprints(app: Flask) -> None:

@@ -34,9 +34,7 @@
       <div class="text-muted">الشهر: {% if selected_month %}{{ selected_month }}{% else %}كل الشهور{% endif %} — السنة: {% if selected_year %}{{ selected_year }}{% else %}كل السنوات{% endif %}</div>
     </div>
     <div>
-      <a href="{{ url_for('main.orders_by_status', status='جديد', year=selected_year, month=selected_month) }}" class="btn btn-secondary">
-        <i class="fas fa-arrow-left"></i> رجوع لطلبات جديد
-      </a>
+
     </div>
   </div>
 
@@ -44,7 +42,7 @@
     <div id="new-products-summary-loading" style="display:none; padding: 8px;"><div class="sk sk-card" style="height:30px; max-width:200px; margin:0 auto;"></div></div>
     <div id="new-products-summary-error" class="text-danger" style="display:none; padding: 8px;"></div>
     <div class="modern-table table-responsive">
-      <table class="table table-striped mb-0 text-center align-middle" style="width: 100%;">
+      <table class="modern-table mb-0" style="width: 100%;">
         <thead>
           <tr>
             <th>#</th>

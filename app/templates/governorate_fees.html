@@ -136,9 +136,7 @@
             <button type="button" class="btn btn-warning d-inline-flex align-items-center gap-1 px-3" onclick="openCodFeeModal()" style="white-space:nowrap; min-width:100px;">
               <i class="fas fa-money-bill-wave"></i> <span>رسوم التحصيل</span>
             </button>
-            <a href="{{ url_for('main.dashboard') }}" class="btn btn-secondary d-inline-flex align-items-center gap-1 px-3" style="white-space:nowrap; min-width:100px;">
-              <i class="fas fa-arrow-left"></i> <span>رجوع</span>
-            </a>
+
           </div>
         </form>
         {% if fees|length == 0 %}

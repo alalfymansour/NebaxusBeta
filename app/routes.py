@@ -4,7 +4,7 @@ from sqlalchemy import extract, or_, and_, text, case, select
 from sqlalchemy.orm import joinedload, selectinload, load_only
 from datetime import datetime, timedelta, date
 import io
-from .models import Customer, Product, ProductVariant, Order, OrderItem, Issue, IssueItem, CustomerLog, Employee, SalaryTransaction, AttendanceRecord, EmployeeLoginLog, Supplier, Invoice, InvoiceItem, EmployeeActivityLog, Expense, ReplacementOrder, ReplacementOrderItem, DamagedProductLog, FollowUp, BundleItem, SupplierReturn, SupplierReturnItem, SupplierDebt, Party, Transaction, CapitalSnapshot, AppSettings, CapitalGrowthHistory, OrderEditLog, OrderStatusHistory, ReplacementOrderStatusHistory, StockTake, StockTakeItem, ReturnOrder, ReturnOrderItem, ORDER_TYPE_DELIVERY, ORDER_TYPE_WALKIN
+from .models import Customer, Product, ProductVariant, Order, OrderItem, Issue, IssueItem, CustomerLog, Employee, SalaryTransaction, AttendanceRecord, EmployeeLoginLog, Supplier, Invoice, InvoiceItem, EmployeeActivityLog, Expense, ReplacementOrder, ReplacementOrderItem, DamagedProductLog, FollowUp, BundleItem, SupplierReturn, SupplierReturnItem, SupplierDebt, Party, Transaction, CapitalSnapshot, AppSettings, CapitalGrowthHistory, OrderEditLog, OrderStatusHistory, ReplacementOrderStatusHistory, StockTake, StockTakeItem, ReturnOrder, ReturnOrderItem, MonthlyGoal, ORDER_TYPE_DELIVERY, ORDER_TYPE_WALKIN
 from . import db
 from sqlalchemy.exc import IntegrityError
 from functools import wraps
@@ -970,72 +970,52 @@ def service_worker():
 @main.route('/dashboard')
 @login_required
 def dashboard():
-    cache_key = 'dashboard_metrics'
-    now = datetime.utcnow()
-    cache_ttl = 15
-    cached = current_app.config.get('_DASHBOARD_CACHE')
-    if cached:
-        data, ts = cached
-        if (now - ts).total_seconds() < cache_ttl:
-            return render_template('dashboard.html', **data)
-
     today = date.today()
-    today_orders_count = (db.session.query(func.count(Order.id))
-                          .filter(func.date(Order.date) == today)
-                          .scalar() or 0)
-    total_customers = db.session.query(func.count(Customer.id)).scalar() or 0
-    total_products = db.session.query(func.count(Product.id)).filter(Product.is_deleted == False).scalar() or 0
-    low_stock_count = (db.session.query(func.count(Product.id))
-                       .filter(Product.is_deleted == False, Product.stock < 3)
+    month_start = today.replace(day=1)
+
+    recent_orders = (Order.query
+                     .order_by(Order.id.desc())
+                     .limit(10)
+                     .all())
+
+    orders_this_month = (db.session.query(func.count(Order.id))
+                         .filter(Order.date >= month_start).scalar() or 0)
+    target = MonthlyGoal.get_current_goal()
+
+    out_stock_count = (db.session.query(func.count(OrderItem.id))
+                       .join(Order)
+                       .join(Product, OrderItem.product_id == Product.id)
+                       .filter(Order.status == 'جديد', Product.stock <= 0)
                        .scalar() or 0)
-    expense_sums = (db.session.query(Expense.category, func.coalesce(func.sum(Expense.amount), 0))
-                    .group_by(Expense.category)
-                    .all())
-    expense_map = {c: v for c, v in expense_sums}
-    total_expenses = sum(expense_map.values())
-    operational_expenses = expense_map.get('مصاريف تشغيلية', 0)
-    fixed_assets = expense_map.get('أصول ثابتة', 0)
 
-    pending_attendance_count = (db.session.query(func.count(Employee.id))
-                                .filter(Employee.requires_attendance == True,
-                                        ~Employee.id.in_(
-                                            db.session.query(AttendanceRecord.employee_id)
-                                            .filter(AttendanceRecord.date == today)
-                                        ))
-                                .scalar() or 0)
+    out_for_delivery = (db.session.query(func.count(Order.id))
+                        .filter(Order.status == 'خرج للتوصيل', func.date(Order.date) == today)
+                        .scalar() or 0)
 
-    cutoff = datetime.now() - timedelta(days=7)
-    overdue_new_orders_count = 0
-    new_orders = (Order.query
-                  .filter(Order.status == 'جديد')
-                  .all())
-    for o in new_orders:
-        ts = _order_status_dt(o)
-        if ts and ts <= cutoff:
-            overdue_new_orders_count += 1
+    delivery_fees_total = (db.session.query(func.sum(Order.delivery_fees))
+                           .scalar() or 0)
 
-    overdue_new_repl_count = 0
-    new_repl = (ReplacementOrder.query
-                .filter(ReplacementOrder.status == 'جديد')
-                .all())
-    for o in new_repl:
-        ts = _order_status_dt(o)
-        if ts and ts <= cutoff:
-            overdue_new_repl_count += 1
+    new_customers_today = (db.session.query(func.count(Customer.id))
+                           .filter(Customer.id.in_(
+                               db.session.query(Order.customer_id)
+                               .filter(func.date(Order.date) == today)
+                           ))
+                           .scalar() or 0)
 
     data = dict(
-        today_orders_count=today_orders_count,
-        total_customers=total_customers,
-        total_products=total_products,
-        low_stock_count=low_stock_count,
-        total_expenses=total_expenses,
-        operational_expenses=operational_expenses,
-        fixed_assets=fixed_assets,
-        pending_attendance_count=pending_attendance_count,
-        overdue_new_orders_count=overdue_new_orders_count,
-        overdue_new_repl_count=overdue_new_repl_count
+        total_orders=db.session.query(func.count(Order.id)).scalar() or 0,
+        today_orders=(db.session.query(func.count(Order.id))
+                      .filter(func.date(Order.date) == today).scalar() or 0),
+        orders_this_month=orders_this_month,
+        monthly_target=target,
+        out_stock_count=out_stock_count,
+        out_for_delivery=out_for_delivery,
+        delivery_fees_total=delivery_fees_total,
+        new_customers_today=new_customers_today,
+        total_customers=db.session.query(func.count(Customer.id)).scalar() or 0,
+        total_products=db.session.query(func.count(Product.id)).filter(Product.is_deleted == False).scalar() or 0,
+        recent_orders=recent_orders,
     )
-    current_app.config['_DASHBOARD_CACHE'] = (data, now)
     return render_template('dashboard.html', **data)
 
 @main.route('/transactions')
@@ -7716,13 +7696,50 @@ def attendance_today():
                            selected_date=selected_date,
                            today_map=today_map)
 
-@main.route('/statistics')
-@login_required
-@permission_required('can_view_statistics')
-def statistics():
-    selected_month = request.args.get('month', datetime.now().month, type=int)
-    selected_year = request.args.get('year', datetime.now().year, type=int)
+def _item_product_name(item):
+    item_product = getattr(item, 'product', None)
+    if item_product and getattr(item_product, 'name', None):
+        return item_product.name
+    product_id = getattr(item, 'product_id', None)
+    return f'منتج محذوف #{product_id}' if product_id else 'منتج محذوف'
 
+
+def _aggregate_products_from_orders(orders, only_new_replacement_products=False):
+    aggregated = {}
+    for order in orders:
+        for item in (order.items or []):
+            if only_new_replacement_products:
+                item_state = (item.state or '').strip()
+                if item_state not in ['منتج جديد', 'جديد']:
+                    continue
+
+            quantity = int(item.quantity or 0)
+            if quantity <= 0:
+                quantity = 1
+
+            product_name = _item_product_name(item)
+            key = product_name
+
+            if key not in aggregated:
+                aggregated[key] = {
+                    'product_name': product_name,
+                    'total_quantity': 0
+                }
+
+            aggregated[key]['total_quantity'] += quantity
+
+    rows = []
+    for grouped in aggregated.values():
+        rows.append({
+            'product_name': grouped['product_name'],
+            'total_quantity': grouped['total_quantity']
+        })
+
+    rows.sort(key=lambda row: (-row['total_quantity'], row['product_name']))
+    return rows
+
+
+def _build_stats_context(selected_month, selected_year):
     month_start = datetime(selected_year, selected_month, 1)
     if selected_month == 12:
         month_end = datetime(selected_year + 1, 1, 1)
@@ -7769,47 +7786,6 @@ def statistics():
         selectinload(ReplacementOrder.items).joinedload(ReplacementOrderItem.color_variant),
         selectinload(ReplacementOrder.items).joinedload(ReplacementOrderItem.style_variant)
     ).all()
-
-    def _item_product_name(item):
-        item_product = getattr(item, 'product', None)
-        if item_product and getattr(item_product, 'name', None):
-            return item_product.name
-        product_id = getattr(item, 'product_id', None)
-        return f'منتج محذوف #{product_id}' if product_id else 'منتج محذوف'
-
-    def _aggregate_products_from_orders(orders, only_new_replacement_products=False):
-        aggregated = {}
-        for order in orders:
-            for item in (order.items or []):
-                if only_new_replacement_products:
-                    item_state = (item.state or '').strip()
-                    if item_state not in ['منتج جديد', 'جديد']:
-                        continue
-
-                quantity = int(item.quantity or 0)
-                if quantity <= 0:
-                    quantity = 1
-
-                product_name = _item_product_name(item)
-                key = product_name
-
-                if key not in aggregated:
-                    aggregated[key] = {
-                        'product_name': product_name,
-                        'total_quantity': 0
-                    }
-
-                aggregated[key]['total_quantity'] += quantity
-
-        rows = []
-        for grouped in aggregated.values():
-            rows.append({
-                'product_name': grouped['product_name'],
-                'total_quantity': grouped['total_quantity']
-            })
-
-        rows.sort(key=lambda row: (-row['total_quantity'], row['product_name']))
-        return rows
 
     delivery_orders_remaining = sum((o.remaining_amount or 0) for o in delivery_orders)
 
@@ -8385,101 +8361,111 @@ def statistics():
             selectinload(ReplacementOrder.items).joinedload(ReplacementOrderItem._product)
         ).order_by(ReplacementOrder.date.desc()).all()
 
+    return dict(
+        total_products=total_products,
+        total_stock_value=total_stock_value,
+        total_pending_orders_value=total_pending_orders_value,
+        delivery_orders_pending_value=delivery_orders_pending_value,
+        replacement_delivery_orders_pending_value=replacement_delivery_orders_pending_value,
+        pending_delivery_products_rows=pending_delivery_products_rows,
+        pending_replacement_new_products_rows=pending_replacement_new_products_rows,
+        delivery_orders=delivery_orders,
+        replacement_delivery_orders=replacement_delivery_orders,
+        net_profit=net_profit,
+        monthly_employee_salaries=monthly_employee_salaries,
+        employee_debt_list=employee_debt_list,
+        employees_salary_details=employees_salary_details,
+        monthly_bonuses=monthly_bonuses,
+        monthly_deductions=monthly_deductions,
+        monthly_advances=monthly_advances,
+        total_sales_orders=total_sales_orders,
+        total_sales_replacements=total_sales_replacements,
+        total_sales_value=total_sales_value,
+        total_cost_of_goods_sold=total_cost_of_goods_sold,
+        monthly_cogs=total_cost_of_goods_sold,
+        delivered_orders_list=delivered_orders_list,
+        delivered_rate_orders_list=delivered_rate_orders_list,
+        delivered_rate_replacements_list=delivered_rate_replacements_list,
+        delivered_replacements_list=delivered_replacements_list,
+        total_losses=total_losses,
+        damaged_stock_loss=damaged_stock_loss,
+        delivery_fees_loss=delivery_fees_loss,
+        total_fixed_assets_value=total_fixed_assets_value,
+        all_fixed_assets_list=all_fixed_assets_list,
+        total_debt=total_debt,
+        all_debts_details=all_debts_details,
+        monthly_inventory_purchases=monthly_inventory_purchases,
+        monthly_invoices_list=monthly_invoices_list,
+        monthly_fixed_assets_expenses=monthly_fixed_assets_expenses,
+        monthly_fixed_assets_list=monthly_fixed_assets_list,
+        monthly_operational_expenses=monthly_operational_expenses,
+        monthly_operational_expenses_list=monthly_operational_expenses_list,
+        selected_month=selected_month,
+        selected_year=selected_year,
+        delivered_percentage=delivered_percentage,
+        delivered_orders_count=delivered_orders_count,
+        total_orders_count=total_orders_count,
+        monthly_orders_created_count=monthly_orders_created_count,
+        monthly_orders_new_count=monthly_orders_new_count,
+        monthly_orders_delivery_count=monthly_orders_delivery_count,
+        monthly_orders_delivered_count=monthly_orders_delivered_count,
+        monthly_orders_other_count=monthly_orders_other_count,
+        monthly_replacements_created_count=monthly_replacements_created_count,
+        monthly_replacements_new_count=monthly_replacements_new_count,
+        monthly_replacements_delivery_count=monthly_replacements_delivery_count,
+        monthly_replacements_delivered_count=monthly_replacements_delivered_count,
+        monthly_replacements_other_count=monthly_replacements_other_count,
+        top_products=top_products,
+        monthly_orders_other_list=monthly_orders_other_list,
+        monthly_replacements_other_list=monthly_replacements_other_list,
+        products_for_stock=products_for_stock,
+        damaged_logs_list=damaged_logs_list,
+        replacement_orders_loss_list=replacement_orders_loss_list,
+        return_orders_count=return_orders_count,
+        return_order_refund_total=return_order_refund_total,
+        total_amount_paid=total_amount_paid,
+        total_amount_paid_orders=total_amount_paid_orders,
+        total_amount_paid_replacements=total_amount_paid_replacements,
+        orders_with_payments=orders_with_payments,
+        replacement_orders_with_payments=replacement_orders_with_payments,
+        monthly_delivered_value=monthly_delivered_value,
+        delivered_in_month_orders=delivered_in_month_orders,
+        delivered_at_map=delivered_at_map,
+        longest_status_info=longest_status_info,
+        current_year=datetime.now().year,
+    )
+
+
+@main.route('/statistics')
+@login_required
+@permission_required('can_view_statistics')
+def statistics():
+    selected_month = request.args.get('month', datetime.now().month, type=int)
+    selected_year = request.args.get('year', datetime.now().year, type=int)
+    ctx = _build_stats_context(selected_month, selected_year)
     from app.permissions import has_permission as _hp
     def _sp(p): return _hp(p)
-
-    return render_template('statistics.html',
-                           total_products=total_products,
-                           total_stock_value=total_stock_value,
-                           total_pending_orders_value=total_pending_orders_value,
-                           delivery_orders_pending_value=delivery_orders_pending_value,
-                           replacement_delivery_orders_pending_value=replacement_delivery_orders_pending_value,
-                           pending_delivery_products_rows=pending_delivery_products_rows,
-                           pending_replacement_new_products_rows=pending_replacement_new_products_rows,
-                           delivery_orders=delivery_orders,
-                           replacement_delivery_orders=replacement_delivery_orders,
-                           net_profit=net_profit,
-                           monthly_employee_salaries=monthly_employee_salaries,
-                           employee_debt_list=employee_debt_list,
-                           employees_salary_details=employees_salary_details,
-                           monthly_bonuses=monthly_bonuses,
-                           monthly_deductions=monthly_deductions,
-                           monthly_advances=monthly_advances,
-                           total_sales_orders=total_sales_orders,
-                           total_sales_replacements=total_sales_replacements,
-                           total_sales_value=total_sales_value,
-                           total_cost_of_goods_sold=total_cost_of_goods_sold,
-                           # COGS يُمرَّر مرتين: مرة بالاسم التقني ومرة بالاسم الذي تستخدمه data-attributes
-                           monthly_cogs=total_cost_of_goods_sold,
-                           delivered_orders_list=delivered_orders_list,
-                           delivered_rate_orders_list=delivered_rate_orders_list,
-                           delivered_rate_replacements_list=delivered_rate_replacements_list,
-                           delivered_replacements_list=delivered_replacements_list,
-                           total_losses=total_losses,
-                           damaged_stock_loss=damaged_stock_loss,
-                           delivery_fees_loss=delivery_fees_loss,
-                           total_fixed_assets_value=total_fixed_assets_value,
-                           all_fixed_assets_list=all_fixed_assets_list,
-                           total_debt=total_debt,
-                           all_debts_details=all_debts_details,
-                           monthly_inventory_purchases=monthly_inventory_purchases,
-                           monthly_invoices_list=monthly_invoices_list,
-                           monthly_fixed_assets_expenses=monthly_fixed_assets_expenses,
-                           monthly_fixed_assets_list=monthly_fixed_assets_list,
-                           monthly_operational_expenses=monthly_operational_expenses,
-                           monthly_operational_expenses_list=monthly_operational_expenses_list,
-                           selected_month=selected_month,
-                           selected_year=selected_year,
-                           delivered_percentage=delivered_percentage,
-                           delivered_orders_count=delivered_orders_count,
-                           total_orders_count=total_orders_count,
-                           monthly_orders_created_count=monthly_orders_created_count,
-                           monthly_orders_new_count=monthly_orders_new_count,
-                           monthly_orders_delivery_count=monthly_orders_delivery_count,
-                           monthly_orders_delivered_count=monthly_orders_delivered_count,
-                           monthly_orders_other_count=monthly_orders_other_count,
-                           monthly_replacements_created_count=monthly_replacements_created_count,
-                           monthly_replacements_new_count=monthly_replacements_new_count,
-                           monthly_replacements_delivery_count=monthly_replacements_delivery_count,
-                           monthly_replacements_delivered_count=monthly_replacements_delivered_count,
-                           monthly_replacements_other_count=monthly_replacements_other_count,
-                           top_products=top_products,
-                            monthly_orders_other_list=monthly_orders_other_list,
-                            monthly_replacements_other_list=monthly_replacements_other_list,
-                            products_for_stock=products_for_stock,
-                            damaged_logs_list=damaged_logs_list,
-                            replacement_orders_loss_list=replacement_orders_loss_list,
-                            return_orders_count=return_orders_count,
-                            return_order_refund_total=return_order_refund_total,
-                           total_amount_paid=total_amount_paid,
-                           total_amount_paid_orders=total_amount_paid_orders,
-                           total_amount_paid_replacements=total_amount_paid_replacements,
-                           orders_with_payments=orders_with_payments,
-                           replacement_orders_with_payments=replacement_orders_with_payments,
-                           monthly_delivered_value=monthly_delivered_value,
-                           delivered_in_month_orders=delivered_in_month_orders,
-                           delivered_at_map=delivered_at_map,
-                           longest_status_info=longest_status_info,
-                           current_year=datetime.now().year,
-                           # صلاحيات كروت الإحصائيات
-                           can_view_stats_stock=_sp('can_view_stats_stock'),
-                           can_view_stats_fixed_assets=_sp('can_view_stats_fixed_assets'),
-                           can_view_stats_total_debt=_sp('can_view_stats_total_debt'),
-                           can_view_stats_capital_growth=_sp('can_view_stats_capital_growth'),
-                           can_view_stats_daily=_sp('can_view_stats_daily'),
-                           can_view_stats_pending_orders=_sp('can_view_stats_pending_orders'),
-                           can_view_stats_net_profit=_sp('can_view_stats_net_profit'),
-                           can_view_stats_losses=_sp('can_view_stats_losses'),
-                           can_view_stats_delivery_rate=_sp('can_view_stats_delivery_rate'),
-                           can_view_stats_sales=_sp('can_view_stats_sales'),
-                           can_view_stats_amount_paid=_sp('can_view_stats_amount_paid'),
-                           can_view_stats_monthly_delivered=_sp('can_view_stats_monthly_delivered'),
-                           can_view_stats_monthly_invoices=_sp('can_view_stats_monthly_invoices'),
-                           can_view_stats_fixed_assets_expenses=_sp('can_view_stats_fixed_assets_expenses'),
-                           can_view_stats_employee_salaries=_sp('can_view_stats_employee_salaries'),
-                           can_view_stats_employee_debt=_sp('can_view_stats_employee_debt'),
-                           can_view_stats_operational_expenses=_sp('can_view_stats_operational_expenses'),
-                           can_view_sold_products_by_quantity=_sp('can_view_sold_products_by_quantity'))
+    ctx.update({
+        'can_view_stats_stock': _sp('can_view_stats_stock'),
+        'can_view_stats_fixed_assets': _sp('can_view_stats_fixed_assets'),
+        'can_view_stats_total_debt': _sp('can_view_stats_total_debt'),
+        'can_view_stats_capital_growth': _sp('can_view_stats_capital_growth'),
+        'can_view_stats_daily': _sp('can_view_stats_daily'),
+        'can_view_stats_pending_orders': _sp('can_view_stats_pending_orders'),
+        'can_view_stats_net_profit': _sp('can_view_stats_net_profit'),
+        'can_view_stats_losses': _sp('can_view_stats_losses'),
+        'can_view_stats_delivery_rate': _sp('can_view_stats_delivery_rate'),
+        'can_view_stats_sales': _sp('can_view_stats_sales'),
+        'can_view_stats_amount_paid': _sp('can_view_stats_amount_paid'),
+        'can_view_stats_monthly_delivered': _sp('can_view_stats_monthly_delivered'),
+        'can_view_stats_monthly_invoices': _sp('can_view_stats_monthly_invoices'),
+        'can_view_stats_fixed_assets_expenses': _sp('can_view_stats_fixed_assets_expenses'),
+        'can_view_stats_employee_salaries': _sp('can_view_stats_employee_salaries'),
+        'can_view_stats_employee_debt': _sp('can_view_stats_employee_debt'),
+        'can_view_stats_operational_expenses': _sp('can_view_stats_operational_expenses'),
+        'can_view_sold_products_by_quantity': _sp('can_view_sold_products_by_quantity'),
+    })
+    return render_template('statistics.html', **ctx)
 
 def calculate_current_capital():
     fixed_assets_value = sum(

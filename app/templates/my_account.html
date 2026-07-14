@@ -95,7 +95,7 @@
     transition: background 0.3s ease;
   }
 
-  .transactions-table {
+  .modern-table {
     width: 100%;
     border-collapse: collapse;
     margin-top: 20px;
@@ -103,7 +103,7 @@
     overflow: hidden;
     border: 1px solid #dee2e6;
   }
-  .transactions-table th {
+  .modern-table th {
     background: linear-gradient(135deg, #D79921 0%, #b8860b 100%);
     font-size: 1rem;
     font-weight: bold;
@@ -112,12 +112,12 @@
     text-align: right;
     border-bottom: 1px solid #000;
   }
-  .transactions-table td {
+  .modern-table td {
     padding: 0.75rem;
     text-align: right;
     border-bottom: 1px solid #e9ecef;
   }
-  .transactions-table tbody tr:hover td {
+  .modern-table tbody tr:hover td {
     background: #fff3cd !important;
   }
 
@@ -448,7 +448,7 @@
     <div class="transactions-section">
         <div class="form-title">المعاملات والتسويات لهذا الشهر</div>
         {% if transactions %}
-        <table class="transactions-table">
+        <table class="modern-table">
             <thead>
                 <tr>
                     <th>التاريخ</th>

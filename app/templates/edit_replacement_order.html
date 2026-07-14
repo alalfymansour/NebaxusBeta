@@ -98,7 +98,7 @@
       </div>
       <div class="card-body p-0">
         <div class="table-responsive">
-          <table id="sendProductsTable" class="table table-bordered mb-0">
+          <table id="sendProductsTable" class="modern-table mb-0">
             <thead class="table-light">
               <tr>
                 <th style="width: 35%;">اسم المنتج</th>
@@ -124,7 +124,7 @@
       </div>
       <div class="card-body p-0">
         <div class="table-responsive">
-          <table class="table table-bordered mb-0">
+          <table class="modern-table mb-0">
             <thead class="table-light">
               <tr>
                 <th style="width: 50%;">اسم المنتج</th>
@@ -321,7 +321,7 @@
       <a href="{{ url_for('main.customer_profile', customer_id=order.customer_id, return_to=request.path) }}" class="btn btn-warning text-dark"><i class="fas fa-user me-1"></i> ملف العميل</a>
       <a href="{{ url_for('main.replacement_order_status_history', order_id=order.id) }}" class="btn btn-info"><i class="fas fa-history me-1"></i> تاريخ الحالات</a>
       <button type="button" class="btn btn-danger delete-btn" data-confirm="هل أنت متأكد أنك تريد حذف طلب الاستبدال هذا؟ هذا الإجراء لا يمكن التراجع عنه." data-form-id="deleteReplacementForm"><i class="fas fa-trash me-1"></i> حذف الطلب</button>
-      <a href="{{ next_url or url_for('main.replacement_orders') }}" class="btn btn-secondary"><i class="fas fa-arrow-left me-1"></i> رجوع</a>
+
     </div>
 
   </form>

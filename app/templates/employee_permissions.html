@@ -84,18 +84,6 @@
     color: #D79921;
   }
   
-  .btn-success {
-    background-color: #D79921;
-    border-color: #D79921;
-    color: #000;
-  }
-  
-  .btn-success:hover {
-    background-color: #e6c23a;
-    border-color: #e6c23a;
-    color: #000;
-  }
-  
   @media (max-width: 768px) {
     .permission-card {
       min-height: auto;
@@ -1022,9 +1010,7 @@
       <button type="submit" class="btn btn-success d-inline-flex align-items-center gap-1 px-4">
         <i class="fas fa-save"></i> <span>حفظ الصلاحيات</span>
       </button>
-      <a href="{{ url_for('main.employee_profile', employee_id=employee.id) }}" class="btn btn-secondary d-inline-flex align-items-center gap-1 px-4">
-        <i class="fas fa-arrow-left"></i> <span>رجوع</span>
-      </a>
+
     </div>
   </form>
 </div>

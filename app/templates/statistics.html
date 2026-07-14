@@ -242,10 +242,12 @@
     transition: all 0.2s ease;
   }
   .stats-modal .btn-outline-primary {
-    border: 2px solid #007bff;
+    border: 2px solid #d79921;
   }
   .stats-modal .btn-outline-primary:hover {
-    background: #007bff;
+    background: #d79921;
+    border-color: #d79921;
+    color: #1d2021;
   }
   .stats-modal .list-unstyled li {
     padding: 0.5rem 0;
@@ -412,14 +414,14 @@
     background: #000;
     border-radius: 8px;
   }
-  .fees-modern-table {
+  .modern-table {
     border-radius: 0.85rem;
     overflow: hidden;
     background: #fff;
     border: 1px solid #000 !important;
     width: 100%;
   }
-  .fees-modern-table th {
+  .modern-table th {
     background: #D79921 !important;
     font-size: 0.95rem;
     letter-spacing: 0.3px;
@@ -427,13 +429,13 @@
     vertical-align: middle;
     border-bottom: 1px solid #000 !important;
   }
-  .fees-modern-table td {
+  .modern-table td {
     vertical-align: middle;
     font-size: 0.9rem;
     background: #fff;
     border-bottom: 1px solid #000 !important;
   }
-  .fees-modern-table tbody tr:hover td {
+  .modern-table tbody tr:hover td {
     background: #fff3cd !important;
     transition: background 0.2s;
   }
@@ -1067,7 +1069,7 @@
     <div class="row mb-5">
       <div class="col-12">
         <div class="modern-table table-responsive">
-          <table class="table table-striped mb-0 text-center align-middle">
+          <table class="modern-table mb-0">
             <thead>
               <tr>
                 <th>#</th>
@@ -1111,7 +1113,7 @@
     </div>
     <div class="mb-2"><strong>عدد المنتجات:</strong> {{ total_products }}</div>
     <div class="modern-table table-responsive mt-3">
-      <table class="table table-striped mb-0 text-center align-middle">
+      <table class="modern-table mb-0">
         <thead>
           <tr>
             <th>#</th>
@@ -1168,7 +1170,7 @@
 
     <h6 class="mb-2">منتجات الطلبات التي خرجت للتوصيل</h6>
     <div class="modern-table table-responsive mb-3">
-      <table class="table table-striped mb-0 text-center align-middle">
+      <table class="modern-table mb-0">
         <thead>
           <tr>
             <th>#</th>
@@ -1196,7 +1198,7 @@
 
     <h6 class="mb-2">المنتجات الجديدة في طلبات الاستبدال التي خرجت للتوصيل</h6>
     <div class="modern-table table-responsive">
-      <table class="table table-striped mb-0 text-center align-middle">
+      <table class="modern-table mb-0">
         <thead>
           <tr>
             <th>#</th>
@@ -1228,7 +1230,7 @@
     <h6 class="mb-3">جميع الأصول الثابتة</h6>
     {% if all_fixed_assets_list %}
     <div class="modern-table table-responsive">
-      <table class="table table-striped mb-0 text-center align-middle">
+      <table class="modern-table mb-0">
         <thead>
           <tr>
             <th>الأصل</th>
@@ -1353,7 +1355,7 @@
       <div class="col-12">
         <strong>الفواتير (مشتريات المخزون):</strong>
         <div class="modern-table table-responsive mt-2">
-          <table class="table table-striped mb-0 text-center align-middle">
+          <table class="modern-table mb-0">
             <thead>
               <tr>
                 <th>#</th>
@@ -1389,7 +1391,7 @@
       <div class="col-12">
         <strong>مصروفات الأصول الثابتة:</strong>
         <div class="modern-table table-responsive mt-2">
-          <table class="table table-striped mb-0 text-center align-middle">
+          <table class="modern-table mb-0">
             <thead>
               <tr>
                 <th>#</th>
@@ -1423,7 +1425,7 @@
       <div class="col-12">
         <strong>مصروفات تشغيلية:</strong>
         <div class="modern-table table-responsive mt-2">
-          <table class="table table-striped mb-0 text-center align-middle">
+          <table class="modern-table mb-0">
             <thead>
               <tr>
                 <th>#</th>
@@ -1488,7 +1490,7 @@
     <div class="mb-3">
       <strong>المنتجات التالفة:</strong>
       <div class="modern-table table-responsive mt-2">
-        <table class="table table-striped mb-0 text-center align-middle">
+        <table class="modern-table mb-0">
           <thead>
             <tr>
               <th>المنتج</th>
@@ -1522,7 +1524,7 @@
     <div>
       <strong>خسائر في طلبات الاستبدال:</strong>
       <div class="modern-table table-responsive mt-2">
-        <table class="table table-striped mb-0 text-center align-middle">
+        <table class="modern-table mb-0">
           <thead>
             <tr>
               <th>المنتجات التالفة</th>
@@ -1572,7 +1574,7 @@
     <div class="mt-4">
       <strong>مرتجعات العملاء:</strong>
       <div class="modern-table table-responsive mt-2">
-        <table class="table table-striped mb-0 text-center align-middle">
+        <table class="modern-table mb-0">
           <thead>
             <tr>
               <th>عدد طلبات الإرجاع</th>
@@ -1680,7 +1682,7 @@
 
     <div class="mt-4 mb-2"><strong>الطلبات ذات الحالة الأخرى:</strong></div>
     <div class="modern-table table-responsive mb-4">
-      <table class="table table-striped mb-0 text-center align-middle">
+      <table class="modern-table mb-0">
         <thead>
           <tr>
             <th>#</th>
@@ -1710,7 +1712,7 @@
 
     <div class="mt-3 mb-2"><strong>طلبات الاستبدال ذات الحالة الأخرى:</strong></div>
     <div class="modern-table table-responsive">
-      <table class="table table-striped mb-0 text-center align-middle">
+      <table class="modern-table mb-0">
         <thead>
           <tr>
             <th>#</th>
@@ -1744,7 +1746,7 @@
       تفاصيل المبيعات لشهر {{ selected_month }}/{{ selected_year }}
     </h6>
     <div class="modern-table table-responsive">
-      <table class="table table-striped mb-0 text-center align-middle">
+      <table class="modern-table mb-0">
         <thead>
           <tr>
             <th>#</th>
@@ -1779,7 +1781,7 @@
       تفاصيل الفواتير لشهر {{ selected_month }}/{{ selected_year }}
     </h6>
     <div class="modern-table table-responsive">
-      <table class="table table-striped mb-0 text-center align-middle">
+      <table class="modern-table mb-0">
         <thead>
           <tr>
             <th>#</th>
@@ -1811,7 +1813,7 @@
   <div id="details-monthly_fixed_assets_expenses" style="display: none">
     <h6 class="mb-3">تفاصيل مصروفات الأصول الثابتة</h6>
     <div class="modern-table table-responsive">
-      <table class="table table-striped mb-0 text-center align-middle">
+      <table class="modern-table mb-0">
         <thead>
           <tr>
             <th>#</th>
@@ -1849,7 +1851,7 @@
   <div id="details-monthly_operational_expenses" style="display: none">
     <h6 class="mb-3">تفاصيل المصروفات التشغيلية</h6>
     <div class="modern-table table-responsive">
-      <table class="table table-striped mb-0 text-center align-middle">
+      <table class="modern-table mb-0">
         <thead>
           <tr>
             <th>#</th>
@@ -1889,7 +1891,7 @@
       تفاصيل مرتبات الموظفين لشهر {{ selected_month }}/{{ selected_year }}
     </h6>
     <div class="modern-table table-responsive">
-      <table class="table table-striped mb-0 text-center align-middle">
+      <table class="modern-table mb-0">
         <thead>
           <tr>
             <th>#</th>
@@ -1939,7 +1941,7 @@
   <div id="details-employee_debt" style="display: none">
     <h6 class="mb-3">ديون الموظفين</h6>
     <div class="modern-table table-responsive">
-      <table class="table table-striped mb-0 text-center align-middle">
+      <table class="modern-table mb-0">
         <thead>
           <tr>
             <th>#</th>
@@ -1970,7 +1972,7 @@
     </h6>
     <div class="mb-2"><strong>طلبات عادية:</strong></div>
     <div class="modern-table table-responsive">
-      <table class="table table-striped mb-0 text-center align-middle">
+      <table class="modern-table mb-0">
         <thead>
           <tr>
             <th>#</th>
@@ -2012,7 +2014,7 @@
     </div>
     <div class="mt-4 mb-2"><strong>طلبات استبدال:</strong></div>
     <div class="modern-table table-responsive">
-      <table class="table table-striped mb-0 text-center align-middle">
+      <table class="modern-table mb-0">
         <thead>
           <tr>
             <th>#</th>
@@ -2066,7 +2068,7 @@
 
     {% if all_debts_details %}
     <div class="modern-table table-responsive">
-      <table class="table table-striped mb-0 text-center align-middle">
+      <table class="modern-table mb-0">
         <thead>
           <tr>
             <th>#</th>
@@ -2157,7 +2159,7 @@
     {% endif %}
 
     <div class="modern-table table-responsive">
-      <table class="table table-striped mb-0 text-center align-middle">
+      <table class="modern-table mb-0">
         <thead>
           <tr>
             <th>رقم الطلب</th>
@@ -2584,7 +2586,7 @@
                 ${(dailyData.created_orders?.fees ?? dailyData.new_orders.fees) > 0 ? `<span class="badge bg-info ms-1">+ ${fmt(dailyData.created_orders?.fees ?? dailyData.new_orders.fees)} ج.م رسوم</span>` : ""}
               </h6>
               <div class="modern-table table-responsive">
-                <table class="table table-striped mb-0 text-center align-middle">
+                <table class="modern-table mb-0">
                   <thead>
                     <tr>
                       <th>العميل</th>
@@ -2606,7 +2608,7 @@
                 ${dailyData.delivery_orders.fees > 0 ? `<span class="badge bg-info ms-1">+ ${fmt(dailyData.delivery_orders.fees)} ج.م رسوم</span>` : ""}
               </h6>
               <div class="modern-table table-responsive">
-                <table class="table table-striped mb-0 text-center align-middle">
+                <table class="modern-table mb-0">
                   <thead>
                     <tr>
                       <th>العميل</th>
@@ -2628,7 +2630,7 @@
                 ${dailyData.delivered_orders.fees > 0 ? `<span class="badge bg-info ms-1">+ ${fmt(dailyData.delivered_orders.fees)} ج.م رسوم</span>` : ""}
               </h6>
               <div class="modern-table table-responsive">
-                <table class="table table-striped mb-0 text-center align-middle">
+                <table class="modern-table mb-0">
                   <thead>
                     <tr>
                       <th>العميل</th>
@@ -2651,7 +2653,7 @@
                 ${(dailyData.replacement_created_orders?.fees_company ?? dailyData.replacement_new_orders.fees_company) > 0 ? `<span class="badge bg-danger ms-1">${fmt(dailyData.replacement_created_orders?.fees_company ?? dailyData.replacement_new_orders.fees_company)} ج.م على نيباكسس</span>` : ""}
               </h6>
               <div class="modern-table table-responsive">
-                <table class="table table-striped mb-0 text-center align-middle">
+                <table class="modern-table mb-0">
                   <thead>
                     <tr>
                       <th>العميل</th>
@@ -2675,7 +2677,7 @@
                 ${dailyData.replacement_delivery_orders.fees_company > 0 ? `<span class="badge bg-danger ms-1">${fmt(dailyData.replacement_delivery_orders.fees_company)} ج.م على نيباكسس</span>` : ""}
               </h6>
               <div class="modern-table table-responsive">
-                <table class="table table-striped mb-0 text-center align-middle">
+                <table class="modern-table mb-0">
                   <thead>
                     <tr>
                       <th>العميل</th>
@@ -2699,7 +2701,7 @@
                 ${dailyData.replacement_delivered_orders.fees_company > 0 ? `<span class="badge bg-danger ms-1">${fmt(dailyData.replacement_delivered_orders.fees_company)} ج.م على نيباكسس</span>` : ""}
               </h6>
               <div class="modern-table table-responsive">
-                <table class="table table-striped mb-0 text-center align-middle">
+                <table class="modern-table mb-0">
                   <thead>
                     <tr>
                       <th>العميل</th>
@@ -2850,7 +2852,7 @@
                 </div>
                 <div id="capitalChartEmpty" class="text-center text-muted small py-3" style="display:none;"></div>
                 <div class="text-center mt-2 mb-1" id="capitalChartLoadMoreBtn" style="display:none;">
-                  <button class="btn btn-primary btn-sm px-4 fw-bold" style="border-radius:2rem;" onclick="loadMoreCapitalHistory()">
+                  <button class="btn btn-primary btn-sm px-4 fw-bold" onclick="loadMoreCapitalHistory()">
                     <i class="fas fa-plus me-1"></i>عرض المزيد
                   </button>
                 </div>
@@ -3127,7 +3129,7 @@
               html: `
                 <div id="returnsStatsSummary" class="d-flex gap-3 mb-3 flex-wrap"></div>
                 <div class="modern-table table-responsive">
-                  <table class="table table-striped mb-0 text-center align-middle">
+                  <table class="modern-table mb-0">
                     <thead>
                       <tr>
                         <th>#</th>
@@ -3470,12 +3472,12 @@
         <div class="fees-breakdown-wrapper">
           <div class="d-flex align-items-center justify-content-between mb-1">
             <div class="fees-section-title mb-0">طلبات خرجت للتوصيل</div>
-            <button type="button" class="btn btn-primary btn-sm fw-bold" style="border-radius:0.6rem; font-size:0.82rem; padding:4px 12px;" onclick="openFeesCalcModal()">
+            <button type="button" class="btn btn-warning btn-sm d-inline-flex align-items-center gap-1 px-3" onclick="openFeesCalcModal()">
               <i class="fas fa-calculator me-1"></i> حساب رسوم التوصيل
             </button>
           </div>
           <div class="fees-table-responsive">
-            <table class="table fees-modern-table table-hover text-center align-middle mb-0" style="table-layout:fixed; width:100%;">
+            <table class="table modern-table table-hover text-center align-middle mb-0" style="table-layout:fixed; width:100%;">
               <colgroup>
                 <col style="width:62%;">
                 <col style="width:16%;">
@@ -3494,7 +3496,7 @@
 
           <div class="fees-section-title mt-3 mb-1">طلبات استبدال خرجت للتوصيل</div>
           <div class="fees-table-responsive">
-            <table class="table fees-modern-table table-hover text-center align-middle mb-0">
+            <table class="table modern-table table-hover text-center align-middle mb-0">
               <thead>
                 <tr>
                   <th>#</th>
@@ -3605,7 +3607,7 @@
 
         body.innerHTML = `
         <div class="fees-table-responsive">
-          <table class="table fees-modern-table table-hover align-middle mb-0" style="table-layout:fixed; width:100%;">
+          <table class="table modern-table table-hover align-middle mb-0" style="table-layout:fixed; width:100%;">
             <colgroup>
               <col style="width:48%;">
               <col style="width:12%;">

@@ -32,14 +32,56 @@
 
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css" rel="stylesheet" />
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet" />
-  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.2/src/regular/style.css" />
+  <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.2/src/bold/style.css" />
   <style>
-    i[class*="fa-"], i[data-lucide] { color: #D79921; }
-    .btn i, button i, .bottom-nav a i { color: inherit; }
-    .bottom-nav a.active i { color: #1d2021; }
-    i[data-lucide] { width: 1.05em; height: 1.05em; stroke-width: 2; vertical-align: -0.125em; }
-    .bottom-nav i[data-lucide] { width: 1.2em; height: 1.2em; }
-  </style>
+    i[class*="fa-"], i.ph, i.ph-bold { color: #D79921; }
+    .btn i, button i { color: inherit; }
+    i.ph { width: 1.05em; height: 1.05em; vertical-align: -0.125em; }
+    i.ph-bold { width: 1.05em; height: 1.05em; vertical-align: -0.125em; }
+    .sidebar i.ph-bold { width: 1.2em; height: 1.2em; color: inherit; }
+  
+  /* Breadcrumb — session trail */
+  .bc-wrap {
+    position: sticky; top: 42px; z-index: 102;
+    width: fit-content;
+    background: #fff;
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-sm);
+    border-right: 3px solid var(--brand-gold);
+    padding: 6px 16px;
+    margin: 0 0 12px;
+  }
+  .bc {
+    display: flex; flex-wrap: wrap; align-items: center;
+    gap: 4px; padding: 0; margin: 0;
+    list-style: none; font-size: 0.875rem;
+  }
+  .bc-item { display: flex; align-items: center; gap: 4px; }
+  .bc-item + .bc-item::before {
+    content: "›";
+    color: var(--brand-gold);
+    font-weight: 700;
+    font-size: 1.1rem;
+    line-height: 1;
+    padding: 0 4px;
+  }
+  .bc-link {
+    color: var(--text-light) !important;
+    text-decoration: none;
+    font-weight: 500;
+    transition: color var(--transition);
+  }
+  .bc-link:hover {
+    color: var(--brand-gold) !important;
+    text-decoration: underline;
+  }
+  .bc-active {
+    color: var(--brand-gold);
+    font-weight: 600;
+  }
+  .bc-icon { color: var(--brand-gold); font-size: 0.9rem; }
+</style>
   <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
   <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -214,92 +256,18 @@
       }
     }
     .content-wrapper {
-      max-width: 1400px;
-      margin: 0.5rem auto 5rem;
-      padding: 2.5rem 3rem 4rem;
+      max-width: 1600px;
+      margin: 0.5rem auto 3rem;
+      padding: 1.5rem 1.5rem 2rem;
+      padding-right: calc(1.5rem + 60px);
       border-radius: var(--radius-lg);
       box-shadow: none;
-      min-height: 80vh;
+      min-height: 90vh;
     }
 
 
 
-    /* ── Bottom Navigation Bar — Glassmorphism pill ── */
-    .bottom-nav {
-      position: fixed;
-      bottom: 14px;
-      left: 50%;
-      transform: translateX(-50%);
-      /* warm frosted glass */
-      background: rgba(251, 241, 199, 0.82);
-      backdrop-filter: blur(16px) saturate(1.4);
-      -webkit-backdrop-filter: blur(16px) saturate(1.4);
-      border: 1px solid rgba(213, 196, 161, 0.6);
-      box-shadow: 0 4px 24px rgba(60,56,54,0.12), 0 1px 4px rgba(60,56,54,0.06);
-      border-radius: 50px;
-      padding: 0.35rem 1rem;
-      display: flex;
-      gap: 4px;
-      z-index: 1050;
-      transition: box-shadow var(--transition);
-    }
-    
-    /* PWA mode adjustments for bottom nav */
-    @supports(padding: max(0px)) {
-      .bottom-nav {
-        bottom: max(10px, env(safe-area-inset-bottom));
-      }
-    }
-    
-    /* Additional PWA fullscreen mode adjustments */
-    @media (display-mode: fullscreen) {
-      .bottom-nav {
-        bottom: calc(10px + env(safe-area-inset-bottom));
-      }
-    }
-    body.modal-open .bottom-nav {
-      z-index: 1030 !important;
-      pointer-events: none;
-      opacity: 0.75;
-      filter: blur(1px);
-      transition: opacity var(--transition), filter var(--transition);
-    }
-    .bottom-nav a {
-      font-weight: 600;
-      color: var(--text-muted);
-      text-decoration: none;
-      padding: 7px 14px;
-      border-radius: 40px;
-      background-color: transparent;
-      transition: background-color var(--transition), color var(--transition), transform var(--transition);
-      user-select: none;
-      display: inline-flex;
-      align-items: center;
-      gap: 7px;
-      font-size: 0.92rem;
-    }
-    .bottom-nav a:hover {
-      color: var(--text-light);
-      background-color: rgba(215, 153, 33, 0.18);
-      transform: translateY(-1px);
-    }
-    .bottom-nav a:focus {
-      outline: none;
-      box-shadow: 0 0 0 3px rgba(215,153,33,0.35);
-    }
-    .bottom-nav a.active {
-      background-color: var(--brand-gold);
-      color: #1d2021;
-      box-shadow: 0 2px 8px rgba(215,153,33,0.35);
-    }
-
-    /* Standardize icon size */
-    .bottom-nav i {
-      font-size: 1.05rem;
-      line-height: 1;
-    }
-
-    /* Nav badge — auto-sizing circle that shrinks font for large numbers */
+    /* ── Nav badge — auto-sizing circle ── */
     .nav-badge {
       position: absolute; top: 2px; right: 2px;
       min-width: 16px; height: 16px;
@@ -316,37 +284,92 @@
       box-sizing: border-box;
     }
 
-      /* Responsive adjustments for mobile only - فقط للشاشات الصغيرة (الهاتف) */
-      @media (max-width: 576px) {
-        /* Respect safe areas on modern phones (iOS/Android with gesture bars) */
-        body {
-          padding-bottom: calc(96px + env(safe-area-inset-bottom)) !important;
-        }
+    /* ── Sidebar ── */
+    .sidebar {
+      position: fixed;
+      top: 29px; right: 0;
+      width: 60px;
+      height: calc(100vh - 29px);
+      background: #1d2021;
+      z-index: 1040;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding-top: 10px;
+      overflow: hidden;
+      transition: width 0.2s ease;
+    }
+    .sidebar:hover {
+      width: 200px;
+    }
+    .sidebar a {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      width: 100%;
+      padding: 10px 14px;
+      color: #ebdbb2;
+      text-decoration: none;
+      font-size: 14px;
+      white-space: nowrap;
+      transition: background 0.15s;
+    }
+    .sidebar a:hover {
+      background: rgba(215, 153, 33, 0.18);
+    }
+    .sidebar a.active {
+      background: #d79921;
+      color: #1d2021;
+    }
+    .sidebar i {
+      font-size: 1.2rem;
+      min-width: 22px;
+      text-align: center;
+    }
+    .sidebar .nav-label {
+      display: none;
+    }
+    .sidebar:hover .nav-label {
+      display: inline;
+    }
+    .sidebar-logo {
+      margin-bottom: 16px;
+      padding: 8px;
+    }
+    .sidebar-logo img {
+      width: 32px;
+      height: 32px;
+    }
 
+      /* Hide sidebar on mobile */
+      @media (max-width: 576px) {
+        .sidebar { display: none; }
+      }
+
+      /* Responsive adjustments for mobile only */
+      @media (max-width: 576px) {
         /* App logo size on phones */
         .app-logo {
           height: 70px !important;
           width: auto !important;
-          max-width: 70px !important; /* if width-based scaling applies */
+          max-width: 70px !important;
         }
 
         /* General touch targets + buttons */
         .btn, .btn-lg, .btn-md, .btn-sm {
           font-size: 0.98rem !important;
           padding: 0.6rem 0.9rem !important;
-          min-height: 44px !important; /* أفضل مقاس للّمس */
+          min-height: 44px !important;
         }
 
         /* Make the main wrapper use full width with tighter side padding */
         .content-wrapper {
           max-width: 100% !important;
-          width: 100% !important;
-          margin: 0.5rem auto 5.5rem !important;
-          padding: 0.6rem 0.25rem !important; /* reduce side padding to hug edges */
+          margin-right: 0 !important;
+          padding: 0.6rem 0.5rem 3rem !important;
           border-radius: 10px !important;
           box-shadow: none !important;
         }
-        /* Remove extra inner horizontal padding so pages using .container fill like dashboard */
         .content-wrapper > .container,
         .content-wrapper .container,
         .content-wrapper .container-fluid {
@@ -465,29 +488,7 @@
         h2 { font-size: 1.05rem !important; }
         h3 { font-size: 1rem !important; }
 
-        /* Bottom nav: stretch to fit with comfortable spacing */
-        .bottom-nav {
-          bottom: calc(10px + env(safe-area-inset-bottom)) !important;
-          left: 50% !important;    /* center the pill */
-          right: auto !important;  /* no stretch */
-          transform: translateX(-50%) !important;
-          width: auto !important;  /* content width */
-          justify-content: center !important; /* compact cluster */
-          padding: 0.75rem 1.5rem !important; /* wider on mobile */
-          border-radius: 50px !important; /* match desktop radius */
-          gap: 8px !important; /* more space between icons on mobile */
-        }
-        .bottom-nav a {
-          padding: 6px 8px !important; /* narrower links */
-          font-size: 0.85rem !important;
-          gap: 6px !important;
-        }
-
-        /* Icons only on mobile: hide labels */
-        .bottom-nav .nav-label {
-          display: none !important;
-        }
-        .bottom-nav i { font-size: 1.05rem !important; }
+        /* Sidebar on mobile is hidden via display:none */
 
         /* Images and responsive media */
         img, .img-fluid, video {
@@ -771,11 +772,7 @@
         padding-top: max(3rem, env(safe-area-inset-top));
       }
       
-      /* Adjust bottom nav for iOS home indicator */
-      .bottom-nav {
-        bottom: max(10px, calc(env(safe-area-inset-bottom) + 10px));
-        padding-bottom: max(0.4rem, env(safe-area-inset-bottom));
-      }
+      /* Sidebar hidden on mobile */
     }
   }
 
@@ -784,27 +781,57 @@
   .date-dmy-wrapper input[type="text"] { background: #fff; pointer-events: none; }
   .date-dmy-wrapper input[type="date"] { position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0.01; cursor: pointer; }
 
-  /* Modern tables — Gruvbox Light styling */
-  .modern-table,
-  .modern-table td,
-  .modern-table th {
-    border-color: var(--border-light) !important;
+  /* Modern tables — white rows, gold header */
+  .modern-table {
+    display: table !important;
+    width: 100% !important;
+    border-collapse: separate !important;
+    border-spacing: 0 !important;
+    background: #fff !important;
+    border: 1px solid var(--border-light) !important;
+    border-radius: var(--radius-md) !important;
+    overflow: hidden !important;
   }
-  .modern-table,
+  .modern-table thead th {
+    background: #d79921 !important;
+    color: #1d2021 !important;
+    padding: 0.6rem 0.8rem !important;
+    font-size: 0.85rem !important;
+    font-weight: 700 !important;
+    text-align: center !important;
+    border: none !important;
+  }
   .modern-table td {
-    background-color: var(--card-light) !important;
-    color: var(--text-light) !important;
+    background: #fff !important;
+    padding: 0.55rem 0.8rem !important;
+    font-size: 0.85rem !important;
+    text-align: center !important;
+    border-bottom: 1px solid var(--border-light) !important;
+    color: #3c3836 !important;
   }
   .modern-table tbody tr:hover td {
-    background-color: var(--accent-hover) !important;
+    background: var(--accent-hover) !important;
+  }
+  .modern-table .status-badge {
+    display: inline-block;
+    padding: 0.15rem 0.6rem;
+    border-radius: 0.4rem;
+    font-size: 0.75rem;
+    font-weight: 600;
   }
   </style>
 </head>
 <body>
   {% if trial_limit is defined %}
+  <style>
+    @keyframes shimmer {
+      0% { background-position: -200px 0; }
+      100% { background-position: 200px 0; }
+    }
+  </style>
   <div id="trial-banner" style="
-    background: #d79921;
-    color: #fff;
+    background: #d5c4a1;
+    color: #3c3836;
     padding: 6px 16px;
     font-size: 13px;
     font-family: 'Cairo', 'Segoe UI', sans-serif;
@@ -817,17 +844,15 @@
     top: 0;
     z-index: 9999;
     direction: rtl;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
   ">
     <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-      <span style="font-weight: 700; font-size: 14px;">NebaxusBeta</span>
-      <span style="opacity: 0.9;">—</span>
-      <span style="opacity: 0.9;">نسخة تجريبية</span>
+      <span style="opacity: 0.9; font-weight: 600;">نسخة تجريبية</span>
       <span style="opacity: 0.5;">•</span>
       <span style="opacity: 0.9;">{{ trial_used }} / {{ trial_limit }} طلب</span>
       <div style="
         width: 100px; height: 6px;
-        background: rgba(255,255,255,0.25);
+        background: rgba(0,0,0,0.1);
         border-radius: 3px;
         overflow: hidden;
         display: inline-block;
@@ -836,8 +861,10 @@
         <div style="
           width: {{ trial_pct }}%;
           height: 100%;
-          background: {% if trial_pct >= 90 %}#dc3545{% elif trial_pct >= 70 %}#ffc107{% else %}#fff{% endif %};
+          background: {% if trial_pct >= 90 %}linear-gradient(90deg, #dc3545, #f06, #dc3545){% elif trial_pct >= 70 %}linear-gradient(90deg, #ffc107, #ffdb6e, #ffc107){% else %}linear-gradient(90deg, #d79921, #e8b84a, #d79921){% endif %};
+          background-size: 200px 100%;
           border-radius: 3px;
+          animation: shimmer 2s infinite linear;
           transition: width 0.5s ease;
         "></div>
       </div>
@@ -848,14 +875,108 @@
       {% endif %}
     </div>
     <a href="https://nebaxus.com" target="_blank" rel="noopener" style="
-      color: #fff; text-decoration: none; font-weight: 600;
-      border-bottom: 1px dashed rgba(255,255,255,0.5);
+      color: #3c3836; opacity: 0.9; text-decoration: none; font-weight: 600;
+      border-bottom: 1px dashed rgba(60,56,54,0.3);
       font-size: 12px;
     ">
-      قريبًا: Nebaxus Cloud ←
+      قريبًا النسخة الكاملة من: Nebaxus ↗
     </a>
   </div>
   {% endif %}
+
+  <nav class="sidebar">
+    <div class="sidebar-logo">
+      <img src="{{ url_for('static', filename='img/logo.svg') }}" alt="NebaxusBeta">
+    </div>
+    <a href="{{ url_for('main.dashboard') }}" class="{% if request.path == url_for('main.dashboard') %}active{% endif %}">
+      <i class="ph-bold ph-house" aria-hidden="true"></i>
+      <span class="nav-label">الرئيسية</span>
+    </a>
+    {% if has_permission('can_view_orders') %}
+    <a href="{{ url_for('main.orders') }}" class="{% if request.path == url_for('main.orders') %}active{% endif %}">
+      <i class="ph-bold ph-receipt" aria-hidden="true"></i>
+      <span class="nav-label">الطلبات</span>
+    </a>
+    {% endif %}
+    {% if has_permission('can_view_replacements') %}
+    <a href="{{ url_for('main.replacement_orders') }}" class="{% if request.path == url_for('main.replacement_orders') %}active{% endif %}">
+      <i class="ph-bold ph-arrows-left-right" aria-hidden="true"></i>
+      <span class="nav-label">طلبات الاستبدال</span>
+    </a>
+    {% endif %}
+    {% if has_permission('can_view_customers') %}
+    <a href="{{ url_for('main.customers') }}" class="{% if request.path == url_for('main.customers') %}active{% endif %}">
+      <i class="ph-bold ph-users" aria-hidden="true"></i>
+      <span class="nav-label">العملاء</span>
+    </a>
+    {% endif %}
+    {% if has_permission('can_view_products') %}
+    <a href="{{ url_for('main.products') }}" class="{% if request.path == url_for('main.products') %}active{% endif %}">
+      <i class="ph-bold ph-stack" aria-hidden="true"></i>
+      <span class="nav-label">المنتجات</span>
+    </a>
+    {% endif %}
+    {% if has_permission('can_view_suppliers') %}
+    <a href="{{ url_for('main.suppliers') }}" class="{% if request.path == url_for('main.suppliers') %}active{% endif %}">
+      <i class="ph-bold ph-handshake" aria-hidden="true"></i>
+      <span class="nav-label">الموردين</span>
+    </a>
+    {% endif %}
+    {% if has_permission('can_view_employees') %}
+    <a href="{{ url_for('main.employees') }}" class="{% if request.path == url_for('main.employees') %}active{% endif %}">
+      <i class="ph-bold ph-user-gear" aria-hidden="true"></i>
+      <span class="nav-label">الموظفين</span>
+    </a>
+    {% endif %}
+    {% if has_permission('can_view_statistics') %}
+    <a href="{{ url_for('main.statistics') }}" class="{% if request.path == url_for('main.statistics') %}active{% endif %}">
+      <i class="ph-bold ph-chart-bar" aria-hidden="true"></i>
+      <span class="nav-label">الإحصائيات</span>
+    </a>
+    {% endif %}
+    {% if has_permission('can_view_transactions') %}
+    <a href="{{ url_for('main.transactions') }}" class="{% if request.path == url_for('main.transactions') %}active{% endif %}">
+      <i class="ph-bold ph-credit-card" aria-hidden="true"></i>
+      <span class="nav-label">المعاملات</span>
+    </a>
+    {% endif %}
+    {% if has_permission('can_view_expenses') %}
+    <a href="{{ url_for('main.expenses') }}" class="{% if request.path == url_for('main.expenses') %}active{% endif %}">
+      <i class="ph-bold ph-calculator" aria-hidden="true"></i>
+      <span class="nav-label">المصروفات</span>
+    </a>
+    {% endif %}
+    {% if has_permission('can_view_invoices') %}
+    <a href="{{ url_for('main.invoices') }}" class="{% if request.path == url_for('main.invoices') %}active{% endif %}">
+      <i class="ph-bold ph-file-text" aria-hidden="true"></i>
+      <span class="nav-label">الفواتير</span>
+    </a>
+    {% endif %}
+    {% if has_permission('can_view_followups') %}
+    <a href="{{ url_for('main.followups') }}" class="{% if request.path == url_for('main.followups') %}active{% endif %}">
+      <i class="ph-bold ph-clipboard-text" aria-hidden="true"></i>
+      <span class="nav-label">قائمة المتابعة</span>
+    </a>
+    {% endif %}
+    {% if has_permission('can_view_fees') %}
+    <a href="{{ url_for('main.governorate_fees') }}" class="{% if request.path == url_for('main.governorate_fees') %}active{% endif %}">
+      <i class="ph-bold ph-currency-dollar" aria-hidden="true"></i>
+      <span class="nav-label">رسوم المحافظات</span>
+    </a>
+    {% endif %}
+    <div style="margin-top: auto;"></div>
+    <a href="#" onclick="showAllReminders()" title="التنبيهات" style="color: #d79921;position:relative;">
+      <i class="ph-bold ph-bell" aria-hidden="true"></i>
+      <span class="nav-label">التنبيهات</span>
+      <span id="sidebarReminderBadge" class="badge bg-danger rounded-circle" style="display:none;font-size:0.55rem;padding:0.2rem 0.35rem;position:absolute;top:4px;right:28px;">0</span>
+    </a>
+    {% if session.employee_name %}
+    <a href="{{ url_for('main.my_account') }}" title="حسابي">
+      <i class="ph-bold ph-user" aria-hidden="true"></i>
+      <span class="nav-label">حسابي</span>
+    </a>
+    {% endif %}
+  </nav>
 
   <main class="content-wrapper">
     {% with messages = get_flashed_messages(with_categories=true) %}
@@ -863,46 +984,30 @@
       <script id="flashMessagesData" type="application/json">{{ messages | tojson }}</script>
       {% endif %}
     {% endwith %}
+    {% block breadcrumb %}
+    {% if breadcrumbs %}
+    <div class="bc-wrap">
+      <nav aria-label="Breadcrumb">
+        <ol class="bc">
+          {% for label, path, icon in breadcrumbs %}
+          <li class="bc-item">
+            {% if icon %}<i class="ph-bold bc-icon ph-{{ icon }}"></i>{% endif %}
+            {% if path and not loop.last %}
+            <a href="{{ path }}" class="bc-link">{{ label }}</a>
+            {% else %}
+            <span class="bc-active">{{ label }}</span>
+            {% endif %}
+          </li>
+          {% endfor %}
+        </ol>
+      </nav>
+    </div>
+    {% endif %}
+    {% endblock %}
     {% block content %}
     
     {% endblock %}
   </main>
-
-  <nav class="bottom-nav" aria-label="شريط التنقل السفلي">
-    <a href="{{ url_for('main.dashboard') }}" aria-label="الرئيسية" class="{% if request.path == url_for('main.dashboard') %}active{% endif %}">
-      <i data-lucide="home" aria-hidden="true"></i>
-      <span class="nav-label">الرئيسية</span>
-    </a>
-    {% if has_permission('can_view_customers') %}
-    <a href="{{ url_for('main.customers') }}" aria-label="العملاء" class="{% if request.path == url_for('main.customers') %}active{% endif %}">
-      <i data-lucide="users" aria-hidden="true"></i>
-      <span class="nav-label">العملاء</span>
-    </a>
-    {% endif %}
-    {% if has_permission('can_view_orders') %}
-    <a href="{{ url_for('main.orders') }}" aria-label="الطلبات" class="{% if request.path == url_for('main.orders') %}active{% endif %}" style="position: relative;">
-      <i data-lucide="receipt" aria-hidden="true"></i>
-      <span class="nav-label">الطلبات</span>
-      <span class="nav-badge" id="navOverdueOrders" style="display:none;">0</span>
-    </a>
-    {% endif %}
-    {% if has_permission('can_view_replacements') %}
-    <a href="{{ url_for('main.replacement_orders') }}" aria-label="طلبات الاستبدال" class="{% if request.path == url_for('main.replacement_orders') %}active{% endif %}" style="position: relative;">
-      <i data-lucide="arrow-left-right" aria-hidden="true"></i>
-      <span class="nav-label">طلبات الاستبدال</span>
-      <span class="nav-badge" id="navOverdueRepl" style="display:none;">0</span>
-    </a>
-    {% endif %}
-    {% if has_permission('can_view_followups') %}
-    <a href="{{ url_for('main.followups') }}" aria-label="قائمة المتابعة" class="{% if request.path == url_for('main.followups') %}active{% endif %}" style="position: relative;">
-      <i data-lucide="clipboard-list" aria-hidden="true"></i>
-      <span class="nav-label">المتابعة</span>
-      {% if pending_followups_count and pending_followups_count > 0 %}
-        <span class="nav-badge">{{ pending_followups_count }}</span>
-      {% endif %}
-    </a>
-    {% endif %}
-  </nav>
 
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
   <script>
@@ -1711,87 +1816,98 @@ function fetchOverdueCounts() {
   {% endif %}
 
   <script>
-  // Map most-used FA icons to Lucide for brand-consistent stroke icons
-  var faToLucide = {
-    'users-cog':'user-cog','credit-card':'credit-card',
-    'plus':'plus','trash':'trash-2','trash-alt':'trash-2','arrow-left':'arrow-left',
-    'eye':'eye','times':'x','edit':'pencil','check':'check','save':'save',
-    'lock':'lock','copy':'copy','money-bill-wave':'dollar-sign','history':'history',
-    'user':'user','spinner':'loader-circle','exclamation-circle':'alert-circle',
-    'exclamation-triangle':'alert-triangle','exchange-alt':'arrow-left-right',
-    'arrow-right':'arrow-right','users':'users','search':'search',
+  // Map FA icon names to Phosphor Icons
+  var faToPhosphor = {
+    'users-cog':'user-gear','credit-card':'credit-card',
+    'plus':'plus','trash':'trash','trash-alt':'trash','arrow-left':'arrow-left',
+    'eye':'eye','times':'x','edit':'pencil','check':'check','save':'floppy-disk',
+    'lock':'lock','copy':'copy','money-bill-wave':'currency-dollar','history':'clock-counter-clockwise',
+    'user':'user','spinner':'spinner','exclamation-circle':'warning-circle',
+    'exclamation-triangle':'warning','exchange-alt':'arrows-left-right',
+    'arrow-right':'arrow-right','users':'users','search':'magnifying-glass',
     'info-circle':'info','check-circle':'check-circle','shopping-cart':'shopping-cart',
     'plus-circle':'plus-circle','file-invoice':'file-text','hand-holding-usd':'hand-coins',
-    'filter':'filter','chart-line':'trending-up','receipt':'receipt','phone-alt':'phone',
-    'map-marker-alt':'map-pin','hourglass-half':'hourglass','cogs':'settings',
-    'clipboard-check':'clipboard-check','calendar-alt':'calendar','user-tie':'user-cog',
-    'user-edit':'user-check','boxes':'boxes','warehouse':'warehouse',
-    'user-plus':'user-plus','user-check':'user-check','undo':'undo-2','undo-alt':'undo',
-    'file-excel':'file-spreadsheet','clipboard-list':'clipboard-list',
-    'calculator':'calculator','building':'building-2','box':'package','bell':'bell',
+    'filter':'funnel','chart-line':'trend-up','receipt':'receipt','phone-alt':'phone',
+    'map-marker-alt':'map-pin','hourglass-half':'hourglass','cogs':'gear',
+    'clipboard-check':'clipboard-text','calendar-alt':'calendar','user-tie':'user-gear',
+    'user-edit':'user-check','boxes':'stack','warehouse':'warehouse',
+    'user-plus':'user-plus','user-check':'user-check','undo':'arrow-bend-left-up','undo-alt':'arrow-bend-left-up',
+    'file-excel':'file-xls','clipboard-list':'list-checks',
+    'calculator':'calculator','building':'building','box':'package','bell':'bell',
     'truck':'truck','times-circle':'x-circle','handshake':'handshake','clock':'clock',
-    'chart-bar':'bar-chart-3','scale-balanced':'scale','phone':'phone','list':'list',
-    'landmark':'landmark','external-link-alt':'external-link','house':'home',
-    'right-left':'arrow-left-right','list-check':'clipboard-list','barcode':'barcode',
-    'pallet':'package','eye-slash':'eye-off','key':'key','envelope':'envelope',
-    'sort':'arrow-up-down','sync':'refresh-cw','sync-alt':'refresh-cw','home':'house',
-    'sign-out-alt':'log-out','sign-in-alt':'log-in','user-circle':'user-circle',
-    'question-circle':'help-circle','cog':'settings','wrench':'wrench','print':'printer',
+    'chart-bar':'chart-bar','scale-balanced':'scales','phone':'phone','list':'list',
+    'landmark':'bank','external-link-alt':'arrow-square-out','house':'house',
+    'right-left':'arrows-left-right','list-check':'list-checks','barcode':'barcode',
+    'pallet':'package','eye-slash':'eye-slash','key':'key','envelope':'envelope',
+    'sort':'arrows-down-up','sync':'arrows-clockwise','sync-alt':'arrows-clockwise','home':'house',
+    'sign-out-alt':'sign-out','sign-in-alt':'sign-in','user-circle':'user-circle',
+    'question-circle':'question','cog':'gear','wrench':'wrench','print':'printer',
     'file':'file','file-alt':'file-text','folder':'folder','folder-open':'folder-open',
-    'tag':'tag','tags':'tags','star':'star','heart':'heart','heartbeat':'heart-pulse',
-    'comment':'message-square','comments':'messages-square','share':'share-2',
-    'share-alt':'share-2','link':'link','unlink':'unlink','paper-plane':'send',
-    'envelope-open':'mail-open','globe':'globe','flag':'flag','bookmark':'bookmark',
+    'tag':'tag','tags':'tags','star':'star','heart':'heart','heartbeat':'heartbeat',
+    'comment':'chat-text','comments':'chats-text','share':'share',
+    'share-alt':'share','link':'link','unlink':'unlink','paper-plane':'paper-plane-right',
+    'envelope-open':'envelope-open','globe':'globe','flag':'flag','bookmark':'bookmark',
     'thumbs-up':'thumbs-up','thumbs-down':'thumbs-down','calendar':'calendar',
     'map':'map','compass':'compass','download':'download','upload':'upload',
     'image':'image','images':'images','camera':'camera','video':'video',
-    'microphone':'mic','headphones':'headphones','play':'play','pause':'pause',
+    'microphone':'microphone','headphones':'headphones','play':'play','pause':'pause',
     'stop':'stop','forward':'fast-forward','backward':'rewind',
-    'volume-up':'volume-2','volume-down':'volume-1','volume-off':'volume-x',
-    'expand':'maximize-2','compress':'minimize-2','arrows-alt':'maximize',
-    'arrows':'move','angle-left':'chevron-left','angle-right':'chevron-right',
-    'angle-up':'chevron-up','angle-down':'chevron-down','chevron-left':'chevron-left',
-    'chevron-right':'chevron-right','chevron-up':'chevron-up','chevron-down':'chevron-down',
-    'caret-down':'chevron-down','caret-up':'chevron-up','caret-left':'chevron-left',
-    'caret-right':'chevron-right','long-arrow-alt-down':'arrow-down',
+    'volume-up':'speaker-high','volume-down':'speaker-low','volume-off':'speaker-x',
+    'expand':'maximize','compress':'minimize','arrows-alt':'arrows-out',
+    'arrows':'arrows-out','angle-left':'caret-left','angle-right':'caret-right',
+    'angle-up':'caret-up','angle-down':'caret-down','chevron-left':'caret-left',
+    'chevron-right':'caret-right','chevron-up':'caret-up','chevron-down':'caret-down',
+    'caret-down':'caret-down','caret-up':'caret-up','caret-left':'caret-left',
+    'caret-right':'caret-right','long-arrow-alt-down':'arrow-down',
     'long-arrow-alt-up':'arrow-up','long-arrow-alt-left':'arrow-left',
-    'long-arrow-alt-right':'arrow-right','mobile-alt':'smartphone',
-    'tablet-alt':'tablet','laptop':'laptop','desktop':'monitor',
+    'long-arrow-alt-right':'arrow-right','mobile-alt':'device-mobile',
+    'tablet-alt':'device-tablet','laptop':'laptop','desktop':'monitor',
     'database':'database','server':'server','hdd':'hard-drive',
-    'bolt':'zap','lightbulb':'lightbulb','sun':'sun','moon':'moon',
-    'cloud':'cloud','tint':'droplets','fire':'flame',
-    'smile':'smile','frown':'frown','meh':'meh',
+    'bolt':'lightning','lightbulb':'lightbulb','sun':'sun','moon':'moon',
+    'cloud':'cloud','tint':'drop','fire':'fire',
+    'smile':'smiley','frown':'smiley-sad','meh':'smiley-meh',
     'gift':'gift','gem':'gem','award':'award','medal':'medal','trophy':'trophy',
     'crown':'crown','star-half':'star-half','bug':'bug',
     'recycle':'recycle','leaf':'leaf','seedling':'seedling',
     'paw':'paw-print','dog':'dog','cat':'cat',
-    'file-csv':'file-spreadsheet','file-pdf':'file-text','pallet':'package',
+    'file-csv':'file-csv','file-pdf':'file-text','pallet':'package',
     'shipping-fast':'truck','box-open':'package','clipboard':'clipboard',
-    'percentage':'percent','dollar-sign':'dollar-sign','money-check':'dollar-sign',
-    'hand-holding':'hand','shopping-bag':'shopping-bag','shopping-basket':'shopping-basket',
+    'percentage':'percent','dollar-sign':'currency-dollar','money-check':'currency-dollar',
+    'hand-holding':'hand','shopping-bag':'shopping-bag','shopping-basket':'basket',
     'store':'store','store-alt':'store','shipping-timed':'truck',
     'parachute-box':'package','dolly':'package','weight-hanging':'weight',
     'ruler-combined':'ruler','paint-brush':'brush','paint-roller':'roller',
     'swatchbook':'swatch-book','palette':'palette','pen':'pen','pen-alt':'pen',
-    'pen-fancy':'pen','pen-nib':'pen','marker':'marker','highlighter':'highlighter',
+    'pen-fancy':'pen','pen-nib':'pen','marker':'marker-circle','highlighter':'highlighter',
     'pencil-alt':'pencil','eraser':'eraser','cut':'scissors','scissors':'scissors',
-    'clip':'paperclip','paperclip':'paperclip','paper-plane':'send',
+    'clip':'paperclip','paperclip':'paperclip','paper-plane':'paper-plane-right',
     'inbox':'inbox','outdent':'indent','indent':'indent',
-    'quote-left':'quote','quote-right':'quote','quote-right':'quote',
+    'quote-left':'quote','quote-right':'quote',
     'align-left':'align-left','align-center':'align-center','align-right':'align-right',
     'align-justify':'align-justify','bold':'bold','italic':'italic','underline':'underline',
     'strikethrough':'strikethrough','superscript':'superscript','subscript':'subscript',
     'text-height':'text-size','text-width':'text','paragraph':'paragraph',
     'list-ul':'list','list-ol':'list-ordered','list-alt':'list',
     'th':'grid','th-large':'grid','th-list':'list','table':'table',
-    'columns':'columns','layer-group':'layers','sitemap':'sitemap',
+    'columns':'columns','layer-group':'stack','sitemap':'tree-structure',
     'project-diagram':'git-branch','code':'code','code-branch':'git-branch',
     'terminal':'terminal','powershell':'terminal','file-code':'file-code',
     'copyright':'copyright','trademark':'trademark','registered':'registered',
-    'at':'at','hashtag':'hash','paragraph':'paragraph',
+    'at':'at','hashtag':'hash',
     'wave-square':'wave-square','minus':'minus','divide':'divide',
     'equals':'equals','not-equal':'not-equal','greater-than':'greater-than',
     'less-than':'less-than','infinity':'infinity',
+    'adjust':'circle-half','archive':'archive','ban':'prohibit',
+    'bell-slash':'bell-slash','bullseye':'crosshair','calendar-day':'calendar',
+    'check-double':'checks','circle-dot':'circle','comment-dots':'chat-text',
+    'file-invoice-dollar':'file-text','funnel-dollar':'funnel','money-bill':'currency-dollar',
+    'retweet':'arrows-clockwise','shapes':'shapes','shield-alt':'shield',
+    'sticky-note':'note','user-shield':'shield-check','user-slash':'user-minus',
+    'whatsapp':'whatsapp-logo','paragraph':'paragraph',
+    'arrow-down':'arrow-down','arrow-up':'arrow-up','balance-scale':'scales',
+    'briefcase':'briefcase','coins':'coins','cubes':'cube',
+    'industry':'factory','percent':'percent','sort-amount-down':'sort-descending',
+    'tasks':'checks','truck-loading':'truck',
   };
   document.addEventListener('DOMContentLoaded', function() {
     document.querySelectorAll('i[class*="fa-"]').forEach(function(el) {
@@ -1803,17 +1919,115 @@ function fetchOverdueCounts() {
           break;
         }
       }
-      if (!faIcon || !faToLucide[faIcon]) return;
+      if (!faIcon || !faToPhosphor[faIcon]) return;
       var keepClasses = classes.filter(function(c) { return !c.startsWith('fa') && c !== 'fas' && c !== 'far' && c !== 'fal' && c !== 'fab'; });
       var i = document.createElement('i');
-      i.setAttribute('data-lucide', faToLucide[faIcon]);
+      i.className = 'ph ph-' + faToPhosphor[faIcon];
       i.setAttribute('aria-hidden', 'true');
       if (el.getAttribute('style')) i.setAttribute('style', el.getAttribute('style'));
       keepClasses.forEach(function(c) { i.classList.add(c); });
       el.parentNode.replaceChild(i, el);
-    });
-    if (typeof lucide !== 'undefined') lucide.createIcons();
   });
   </script>
+
+<div class="stats-modal" id="reminderModal" tabindex="-1">
+  <div class="stats-modal-content">
+    <button type="button" class="close-btn" onclick="closeReminderModal()"><i class="fas fa-times"></i></button>
+    <h4 class="modal-title"><i class="fas fa-bell me-2"></i>تنبيهات المتابعة</h4>
+    <div class="modal-body" id="reminderContent"></div>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  clearOldNotifications();
+  checkAllReminders();
+  var m = document.getElementById('reminderModal');
+  if (m) m.addEventListener('click', function(e) { if (e.target === m) closeReminderModal(); });
+});
+setInterval(checkAllReminders, 60000);
+function clearOldNotifications() {
+  try { localStorage.removeItem('shownReminderNotifications'); } catch(e) {}
+}
+function checkAllReminders() {
+  fetch('/api/reminders/all').then(function(r){return r.json()}).then(function(data){
+    var badge = document.getElementById('sidebarReminderBadge');
+    if (data.reminders && data.reminders.length > 0) {
+      var due = data.reminders.filter(function(r){return r.is_due});
+      if (due.length > 0) {
+        if (badge) { badge.textContent = due.length; badge.style.display = 'inline'; }
+        due.forEach(function(reminder){
+          var nid = 'reminder_'+reminder.id;
+          var shown = JSON.parse(localStorage.getItem('shownReminderNotifications')||'[]');
+          if (!shown.includes(nid)) {
+            shown.push(nid);
+            localStorage.setItem('shownReminderNotifications', JSON.stringify(shown));
+            showNotification('تنبيه بالمتابعة','حان موعد متابعة العميل: '+reminder.customer_name, reminder.customer_id);
+            playNotificationSound();
+          }
+        });
+      } else { if (badge) { badge.style.display = 'none'; } }
+    } else { if (badge) { badge.style.display = 'none'; } }
+  }).catch(function(e){});
+}
+function showAllReminders() {
+  fetch('/api/reminders/all').then(function(r){return r.json()}).then(function(data){
+    if (data.reminders && data.reminders.length > 0) showReminders(data.reminders);
+    else showNoRemindersModal();
+  }).catch(function(e){});
+}
+function showNoRemindersModal() {
+  var m = document.getElementById('reminderModal');
+  var c = document.getElementById('reminderContent');
+  c.innerHTML = '<div class="text-center py-4"><i class="fas fa-bell-slash fa-3x text-muted mb-3"></i><h5 class="text-muted">لا توجد تنبيهات حالياً</h5><p class="text-muted">جميع التنبيهات محدثة ومتابعة</p></div>';
+  m.style.display = 'flex'; document.body.style.overflow = 'hidden';
+}
+function showReminders(reminders) {
+  var m = document.getElementById('reminderModal');
+  var c = document.getElementById('reminderContent');
+  var html = '<div class="reminder-list">';
+  reminders.forEach(function(reminder){
+    var isDue = reminder.is_due;
+    var st = isDue ? 'حان' : 'لسه';
+    var sc = isDue ? 'text-danger' : 'text-success';
+    var si = isDue ? 'fas fa-exclamation-circle' : 'fas fa-clock';
+    html += '<div class="reminder-item border rounded p-3 mb-3 bg-light" data-reminder-id="'+reminder.id+'"><div class="d-flex justify-content-between align-items-start"><div class="flex-grow-1"><div class="d-flex align-items-center gap-2 mb-2"><h6 class="fw-bold text-dark mb-0">'+reminder.customer_name+'</h6><small class="text-muted">'+(reminder.customer_phone||'لا يوجد رقم')+'</small></div><p class="text-dark mb-2"><strong>سبب التنبيه:</strong> '+reminder.follow_up_reason+'</p><div class="d-flex align-items-center gap-3"><small class="text-muted"><i class="fas fa-clock me-1"></i>بعد '+reminder.reminder_duration+' '+reminder.reminder_duration_type+'<br><small class="text-muted"><i class="fas fa-calendar-alt me-1"></i>'+reminder.reminder_time+'</small></small><small class="'+sc+'"><i class="'+si+' me-1"></i>'+st+'</small></div></div><div class="d-flex flex-column gap-2"><button type="button" class="btn btn-sm btn-outline-primary" onclick="viewCustomerProfile('+reminder.customer_id+')" title="عرض ملف العميل"><i class="fas fa-user"></i></button><button type="button" class="btn btn-sm btn-outline-secondary" onclick="dismissReminder('+reminder.id+')" title="إزالة من الإشعارات"><i class="fas fa-times"></i></button></div></div></div>';
+  });
+  html += '</div>';
+  c.innerHTML = html;
+  m.style.display = 'flex'; document.body.style.overflow = 'hidden';
+}
+function dismissReminder(reminderId) {
+  fetch('/api/reminder/'+reminderId+'/dismiss',{method:'POST',headers:{'Content-Type':'application/json'}}).then(function(r){return r.json()}).then(function(data){
+    if (data.success) {
+      var nid = 'reminder_'+reminderId;
+      var shown = JSON.parse(localStorage.getItem('shownReminderNotifications')||'[]');
+      localStorage.setItem('shownReminderNotifications', JSON.stringify(shown.filter(function(id){return id!==nid})));
+      var el = document.querySelector('[data-reminder-id="'+reminderId+'"]');
+      if (el) { el.remove(); if (!document.querySelectorAll('.reminder-item').length) closeReminderModal(); }
+      checkAllReminders();
+    }
+  }).catch(function(e){});
+}
+function viewCustomerProfile(customerId) { window.location.href = '/customer/'+customerId+'/profile'; }
+function closeReminderModal() {
+  var m = document.getElementById('reminderModal');
+  if (m) { m.style.display = 'none'; document.body.style.overflow = ''; }
+}
+function playNotificationSound() {
+  try { var a = new Audio('/static/sounds/notification.mp3'); a.volume = 0.5; a.play().catch(function(){}); } catch(e){}
+}
+function showNotification(title, message, customerId) {
+  if (Notification.permission === 'granted') {
+    var n = new Notification(title, {body: message, icon: '/static/img/logo.svg'});
+    if (customerId) n.onclick = function(){ window.focus(); window.location.href = '/customer/'+customerId+'/profile'; };
+  } else if (Notification.permission !== 'denied') {
+    Notification.requestPermission().then(function(p){
+      if (p === 'granted') showNotification(title, message, customerId);
+    });
+  }
+}
+</script>
+
 </body>
 </html>

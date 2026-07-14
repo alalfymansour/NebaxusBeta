@@ -23,7 +23,7 @@
           <input type="date" name="date" value="{{ selected_date.isoformat() }}" onchange="this.previousElementSibling.value=this.value.split('-').reverse().join('/');this.form.submit()">
         </div>
       </form>
-      <a href="{{ url_for('main.employees') }}" class="btn btn-secondary"><i class="fas fa-arrow-right"></i> رجوع</a>
+
     </div>
   </div>
 
