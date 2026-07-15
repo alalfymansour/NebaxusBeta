@@ -665,8 +665,8 @@ class ReturnOrder(db.Model):
 
     __table_args__ = (
         db.CheckConstraint(
-            '(original_order_id IS NOT NULL)::int + '
-            '(original_replacement_order_id IS NOT NULL)::int = 1',
+            '(original_order_id IS NOT NULL) + '
+            '(original_replacement_order_id IS NOT NULL) = 1',
             name='ck_return_order_single_source'
         ),
         db.Index('ix_return_order_customer_created', 'customer_id', 'created_at'),
