@@ -68,8 +68,8 @@ def run_nuitka():
         '--include-data-dir=migrations=migrations',
         '--include-package=app',
         '--include-package=alembic',
-        '--include-module=webview',
         '--nofollow-import-to=psycopg2',
+        '--nofollow-import-to=webview.platforms.android',
         '--nofollow-import-to=gunicorn',
         '--nofollow-import-to=pytest',
     ]
