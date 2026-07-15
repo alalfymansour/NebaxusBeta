@@ -72,6 +72,8 @@ def run_nuitka():
         '--nofollow-import-to=webview.platforms.android',
         '--nofollow-import-to=gunicorn',
         '--nofollow-import-to=pytest',
+        '--include-module=webview.platforms.win32',
+        '--no-deployment-flag=excluded-module-usage',
     ]
     if os.path.exists(ICON_PATH):
         cmd.append('--windows-icon-from-ico=' + ICON_PATH)

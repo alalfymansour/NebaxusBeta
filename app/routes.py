@@ -11956,8 +11956,11 @@ def export_wassalha_replacement_orders():
 
 @main.route('/auto-login')
 def auto_login():
-    from .models import Employee
-    employee = Employee.query.filter_by(username='nebaxusbeta', is_active=True).first()
+    try:
+        from .models import Employee
+        employee = Employee.query.filter_by(username='nebaxusbeta', is_active=True).first()
+    except Exception:
+        employee = None
     if not employee:
         flash('لم يتم العثور على حساب افتراضي')
         return redirect(url_for('main.login'))

@@ -12,9 +12,12 @@ TRIAL_LIMIT = 500
 
 
 def orders_this_month_count():
-    now = datetime.utcnow()
-    first = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-    return Order.query.filter(Order.date >= first).count()
+    try:
+        now = datetime.utcnow()
+        first = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        return Order.query.filter(Order.date >= first).count()
+    except Exception:
+        return 0
 
 
 def remaining():
