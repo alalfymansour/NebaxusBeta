@@ -223,9 +223,14 @@ def _ensure_employee_schema(app: Flask) -> bool:
     table_names = inspector.get_table_names()
     if "employee" not in table_names:
         app.logger.warning(
-            "⚠️ Employee table missing - migrations might not be applied. Skipping default user creation."
+            "⚠️ Employee table missing — attempting auto-upgrade..."
         )
-        return False
+        if not _run_auto_upgrade(app):
+            app.logger.warning(
+                "Skipping default user creation."
+            )
+            return False
+        app.logger.info("✅ Auto-upgrade created employee table.")
 
     required_new_cols = [
         "can_view_followups",
@@ -317,11 +322,14 @@ def _register_context_processors(app: Flask) -> None:
 
     @app.context_processor
     def inject_pending_followups():
-        from .models import FollowUp, db
-        from sqlalchemy import func
-        count = (db.session.query(func.count(FollowUp.id))
-                 .filter(FollowUp.status == 'قائمة')
-                 .scalar() or 0)
+        try:
+            from .models import FollowUp, db
+            from sqlalchemy import func
+            count = (db.session.query(func.count(FollowUp.id))
+                     .filter(FollowUp.status == 'قائمة')
+                     .scalar() or 0)
+        except Exception:
+            count = 0
         return {"pending_followups_count": count}
 
     @app.template_filter("localtime")
