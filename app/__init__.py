@@ -222,72 +222,15 @@ def _ensure_employee_schema(app: Flask) -> bool:
     inspector = inspect(db.engine)
     table_names = inspector.get_table_names()
     if "employee" not in table_names:
-        app.logger.warning(
-            "⚠️ Employee table missing — attempting auto-upgrade..."
-        )
-        if not _run_auto_upgrade(app):
-            app.logger.warning(
-                "Skipping default user creation."
-            )
+        app.logger.warning("⚠️ Employee table missing — creating tables...")
+        try:
+            from .models import Employee
+            db.create_all()
+            app.logger.info("✅ Tables created.")
+        except Exception as e:
+            app.logger.error("❌ Table creation failed: %s", e, exc_info=True)
             return False
-        app.logger.info("✅ Auto-upgrade created employee table.")
-
-    required_new_cols = [
-        "can_view_followups",
-        "can_add_followups",
-        "can_edit_followups",
-        "can_delete_followups",
-        "can_view_damaged_products",
-        "can_add_damaged_products",
-        "can_delete_damaged_products",
-        "can_manage_stocktake",
-    ]
-    existing_cols = [column["name"] for column in inspector.get_columns("employee")]
-    missing = [column for column in required_new_cols if column not in existing_cols]
-    if not missing:
         return True
-
-    app.logger.warning("⚠️ Employee schema is outdated (missing columns): %s", ", ".join(missing))
-
-    if not _run_auto_upgrade(app):
-        app.logger.warning("👉 Run migration manually if not resolved: flask db upgrade, then restart.")
-        return False
-
-    inspector = inspect(db.engine)
-    existing_cols = [column["name"] for column in inspector.get_columns("employee")]
-    still_missing = [column for column in required_new_cols if column not in existing_cols]
-    if still_missing:
-        app.logger.warning("⚠️ Still missing columns after auto-upgrade: %s", ", ".join(still_missing))
-        app.logger.warning("👉 Run migration manually if not resolved: flask db upgrade, then restart.")
-        return False
-
-    app.logger.info("✅ Auto-upgrade applied successfully.")
-    return True
-
-
-def _run_auto_upgrade(app: Flask) -> bool:
-    """Run Alembic upgrade to head when startup schema checks detect drift."""
-    try:
-        from alembic import command
-        from alembic.config import Config
-
-        migrations_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "migrations"))
-        alembic_ini = os.path.join(migrations_dir, "alembic.ini")
-        if not os.path.isfile(alembic_ini):
-            app.logger.error("❌ alembic.ini not found at: %s", alembic_ini)
-            return False
-
-        app.logger.info("🔄 Running Alembic auto-upgrade (head)...")
-        cfg = Config(alembic_ini)
-        cfg.set_main_option("script_location", migrations_dir)
-        command.upgrade(cfg, "head")
-        return True
-    except Exception as e:
-        app.logger.error("❌ Auto-upgrade failed: %s", e, exc_info=True)
-        app.logger.warning("👉 Run manually: flask db upgrade")
-        return False
-
-
 
 
 
